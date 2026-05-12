@@ -1,0 +1,30 @@
+{
+  "name": "sistema-de-gestion-de-inventarios-empresarial",
+  "version": "1.0.0",
+  "description": "![CI](https://img.shields.io/github/actions/workflow/status/YOUR_USER/Sistema-de-Gestion-de-Inventarios-Empresarial/ci.yml?label=CI&style=flat-square) ![Coverage](https://img.shields.io/badge/coverage-placeholder-brightgreen?style=flat-square) ![License](https://img.shields.io/github/license/YOUR_USER/Sistema-de-Gestion-de-Inventarios-Empresarial?style=flat-square) ![Issues](https://img.shields.io/github/issues/YOUR_USER/Sistema-de-Gestion-de-Inventarios-Empresarial?style=flat-square) ![Last Commit](https://img.shields.io/github/last-commit/YOUR_USER/Sistema-de-Gestion-de-Inventarios-Empresarial?style=flat-square)",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "commitlint": "commitlint --from HEAD~1 --to HEAD --verbose"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/issues"
+  },
+  "homepage": "https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial#readme",
+  "devDependencies": {
+    "@commitlint/cli": "^21.0.1",
+    "@commitlint/config-conventional": "^21.0.1",
+    "husky": "^9.1.7"
+  }
+}
