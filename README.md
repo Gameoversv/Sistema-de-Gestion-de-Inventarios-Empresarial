@@ -19,14 +19,13 @@ Plataforma para gestionar inventarios empresariales de forma segura y escalable.
 | Capa | Tecnología |
 |------|-----------|
 | Backend | Java 21 + Spring Boot 3 |
-| Frontend | React 18 + TypeScript |
+| Frontend | React 18 + TypeScript + Vite |
 | Base de Datos | PostgreSQL 16 |
-| Cache | Redis 7 |
-| Mensajería | RabbitMQ / Kafka (TBD — ver [ADR-001](docs/decisions/ADR-001-stack-selection.md)) |
+| Seguridad | Keycloak + OAuth2 + JWT |
 | Contenedores | Docker + Docker Compose |
-| Observabilidad | Prometheus + Grafana + Loki |
-| CI/CD | GitHub Actions |
-| Testing | JUnit 5, Testcontainers, Playwright, k6 |
+| Observabilidad | OpenTelemetry · Prometheus · Grafana · Tempo · Loki · Alloy · Alertmanager |
+| CI/CD | GitHub Actions + Jenkins |
+| Testing | JUnit 5 · Mockito · Testcontainers · RestAssured · Playwright · k6 · OWASP ZAP |
 
 ## Estructura del Proyecto
 
