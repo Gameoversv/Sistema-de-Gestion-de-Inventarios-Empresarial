@@ -8,7 +8,7 @@ COPY .mvn .mvn
 RUN ./mvnw dependency:go-offline -q
 
 COPY src src
-RUN ./mvnw package -DskipTests -q && \
+RUN ./mvnw package -DskipTests -Dspotless.check.skip=true -q && \
     java -Djarmode=tools -jar target/*.jar extract \
          --layers --launcher --destination target/extracted
 

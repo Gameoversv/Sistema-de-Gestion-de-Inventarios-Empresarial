@@ -1,0 +1,14 @@
+# Normalize line endings: store as LF, checkout as LF (Docker-safe)
+* text=auto eol=lf
+
+# Binaries — no conversion
+*.jar    binary
+*.png    binary
+*.jpg    binary
+*.gif    binary
+*.pdf    binary
+*.docx   binary
+*.xlsx   binary
+*.zip    binary
+*.gz     binary
+*.tar    binary
