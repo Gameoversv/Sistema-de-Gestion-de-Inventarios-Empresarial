@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+  <!-- ── Dev / Test: colored human-readable text ──────────────────────── -->
+  <springProfile name="dev | test">
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+      <encoder>
+        <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) [%15.15thread] %cyan(%-40.40logger{39}) : %msg%n</pattern>
+        <charset>UTF-8</charset>
+      </encoder>
+    </appender>
+    <root level="INFO">
+      <appender-ref ref="CONSOLE"/>
+    </root>
+  </springProfile>
+
+  <!-- ── Staging / Prod: structured JSON (one object per line) ─────────── -->
+  <springProfile name="staging | prod">
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+      <encoder class="ch.qos.logback.classic.encoder.JsonEncoder"/>
+    </appender>
+    <root level="INFO">
+      <appender-ref ref="CONSOLE"/>
+    </root>
+  </springProfile>
+
+  <!-- ── Fallback (no profile active) ─────────────────────────────────── -->
+  <springProfile name="!(dev | test | staging | prod)">
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+      <encoder>
+        <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} : %msg%n</pattern>
+        <charset>UTF-8</charset>
+      </encoder>
+    </appender>
+    <root level="INFO">
+      <appender-ref ref="CONSOLE"/>
+    </root>
+  </springProfile>
+
+</configuration>
