@@ -1,0 +1,115 @@
+spring:
+  application:
+    name: inventory-api
+
+  # ── datasource ──────────────────────────────────────────────────────────
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:inventory_db}
+    username: ${DB_USER:inventory_user}
+    password: ${DB_PASSWORD:changeme_db_password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: InventoryHikariPool
+      maximum-pool-size: ${DB_POOL_MAX:10}
+      minimum-idle: ${DB_POOL_MIN:2}
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # ── JPA ─────────────────────────────────────────────────────────────────
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+        default_schema: public
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+
+  # ── Flyway ──────────────────────────────────────────────────────────────
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+    validate-on-migrate: true
+    out-of-order: false
+
+  # ── Redis ────────────────────────────────────────────────────────────────
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 4
+          min-idle: 1
+
+  # ── JWT (custom property) ────────────────────────────────────────────────
+  security:
+    jwt:
+      secret: ${JWT_SECRET:changeme_jwt_secret_min_32_characters_long}
+      expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+# ── Server ──────────────────────────────────────────────────────────────────
+server:
+  port: ${BACKEND_PORT:8080}
+  servlet:
+    context-path: /api/v1
+  error:
+    include-message: never
+    include-stacktrace: never
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html
+    min-response-size: 1024
+
+# ── Actuator / Observability ─────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,loggers
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when_authorized
+    loggers:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+      profile: ${spring.profiles.active:default}
+  tracing:
+    sampling:
+      probability: 1.0
+  info:
+    env:
+      enabled: true
+
+# ── Info endpoint ──────────────────────────────────────────────────────────────
+info:
+  app:
+    name: ${spring.application.name}
+    version: "@project.version@"
+    description: Sistema de Gestión de Inventarios Empresarial
+
+# ── Logging (base) ─────────────────────────────────────────────────────────────
+logging:
+  level:
+    root: ${LOG_LEVEL:INFO}
+    com.inventory: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+    org.flywaydb: INFO

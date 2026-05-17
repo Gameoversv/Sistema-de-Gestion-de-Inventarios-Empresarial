@@ -1,0 +1,19 @@
+# Profile: test — Testcontainers overrides datasource via dynamic properties
+spring:
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+  jpa:
+    show-sql: true
+
+  security:
+    jwt:
+      secret: test_jwt_secret_min_32_characters_long_for_tests
+      expiration-ms: 3600000
+
+logging:
+  level:
+    com.inventory: DEBUG
+    org.springframework.security: WARN
+    org.hibernate.SQL: DEBUG
