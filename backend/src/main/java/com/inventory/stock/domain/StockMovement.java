@@ -5,9 +5,11 @@ import com.inventory.product.domain.Product;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import org.hibernate.envers.Audited;
 
 @Entity
 @Table(name = "stock_movements")
+@Audited
 @Getter
 @Setter
 @NoArgsConstructor

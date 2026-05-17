@@ -15,6 +15,9 @@ spring:
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
+      keepalive-time: 60000
+      validation-timeout: 5000
+      leak-detection-threshold: 60000
 
   # ── JPA ─────────────────────────────────────────────────────────────────
   jpa:
@@ -31,6 +34,11 @@ spring:
           batch_size: 20
         order_inserts: true
         order_updates: true
+        envers:
+          audit_table_suffix: _aud
+          revision_field_name: rev
+          revision_type_field_name: revtype
+          store_data_at_delete: true
 
   # ── Flyway ──────────────────────────────────────────────────────────────
   flyway:

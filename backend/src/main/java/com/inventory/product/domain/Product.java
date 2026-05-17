@@ -5,9 +5,11 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import lombok.*;
+import org.hibernate.envers.Audited;
 
 @Entity
 @Table(name = "products")
+@Audited
 @Getter
 @Setter
 @NoArgsConstructor

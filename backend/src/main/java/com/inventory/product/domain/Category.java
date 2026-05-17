@@ -4,9 +4,11 @@ import com.inventory.common.domain.BaseEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import org.hibernate.envers.Audited;
 
 @Entity
 @Table(name = "categories")
+@Audited
 @Getter
 @Setter
 @NoArgsConstructor
