@@ -84,7 +84,7 @@ class StockServiceTest {
   @Test
   @DisplayName("IN — increases stock by quantity")
   void registerMovement_in_increasesStock() {
-    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+    when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
     ArgumentCaptor<StockMovement> captor = ArgumentCaptor.forClass(StockMovement.class);
     when(movementRepository.save(captor.capture())).thenAnswer(i -> i.getArgument(0));
     when(movementMapper.toResponse(any())).thenReturn(dummyResponse);
@@ -100,7 +100,7 @@ class StockServiceTest {
   @Test
   @DisplayName("IN — sets performedBy from JWT preferred_username")
   void registerMovement_in_setsPerformedBy() {
-    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+    when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
     ArgumentCaptor<StockMovement> captor = ArgumentCaptor.forClass(StockMovement.class);
     when(movementRepository.save(captor.capture())).thenAnswer(i -> i.getArgument(0));
     when(movementMapper.toResponse(any())).thenReturn(dummyResponse);
@@ -114,7 +114,7 @@ class StockServiceTest {
   @Test
   @DisplayName("OUT — decreases stock by quantity")
   void registerMovement_out_decreasesStock() {
-    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+    when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
     ArgumentCaptor<StockMovement> captor = ArgumentCaptor.forClass(StockMovement.class);
     when(movementRepository.save(captor.capture())).thenAnswer(i -> i.getArgument(0));
     when(movementMapper.toResponse(any())).thenReturn(dummyResponse);
@@ -131,7 +131,7 @@ class StockServiceTest {
   @DisplayName("OUT — throws BusinessException when stock insufficient")
   void registerMovement_out_insufficientStock_throws() {
     product.setStock(3);
-    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+    when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
 
     assertThatThrownBy(
             () ->
@@ -147,7 +147,7 @@ class StockServiceTest {
   @DisplayName("OUT — exact stock (not zero) succeeds")
   void registerMovement_out_exactStock_succeeds() {
     product.setStock(5);
-    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+    when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
     when(movementRepository.save(any())).thenAnswer(i -> i.getArgument(0));
     when(movementMapper.toResponse(any())).thenReturn(dummyResponse);
 
@@ -161,7 +161,7 @@ class StockServiceTest {
   @DisplayName("ADJUSTMENT — sets stock to absolute value")
   void registerMovement_adjust_setsAbsoluteStock() {
     product.setStock(20);
-    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+    when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
     ArgumentCaptor<StockMovement> captor = ArgumentCaptor.forClass(StockMovement.class);
     when(movementRepository.save(captor.capture())).thenAnswer(i -> i.getArgument(0));
     when(movementMapper.toResponse(any())).thenReturn(dummyResponse);
@@ -178,7 +178,7 @@ class StockServiceTest {
   @DisplayName("ADJUSTMENT — stores target quantity on movement")
   void registerMovement_adjust_storesTargetQuantity() {
     product.setStock(20);
-    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+    when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
     ArgumentCaptor<StockMovement> captor = ArgumentCaptor.forClass(StockMovement.class);
     when(movementRepository.save(captor.capture())).thenAnswer(i -> i.getArgument(0));
     when(movementMapper.toResponse(any())).thenReturn(dummyResponse);
@@ -194,7 +194,7 @@ class StockServiceTest {
   void registerMovement_belowMinimum_publishesEvent() {
     product.setStock(10);
     product.setMinimumStock(8);
-    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+    when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
     when(movementRepository.save(any())).thenAnswer(i -> i.getArgument(0));
     when(movementMapper.toResponse(any())).thenReturn(dummyResponse);
 
@@ -213,7 +213,7 @@ class StockServiceTest {
   void registerMovement_aboveMinimum_noEvent() {
     product.setStock(20);
     product.setMinimumStock(5);
-    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+    when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
     when(movementRepository.save(any())).thenAnswer(i -> i.getArgument(0));
     when(movementMapper.toResponse(any())).thenReturn(dummyResponse);
 
@@ -226,7 +226,7 @@ class StockServiceTest {
   @Test
   @DisplayName("throws ResourceNotFoundException when product missing")
   void registerMovement_productNotFound_throws() {
-    when(productRepository.findById(99L)).thenReturn(Optional.empty());
+    when(productRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
 
     assertThatThrownBy(
             () ->

@@ -45,7 +45,7 @@ public class StockServiceImpl implements StockService {
 
     Product product =
         productRepository
-            .findById(request.productId())
+            .findByIdForUpdate(request.productId())
             .orElseThrow(
                 () -> new ResourceNotFoundException("Product not found: " + request.productId()));
 
