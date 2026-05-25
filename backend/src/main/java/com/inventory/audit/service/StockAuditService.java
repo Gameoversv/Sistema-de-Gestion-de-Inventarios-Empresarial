@@ -7,12 +7,15 @@ import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.hibernate.LazyInitializationException;
 import org.hibernate.envers.AuditReaderFactory;
 import org.hibernate.envers.RevisionType;
 import org.hibernate.envers.query.AuditEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -61,8 +64,9 @@ public class StockAuditService {
         productName = movement.getProduct().getName();
         productId = movement.getProduct().getId();
       }
-    } catch (Exception ignored) {
-      // lazy-load may fail outside of a fully-open session; fields remain null
+    } catch (LazyInitializationException ex) {
+      log.warn(
+          "Could not resolve product for movement id={}: {}", movement.getId(), ex.getMessage());
     }
 
     return new AuditRevisionResponse(
