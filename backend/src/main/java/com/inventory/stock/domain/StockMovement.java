@@ -28,8 +28,18 @@ public class StockMovement extends BaseEntity {
   private MovementType type;
 
   @NotNull
+  @Min(0)
   @Column(nullable = false)
   private Integer quantity;
+
+  @Column(name = "quantity_before")
+  private Integer quantityBefore;
+
+  @Column(name = "quantity_after")
+  private Integer quantityAfter;
+
+  @Column(length = 100)
+  private String performedBy;
 
   @Column(length = 500)
   private String reason;
