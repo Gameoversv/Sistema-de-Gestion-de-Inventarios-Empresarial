@@ -25,8 +25,7 @@ public class ReportServiceImpl implements ReportService {
   @Transactional(readOnly = true)
   public StockSummaryResponse stockSummary() {
     List<Product> all = productRepository.findAll();
-    List<Product> active =
-        all.stream().filter(p -> Boolean.TRUE.equals(p.getActive())).toList();
+    List<Product> active = all.stream().filter(p -> Boolean.TRUE.equals(p.getActive())).toList();
     int lowStockCount =
         (int) active.stream().filter(p -> p.getStock() <= p.getMinimumStock()).count();
 
@@ -39,10 +38,7 @@ public class ReportServiceImpl implements ReportService {
         active.stream()
             .collect(
                 Collectors.groupingBy(
-                    p ->
-                        p.getCategory() != null
-                            ? p.getCategory().getName()
-                            : "Sin categoría"));
+                    p -> p.getCategory() != null ? p.getCategory().getName() : "Sin categoría"));
 
     List<CategoryStockDto> byCategory =
         grouped.entrySet().stream()

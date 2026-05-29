@@ -22,9 +22,7 @@ public record ProductCreateRequest(
             description = "Descripción detallada del producto",
             example = "Intel Core i7-13700H, 16GB RAM, 512GB SSD")
         String description,
-    @Schema(description = "Precio unitario", example = "1299.99")
-        @NotNull
-        @DecimalMin("0.00")
+    @Schema(description = "Precio unitario", example = "1299.99") @NotNull @DecimalMin("0.00")
         BigDecimal price,
     @Schema(description = "Cantidad inicial en stock", example = "10") @NotNull @Min(0)
         Integer stock,

@@ -32,9 +32,7 @@ public class OpenApiConfig {
                     "Sistema de Gestión de Inventarios Empresarial — PUCMM. "
                         + "API REST para gestión de productos, stock, reportes y auditoría.")
                 .contact(
-                    new Contact()
-                        .name("PUCMM Inventory Team")
-                        .email("snipervargas37@gmail.com"))
+                    new Contact().name("PUCMM Inventory Team").email("snipervargas37@gmail.com"))
                 .license(new License().name("MIT").url("https://opensource.org/licenses/MIT")))
         .addSecurityItem(new SecurityRequirement().addList("keycloak"))
         .components(
@@ -50,8 +48,7 @@ public class OpenApiConfig {
                                     new OAuthFlow()
                                         .authorizationUrl(
                                             kcIssuerUri + "/protocol/openid-connect/auth")
-                                        .tokenUrl(
-                                            kcIssuerUri + "/protocol/openid-connect/token")
+                                        .tokenUrl(kcIssuerUri + "/protocol/openid-connect/token")
                                         .scopes(
                                             new Scopes()
                                                 .addString("product:view", "Read products")
@@ -63,8 +60,7 @@ public class OpenApiConfig {
                                                     "stock:manage", "Register stock movements")
                                                 .addString("audit:view", "Access audit history")
                                                 .addString(
-                                                    "report:view",
-                                                    "Access inventory reports"))))));
+                                                    "report:view", "Access inventory reports"))))));
   }
 
   @Bean

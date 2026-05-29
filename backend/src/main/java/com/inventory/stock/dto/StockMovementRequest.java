@@ -14,12 +14,8 @@ public record StockMovementRequest(
             example = "IN")
         @NotNull
         MovementType type,
-    @Schema(description = "Cantidad de unidades", example = "50") @NotNull @Min(0)
-        Integer quantity,
-    @Schema(description = "Motivo del movimiento", example = "Reposición mensual")
-        @Size(max = 500)
+    @Schema(description = "Cantidad de unidades", example = "50") @NotNull @Min(0) Integer quantity,
+    @Schema(description = "Motivo del movimiento", example = "Reposición mensual") @Size(max = 500)
         String reason,
-    @Schema(
-            description = "Número de referencia del pedido o documento",
-            example = "PO-2024-001")
+    @Schema(description = "Número de referencia del pedido o documento", example = "PO-2024-001")
         String referenceId) {}
