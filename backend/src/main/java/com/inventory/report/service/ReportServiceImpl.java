@@ -1,17 +1,28 @@
 package com.inventory.report.service;
 
 import com.inventory.product.domain.Product;
+import com.inventory.product.repository.CategoryRepository;
 import com.inventory.product.repository.ProductRepository;
 import com.inventory.report.dto.CategoryStockDto;
+import com.inventory.report.dto.CriticalStockResponse;
+import com.inventory.report.dto.DashboardMetricsResponse;
 import com.inventory.report.dto.LowStockItemDto;
 import com.inventory.report.dto.LowStockReportResponse;
+import com.inventory.report.dto.RecentMovementDto;
+import com.inventory.report.dto.RecentMovementsResponse;
 import com.inventory.report.dto.StockSummaryResponse;
+import com.inventory.report.dto.TopProductDto;
+import com.inventory.report.dto.TopProductsResponse;
+import com.inventory.stock.domain.StockMovement;
+import com.inventory.stock.repository.StockMovementRepository;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +31,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class ReportServiceImpl implements ReportService {
 
   private final ProductRepository productRepository;
+  private final CategoryRepository categoryRepository;
+  private final StockMovementRepository stockMovementRepository;
 
   @Override
   @Transactional(readOnly = true)
@@ -63,6 +76,91 @@ public class ReportServiceImpl implements ReportService {
     return new LowStockReportResponse(threshold, items.size(), items);
   }
 
+  @Override
+  @Transactional(readOnly = true)
+  public CriticalStockResponse criticalStock() {
+    List<Product> critical = productRepository.findCriticalStockProducts();
+    List<LowStockItemDto> items = critical.stream().map(this::toLowStockItem).toList();
+    return new CriticalStockResponse(items.size(), items);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public TopProductsResponse topProducts(int limit, String metric) {
+    int effectiveLimit = limit > 0 ? limit : 10;
+    String effectiveMetric = metric != null && !metric.isBlank() ? metric : "value";
+
+    List<Product> active =
+        productRepository.findAll().stream()
+            .filter(p -> Boolean.TRUE.equals(p.getActive()))
+            .toList();
+
+    Comparator<Product> comparator;
+    if ("quantity".equalsIgnoreCase(effectiveMetric)) {
+      comparator = Comparator.comparingInt(Product::getStock).reversed();
+    } else {
+      comparator =
+          Comparator.comparing(
+              (Product p) -> p.getPrice().multiply(BigDecimal.valueOf(p.getStock())),
+              Comparator.reverseOrder());
+    }
+
+    List<TopProductDto> items =
+        active.stream()
+            .sorted(comparator)
+            .limit(effectiveLimit)
+            .map(this::toTopProductDto)
+            .toList();
+
+    return new TopProductsResponse(effectiveLimit, effectiveMetric, items);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public DashboardMetricsResponse dashboardMetrics() {
+    List<Product> all = productRepository.findAll();
+    List<Product> active = all.stream().filter(p -> Boolean.TRUE.equals(p.getActive())).toList();
+
+    int lowStockCount =
+        (int) active.stream().filter(p -> p.getStock() <= p.getMinimumStock()).count();
+    int criticalStockCount = (int) active.stream().filter(p -> p.getStock() == 0).count();
+
+    BigDecimal totalValue =
+        active.stream()
+            .map(p -> p.getPrice().multiply(BigDecimal.valueOf(p.getStock())))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+    long totalCategories = categoryRepository.count();
+    long totalMovements = stockMovementRepository.count();
+
+    Instant lastMovementAt =
+        stockMovementRepository
+            .findFirstByOrderByCreatedAtDesc()
+            .map(StockMovement::getCreatedAt)
+            .orElse(null);
+
+    return new DashboardMetricsResponse(
+        all.size(),
+        active.size(),
+        all.size() - active.size(),
+        totalCategories,
+        totalMovements,
+        totalValue,
+        lowStockCount,
+        criticalStockCount,
+        lastMovementAt);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public RecentMovementsResponse recentMovements(int limit) {
+    int effectiveLimit = limit > 0 ? limit : 20;
+    List<StockMovement> movements =
+        stockMovementRepository.findRecent(PageRequest.of(0, effectiveLimit));
+    List<RecentMovementDto> dtos = movements.stream().map(this::toRecentMovementDto).toList();
+    return new RecentMovementsResponse(effectiveLimit, dtos.size(), dtos);
+  }
+
   private CategoryStockDto toCategoryDto(String name, List<Product> products) {
     long totalStock = products.stream().mapToLong(Product::getStock).sum();
     BigDecimal totalValue =
@@ -81,5 +179,32 @@ public class ReportServiceImpl implements ReportService {
         p.getMinimumStock(),
         p.getMinimumStock() - p.getStock(),
         p.getCategory() != null ? p.getCategory().getName() : "Sin categoría");
+  }
+
+  private TopProductDto toTopProductDto(Product p) {
+    BigDecimal value = p.getPrice().multiply(BigDecimal.valueOf(p.getStock()));
+    return new TopProductDto(
+        p.getId(),
+        p.getSku(),
+        p.getName(),
+        p.getStock(),
+        p.getPrice(),
+        value,
+        p.getCategory() != null ? p.getCategory().getName() : "Sin categoría");
+  }
+
+  private RecentMovementDto toRecentMovementDto(StockMovement m) {
+    Product product = m.getProduct();
+    return new RecentMovementDto(
+        m.getId(),
+        product.getId(),
+        product.getSku(),
+        product.getName(),
+        m.getType(),
+        m.getQuantity(),
+        m.getQuantityBefore(),
+        m.getQuantityAfter(),
+        m.getPerformedBy(),
+        m.getCreatedAt());
   }
 }
