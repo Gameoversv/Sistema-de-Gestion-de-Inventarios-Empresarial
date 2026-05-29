@@ -1,13 +1,11 @@
 package com.inventory.report.service;
 
-import java.util.Map;
-import org.springframework.data.domain.Pageable;
+import com.inventory.report.dto.LowStockReportResponse;
+import com.inventory.report.dto.StockSummaryResponse;
 
 public interface ReportService {
 
-  /** Returns current stock levels grouped by category. */
-  Map<String, Object> stockSummary();
+  StockSummaryResponse stockSummary();
 
-  /** Returns products below a minimum stock threshold. */
-  Map<String, Object> lowStockAlert(int threshold, Pageable pageable);
+  LowStockReportResponse lowStockAlert(int threshold);
 }
