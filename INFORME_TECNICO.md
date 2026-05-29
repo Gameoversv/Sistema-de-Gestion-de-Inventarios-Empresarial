@@ -5,8 +5,8 @@
 **Docente:** Freddy Peña  
 **Fecha:** 2026-05-29  
 **Rama activa:** `develop`  
-**Total de commits:** 22  
-**Total de tests:** 81 (+ 2 de concurrencia con Testcontainers)
+**Total de commits:** 25  
+**Total de tests:** 123 (+ 2 de concurrencia con Testcontainers)
 
 > Este documento es privado y no se sube al repositorio (excluido en `.gitignore`).  
 > Cubre **absolutamente todo** lo implementado desde el commit inicial hasta el estado actual.
@@ -584,7 +584,7 @@ El sistema NO usa roles simples para autorizar acciones. Cada operación crític
 | Stock | `stock:view` | GET /api/stock/movements, GET /api/stock/alerts |
 | Stock | `stock:manage` | POST /api/stock/movements + todo lo de view |
 | Auditoría | `audit:view` | GET /api/audit/stock-movements |
-| Reportes | `report:view` | GET /api/reports/stock-summary, GET /api/reports/low-stock |
+| Reportes | `report:view` | GET /api/reports/stock-summary, GET /api/reports/low-stock, GET /api/reports/critical-stock, GET /api/reports/top-products, GET /api/reports/dashboard-metrics, GET /api/reports/recent-movements |
 | Usuarios | `user:manage` | (preparado para gestión de usuarios) |
 
 **Implementación en controladores:**
@@ -1598,7 +1598,7 @@ class StockControllerTest {
 
 ## 12. Fase 11 — OpenAPI/Swagger UI completo + Endpoints de Reportes
 
-**Commit:** pendiente
+**Commits:** `c45f400` — OpenAPI/Swagger UI + reportes base (stock-summary, low-stock) | `37b8574` — tests ReportService/ReportController (18 tests) | `3426be7` — critical-stock, top-products, dashboard-metrics, recent-movements + tests (26 tests)
 
 ### Objetivos de la fase
 
@@ -1753,6 +1753,10 @@ Las anotaciones conviven correctamente con las de Jakarta Validation — SpringD
 public interface ReportService {
   StockSummaryResponse stockSummary();
   LowStockReportResponse lowStockAlert(int threshold);
+  CriticalStockResponse criticalStock();
+  TopProductsResponse topProducts(int limit, String metric);
+  DashboardMetricsResponse dashboardMetrics();
+  RecentMovementsResponse recentMovements(int limit);
 }
 ```
 
@@ -1844,9 +1848,70 @@ public record LowStockReportResponse(
 |--------|------|-------|-------------|
 | `GET` | `/api/reports/stock-summary` | `report:view` | Resumen del inventario agrupado por categoría |
 | `GET` | `/api/reports/low-stock` | `report:view` | Productos bajo stock mínimo con filtro de umbral |
+| `GET` | `/api/reports/critical-stock` | `report:view` | Productos activos con stock exactamente en cero |
+| `GET` | `/api/reports/top-products` | `report:view` | Top N productos por valor de inventario o cantidad de stock |
+| `GET` | `/api/reports/dashboard-metrics` | `report:view` | Métricas generales: totales, valor, alertas, último movimiento |
+| `GET` | `/api/reports/recent-movements` | `report:view` | N movimientos de stock más recientes |
 
 **Parámetros de `/api/reports/low-stock`:**
 - `threshold` (default `0`) — si es 0, usa el `minimumStock` configurado por producto; si es > 0, filtra adicionalmente por `stock <= threshold`
+
+**Parámetros de `/api/reports/top-products`:**
+- `limit` (default `10`) — número máximo de productos a devolver; si ≤ 0 usa default 10
+- `metric` (default `value`) — `value` ordena por `precio × stock` desc; `quantity` ordena por unidades en stock desc; solo incluye productos activos
+
+**Parámetros de `/api/reports/recent-movements`:**
+- `limit` (default `20`) — número de movimientos a devolver (máximo 100); si ≤ 0 usa default 20
+
+#### Nuevos DTOs de Reportes (commit `3426be7`)
+
+```java
+record CriticalStockResponse(int totalCritical, List<LowStockItemDto> items) {}
+
+record TopProductDto(Long id, String sku, String name, int stock,
+    BigDecimal price, BigDecimal inventoryValue, String categoryName) {}
+
+record TopProductsResponse(int limit, String metric, List<TopProductDto> items) {}
+
+record DashboardMetricsResponse(
+    int totalProducts, int activeProducts, int inactiveProducts,
+    long totalCategories, long totalStockMovements,
+    BigDecimal totalInventoryValue,
+    int lowStockCount, int criticalStockCount,
+    Instant lastMovementAt) {}
+
+record RecentMovementDto(Long id, Long productId, String sku, String productName,
+    MovementType type, int quantity,
+    Integer quantityBefore, Integer quantityAfter,
+    String performedBy, Instant createdAt) {}
+
+record RecentMovementsResponse(int limit, int count, List<RecentMovementDto> movements) {}
+```
+
+#### Nuevas queries en repositorios (commit `3426be7`)
+
+**ProductRepository:**
+```java
+@Query("SELECT p FROM Product p WHERE p.active = true AND p.stock = 0 ORDER BY p.name ASC")
+List<Product> findCriticalStockProducts();
+```
+
+**StockMovementRepository:**
+```java
+Optional<StockMovement> findFirstByOrderByCreatedAtDesc();
+
+@Query("SELECT m FROM StockMovement m JOIN FETCH m.product p ORDER BY m.createdAt DESC")
+List<StockMovement> findRecent(Pageable pageable);
+```
+
+El `JOIN FETCH m.product` evita el problema N+1 al serializar el DTO que necesita datos del producto. `findFirstByOrderByCreatedAtDesc()` usa convención de nombre Spring Data — no requiere JPQL manual.
+
+#### ReportServiceImpl — lógica de los 4 nuevos métodos
+
+- **`criticalStock()`** — llama `findCriticalStockProducts()`, mapea a `LowStockItemDto` reutilizando el mapper ya existente, devuelve `CriticalStockResponse`
+- **`topProducts(limit, metric)`** — carga todos con `findAll()`, filtra activos, ordena por `price × stock` (value) o `stock` (quantity) desc, aplica `limit` con `stream().limit()`, devuelve `TopProductsResponse`; si `limit ≤ 0` usa 10 como default
+- **`dashboardMetrics()`** — agrega: `productRepository.findAll()` para conteos y valor, `categoryRepository.count()`, `stockMovementRepository.count()`, `findFirstByOrderByCreatedAtDesc()` para `lastMovementAt`; calcula `lowStockCount` (stock ≤ minimumStock) y `criticalStockCount` (stock = 0) solo sobre activos
+- **`recentMovements(limit)`** — llama `findRecent(PageRequest.of(0, effectiveLimit))` con `JOIN FETCH`; si `limit ≤ 0` usa 20 como default
 
 ### Exportación de openapi.yaml
 
@@ -1937,8 +2002,12 @@ categories_aud, products_aud, stock_movements_aud, app_users_aud
 | `ProductCreateRequestValidationTest` | Validación | 12 | JUnit 5 + Validator |
 | `CategoryCreateRequestValidationTest` | Validación | 6 | JUnit 5 + Validator |
 | `InventoryApplicationTests` | Smoke | 1 | SpringBootTest |
+| `ReportServiceTest` | Unitario | 10 | JUnit 5 + Mockito |
+| `ReportControllerTest` | Web slice | 8 | JUnit 5 + WebMvcTest + Spring Security Test |
+| `ReportServiceExtendedTest` | Unitario | 12 | JUnit 5 + Mockito |
+| `ReportControllerExtendedTest` | Web slice | 14 | JUnit 5 + WebMvcTest + Spring Security Test |
 | `StockServiceConcurrencyIT` | Concurrencia | 2 | JUnit 5 + Testcontainers + PostgreSQL |
-| **TOTAL** | | **81** | |
+| **TOTAL** | | **123** (+ 2 Testcontainers) | |
 
 ---
 
@@ -2129,7 +2198,9 @@ GRAFANA_ADMIN_PASSWORD=<secreto>
 | `1b2f49c` | fix | Reemplaza swallow genérico por LazyInitializationException específico | 8 |
 | `583e13f` | test | Bloqueo pesimista (SELECT FOR UPDATE) + pruebas de concurrencia Testcontainers | 9 |
 | `51ab675` | test | StockControllerTest (12) + AuditControllerTest (8) + fix AccessDeniedException → 403 | 10 |
-| pendiente | feat | OpenAPI/Swagger UI completo: OpenApiConfig, grupos, OAuth2, @ApiResponse, @Schema, ReportController, generate-docs profile | 11 |
+| `c45f400` | feat | OpenAPI/Swagger UI completo: OpenApiConfig, grupos, OAuth2, @ApiResponse, @Schema, ReportController (stock-summary + low-stock), generate-docs profile | 11 |
+| `37b8574` | test | ReportServiceTest (10) + ReportControllerTest (8) — tests para stock-summary y low-stock | 11 |
+| `3426be7` | feat | critical-stock, top-products, dashboard-metrics, recent-movements: DTOs, queries repo, service impl, controller, tests (26) | 11 |
 
 ---
 
