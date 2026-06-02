@@ -137,7 +137,10 @@ jobs:
           # ── Authenticated endpoints ─────────────────────────────────────
           check "GET /categories"              200 "$BASE/categories"
           check "GET /products"               200 "$BASE/products"
-          check "GET /stock/movements"        200 "$BASE/stock/movements"
+          STOCK_BODY=$(curl -s -H "Authorization: Bearer $TOKEN" "$BASE/stock/movements")
+          STOCK_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $TOKEN" "$BASE/stock/movements")
+          echo "Stock response ($STOCK_STATUS): $STOCK_BODY"
+          [ "$STOCK_STATUS" = "200" ] && echo "✓ GET /stock/movements → 200" || (echo "✗ GET /stock/movements expected 200, got $STOCK_STATUS" && exit 1)
           check "GET /reports/dashboard"      200 "$BASE/reports/dashboard"
           check "GET /audit"                  200 "$BASE/audit"
 
