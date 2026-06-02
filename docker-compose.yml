@@ -90,7 +90,7 @@ services:
     ports:
       - "${KEYCLOAK_PORT:-8180}:8080"
     volumes:
-      - ./scripts/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
     networks:
       - inventory-net
     depends_on:
@@ -145,7 +145,10 @@ services:
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
       BACKEND_PORT: 8080
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/${KC_REALM:-inventory}
+      # issuer-uri: external URL that Keycloak embeds in "iss" claim
+      KC_ISSUER_URI: http://localhost:${KEYCLOAK_PORT:-8180}/realms/${KC_REALM:-inventory}
+      # jwk-set-uri: internal Docker URL to fetch signing keys without leaving the network
+      KC_JWK_SET_URI: http://keycloak:8080/realms/${KC_REALM:-inventory}/protocol/openid-connect/certs
       KC_REALM: ${KC_REALM:-inventory}
       KC_BACKEND_CLIENT_SECRET: ${KC_BACKEND_CLIENT_SECRET}
     ports:

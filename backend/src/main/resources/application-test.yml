@@ -7,10 +7,7 @@ spring:
   jpa:
     show-sql: true
 
-  security:
-    jwt:
-      secret: test_jwt_secret_min_32_characters_long_for_tests
-      expiration-ms: 3600000
+  # JwtDecoder is @MockBean in tests — no issuer-uri needed
 
 logging:
   level:
