@@ -139,7 +139,7 @@ jobs:
           check "GET /products"               200 "$BASE/products"
           check "GET /stock/movements"             200 "$BASE/stock/movements"
           check "GET /reports/dashboard-metrics" 200 "$BASE/reports/dashboard-metrics"
-          check "GET /audit"                  200 "$BASE/audit"
+          check "GET /audit/stock-movements"     200 "$BASE/audit/stock-movements"
 
           # ── Security: must reject unauthenticated requests ──────────────
           UNAUTH=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/products")

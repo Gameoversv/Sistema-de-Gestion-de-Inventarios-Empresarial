@@ -14,6 +14,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -88,6 +89,17 @@ public class GlobalExceptionHandler {
     problem.setTitle("Constraint Violation");
     problem.setInstance(URI.create(request.getRequestURI()));
     return ResponseEntity.badRequest().body(problem);
+  }
+
+  @ExceptionHandler(NoResourceFoundException.class)
+  public ResponseEntity<ProblemDetail> handleNoResource(
+      NoResourceFoundException ex, HttpServletRequest request) {
+    ProblemDetail problem =
+        ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Resource not found");
+    problem.setType(URI.create(PROBLEM_BASE_URI + "/not-found"));
+    problem.setTitle("Not Found");
+    problem.setInstance(URI.create(request.getRequestURI()));
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
   }
 
   @ExceptionHandler(Exception.class)
