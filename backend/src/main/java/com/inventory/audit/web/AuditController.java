@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/audit")
+@RequestMapping("/audit")
 @RequiredArgsConstructor
 @Tag(name = "Audit", description = "Historial de revisiones Envers — requiere audit:view")
 public class AuditController {

@@ -21,7 +21,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/stock")
+@RequestMapping("/stock")
 @RequiredArgsConstructor
 @Tag(name = "Stock", description = "Control de inventario — movimientos y alertas")
 public class StockController {

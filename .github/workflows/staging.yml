@@ -135,11 +135,11 @@ jobs:
           echo "✓ Health endpoint OK"
 
           # ── Authenticated endpoints ─────────────────────────────────────
-          check "GET /categories"         200 "$BASE/categories"
-          check "GET /products"           200 "$BASE/products"
-          check "GET /stock"              200 "$BASE/stock"
-          check "GET /reports/dashboard"  200 "$BASE/reports/dashboard"
-          check "GET /audit"              200 "$BASE/audit"
+          check "GET /categories"              200 "$BASE/categories"
+          check "GET /products"               200 "$BASE/products"
+          check "GET /stock/movements"        200 "$BASE/stock/movements"
+          check "GET /reports/dashboard"      200 "$BASE/reports/dashboard"
+          check "GET /audit"                  200 "$BASE/audit"
 
           # ── Security: must reject unauthenticated requests ──────────────
           UNAUTH=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/products")
@@ -163,7 +163,7 @@ jobs:
           VIEWER_CREATE=$(curl -s -o /dev/null -w "%{http_code}" \
             -X POST -H "Authorization: Bearer $VIEWER_TOKEN" \
             -H "Content-Type: application/json" \
-            -d '{"name":"test","sku":"SKU-TEST","price":1}' \
+            -d '{"name":"test","sku":"SKU-TEST","price":1.00,"categoryId":1}' \
             "$BASE/products")
           if [ "$VIEWER_CREATE" = "403" ] || [ "$VIEWER_CREATE" = "401" ]; then
             echo "✓ Viewer role blocked from POST /products ($VIEWER_CREATE)"
