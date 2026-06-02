@@ -93,6 +93,10 @@ jobs:
             sleep 10
           done
 
+      # ── Dump backend startup logs before tests ───────────────────────────
+      - name: Backend startup logs
+        run: docker compose logs backend --tail=50
+
       # ── API tests (against running system) ───────────────────────────────
       - name: API smoke & integration tests
         run: |
@@ -140,6 +144,10 @@ jobs:
           STOCK_BODY=$(curl -s -H "Authorization: Bearer $TOKEN" "$BASE/stock/movements")
           STOCK_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $TOKEN" "$BASE/stock/movements")
           echo "Stock response ($STOCK_STATUS): $STOCK_BODY"
+          if [ "$STOCK_STATUS" != "200" ]; then
+            echo "==> Backend logs at failure:"
+            docker compose logs backend --tail=80
+          fi
           [ "$STOCK_STATUS" = "200" ] && echo "✓ GET /stock/movements → 200" || (echo "✗ GET /stock/movements expected 200, got $STOCK_STATUS" && exit 1)
           check "GET /reports/dashboard"      200 "$BASE/reports/dashboard"
           check "GET /audit"                  200 "$BASE/audit"
