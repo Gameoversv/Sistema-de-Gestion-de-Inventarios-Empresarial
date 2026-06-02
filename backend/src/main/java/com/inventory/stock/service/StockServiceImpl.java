@@ -13,6 +13,7 @@ import com.inventory.stock.dto.StockMovementResponse;
 import com.inventory.stock.event.StockThresholdCrossedEvent;
 import com.inventory.stock.mapper.StockMovementMapper;
 import com.inventory.stock.repository.StockMovementRepository;
+import com.inventory.stock.repository.StockMovementSpec;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -93,7 +94,7 @@ public class StockServiceImpl implements StockService {
   public Page<StockMovementResponse> getMovements(
       Long productId, MovementType type, Instant from, Instant to, Pageable pageable) {
     return movementRepository
-        .findFiltered(productId, type, from, to, pageable)
+        .findAll(StockMovementSpec.filtered(productId, type, from, to), pageable)
         .map(movementMapper::toResponse);
   }
 
