@@ -153,8 +153,8 @@ jobs:
           DASH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $TOKEN" "$BASE/reports/dashboard")
           echo "Dashboard response ($DASH_STATUS): $DASH_BODY"
           if [ "$DASH_STATUS" != "200" ]; then
-            echo "==> Backend logs at dashboard failure:"
-            docker compose logs backend --tail=30
+            echo "==> Backend ERROR logs:"
+            docker compose logs backend 2>&1 | grep '"level":"ERROR"' | tail -10
           fi
           [ "$DASH_STATUS" = "200" ] && echo "✓ GET /reports/dashboard → 200" || (echo "✗ GET /reports/dashboard expected 200, got $DASH_STATUS" && exit 1)
           check "GET /audit"                  200 "$BASE/audit"
