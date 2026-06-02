@@ -5,7 +5,7 @@ WORKDIR /workspace
 # resolve deps separately — cached as long as pom.xml doesn't change
 COPY mvnw pom.xml ./
 COPY .mvn .mvn
-RUN ./mvnw dependency:go-offline -q
+RUN chmod +x mvnw && ./mvnw dependency:go-offline -q
 
 COPY src src
 RUN ./mvnw package -DskipTests -Dspotless.check.skip=true -q && \
