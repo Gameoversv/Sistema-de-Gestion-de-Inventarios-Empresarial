@@ -107,7 +107,9 @@ jobs:
             -d "client_id=inventory-frontend" \
             -d "username=inv_admin" \
             -d "password=${{ secrets.STAGING_KC_USER_ADMIN_PASSWORD }}" \
-            -d "grant_type=password" | jq -r '.access_token')
+            -d "grant_type=password" \
+            -d "scope=openid product:view product:manage stock:view stock:manage report:view audit:view user:manage" \
+            | jq -r '.access_token')
 
           if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
             echo "ERROR: failed to obtain JWT from Keycloak"
@@ -154,7 +156,9 @@ jobs:
             -d "client_id=inventory-frontend" \
             -d "username=inv_viewer" \
             -d "password=${{ secrets.STAGING_KC_USER_VIEWER_PASSWORD }}" \
-            -d "grant_type=password" | jq -r '.access_token')
+            -d "grant_type=password" \
+            -d "scope=openid product:view stock:view" \
+            | jq -r '.access_token')
 
           VIEWER_CREATE=$(curl -s -o /dev/null -w "%{http_code}" \
             -X POST -H "Authorization: Bearer $VIEWER_TOKEN" \
