@@ -149,7 +149,14 @@ jobs:
             docker compose logs backend --tail=80
           fi
           [ "$STOCK_STATUS" = "200" ] && echo "✓ GET /stock/movements → 200" || (echo "✗ GET /stock/movements expected 200, got $STOCK_STATUS" && exit 1)
-          check "GET /reports/dashboard"      200 "$BASE/reports/dashboard"
+          DASH_BODY=$(curl -s -H "Authorization: Bearer $TOKEN" "$BASE/reports/dashboard")
+          DASH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $TOKEN" "$BASE/reports/dashboard")
+          echo "Dashboard response ($DASH_STATUS): $DASH_BODY"
+          if [ "$DASH_STATUS" != "200" ]; then
+            echo "==> Backend logs at dashboard failure:"
+            docker compose logs backend --tail=30
+          fi
+          [ "$DASH_STATUS" = "200" ] && echo "✓ GET /reports/dashboard → 200" || (echo "✗ GET /reports/dashboard expected 200, got $DASH_STATUS" && exit 1)
           check "GET /audit"                  200 "$BASE/audit"
 
           # ── Security: must reject unauthenticated requests ──────────────
