@@ -137,9 +137,9 @@ jobs:
           # ── Authenticated endpoints ─────────────────────────────────────
           check "GET /categories"              200 "$BASE/categories"
           check "GET /products"               200 "$BASE/products"
-          check "GET /stock/movements"             200 "$BASE/stock/movements"
-          check "GET /reports/dashboard-metrics" 200 "$BASE/reports/dashboard-metrics"
-          check "GET /audit/stock-movements"     200 "$BASE/audit/stock-movements"
+          check "GET /api/stock/movements"         200 "$BASE/api/stock/movements"
+          check "GET /api/reports/dashboard-metrics" 200 "$BASE/api/reports/dashboard-metrics"
+          check "GET /api/audit/stock-movements"   200 "$BASE/api/audit/stock-movements"
 
           # ── Security: must reject unauthenticated requests ──────────────
           UNAUTH=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/products")
