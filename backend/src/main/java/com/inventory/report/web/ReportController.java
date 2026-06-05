@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/reports")
+@RequestMapping("/api/reports")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "keycloak")
 @Tag(name = "Reports", description = "Reportes del dashboard — resumen de stock y alertas")

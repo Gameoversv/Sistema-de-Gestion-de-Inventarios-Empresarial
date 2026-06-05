@@ -58,7 +58,7 @@ jobs:
           GRAFANA_PORT=3001
           PROMETHEUS_PORT=9090
           FRONTEND_PORT=3000
-          VITE_API_BASE_URL=http://localhost:8080/api/v1
+          VITE_API_BASE_URL=http://localhost:8080
           APP_ENV=staging
           ENVEOF
 
@@ -84,7 +84,7 @@ jobs:
         run: |
           echo "Waiting for backend..."
           for i in $(seq 1 18); do
-            if curl -sf http://localhost:8080/api/v1/actuator/health > /dev/null 2>&1; then
+            if curl -sf http://localhost:8080/actuator/health > /dev/null 2>&1; then
               echo "Backend ready after $((i * 10))s"
               break
             fi
@@ -97,7 +97,7 @@ jobs:
       - name: API smoke & integration tests
         run: |
           set -e
-          BASE=http://localhost:8080/api/v1
+          BASE=http://localhost:8080
           KC=http://localhost:8180
 
           # ── Get JWT from live Keycloak ──────────────────────────────────
@@ -193,7 +193,7 @@ jobs:
       - name: OWASP ZAP baseline security scan
         uses: zaproxy/action-baseline@v0.14.0
         with:
-          target: 'http://localhost:8080/api/v1'
+          target: 'http://localhost:8080'
           cmd_options: '-I'
           allow_issue_writing: false
 

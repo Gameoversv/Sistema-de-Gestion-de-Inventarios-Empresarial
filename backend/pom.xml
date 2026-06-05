@@ -338,4 +338,55 @@
     </plugins>
   </build>
 
+  <profiles>
+    <!--
+      Profile: generate-docs
+      Starts the app, calls /v3/api-docs.yaml, writes docs/api/openapi.yaml.
+      Usage: mvn verify -P generate-docs  (requires Docker services running)
+    -->
+    <profile>
+      <id>generate-docs</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>pre-integration-test</id>
+                <goals>
+                  <goal>start</goal>
+                </goals>
+              </execution>
+              <execution>
+                <id>post-integration-test</id>
+                <goals>
+                  <goal>stop</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-maven-plugin</artifactId>
+            <version>2.0.0</version>
+            <executions>
+              <execution>
+                <id>openapi-generate</id>
+                <goals>
+                  <goal>generate</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <apiDocsUrl>http://localhost:${BACKEND_PORT:8080}/v3/api-docs.yaml</apiDocsUrl>
+              <outputFileName>openapi.yaml</outputFileName>
+              <outputDir>${project.basedir}/../docs/api</outputDir>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
 </project>
