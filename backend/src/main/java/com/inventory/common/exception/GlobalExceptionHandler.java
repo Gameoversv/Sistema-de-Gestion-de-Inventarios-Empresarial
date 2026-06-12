@@ -5,6 +5,8 @@ import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -12,9 +14,12 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+  private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
   private static final String PROBLEM_BASE_URI = "https://inventory.api/problems";
 
@@ -86,8 +91,20 @@ public class GlobalExceptionHandler {
     return ResponseEntity.badRequest().body(problem);
   }
 
+  @ExceptionHandler(NoResourceFoundException.class)
+  public ResponseEntity<ProblemDetail> handleNoResource(
+      NoResourceFoundException ex, HttpServletRequest request) {
+    ProblemDetail problem =
+        ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Resource not found");
+    problem.setType(URI.create(PROBLEM_BASE_URI + "/not-found"));
+    problem.setTitle("Not Found");
+    problem.setInstance(URI.create(request.getRequestURI()));
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
+  }
+
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ProblemDetail> handleGeneric(Exception ex, HttpServletRequest request) {
+    log.error("Unhandled exception on {}", request.getRequestURI(), ex);
     ProblemDetail problem =
         ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
     problem.setType(URI.create(PROBLEM_BASE_URI + "/internal-error"));

@@ -5,7 +5,7 @@ WORKDIR /workspace
 # resolve deps separately — cached as long as pom.xml doesn't change
 COPY mvnw pom.xml ./
 COPY .mvn .mvn
-RUN ./mvnw dependency:go-offline -q
+RUN chmod +x mvnw && ./mvnw dependency:go-offline -q
 
 COPY src src
 RUN ./mvnw package -DskipTests -Dspotless.check.skip=true -q && \
@@ -30,7 +30,7 @@ USER inventory
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8080/api/v1/actuator/health || exit 1
+    CMD curl -f http://localhost:8080/actuator/health || exit 1
 
 ENTRYPOINT ["java", \
             "-XX:+UseContainerSupport", \
