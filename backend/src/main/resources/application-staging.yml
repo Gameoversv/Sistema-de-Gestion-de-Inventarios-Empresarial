@@ -25,6 +25,10 @@ management:
     sampling:
       probability: 0.5
 
+app:
+  cors:
+    allowed-origins: https://staging.inventory.example.com
+
 logging:
   level:
     root: INFO

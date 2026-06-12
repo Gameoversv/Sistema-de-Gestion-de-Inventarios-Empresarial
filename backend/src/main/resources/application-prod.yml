@@ -35,6 +35,10 @@ management:
     sampling:
       probability: 0.1
 
+app:
+  cors:
+    allowed-origins: https://inventory.example.com
+
 logging:
   level:
     root: WARN
