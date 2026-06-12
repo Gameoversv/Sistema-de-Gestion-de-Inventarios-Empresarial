@@ -2,22 +2,16 @@ package com.inventory;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.ActiveProfiles;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SpringBootTest
-@ActiveProfiles("test")
-@Testcontainers
+@ActiveProfiles("smoke")
 class InventoryApplicationTests {
 
-  @Container
-  static PostgreSQLContainer<?> postgres =
-      new PostgreSQLContainer<>("postgres:16-alpine")
-          .withDatabaseName("inventory_test")
-          .withUsername("test_user")
-          .withPassword("test_password");
+  // Prevents Spring from contacting Keycloak at startup to fetch JWKS
+  @MockBean JwtDecoder jwtDecoder;
 
   @Test
   void contextLoads() {}

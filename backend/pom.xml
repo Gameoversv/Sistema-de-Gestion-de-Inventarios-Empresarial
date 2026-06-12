@@ -22,7 +22,7 @@
   <properties>
     <java.version>21</java.version>
     <jjwt.version>0.12.6</jjwt.version>
-    <testcontainers.version>1.20.1</testcontainers.version>
+    <testcontainers.version>1.20.6</testcontainers.version>
     <jacoco.version>0.8.12</jacoco.version>
     <sonar.version>4.0.0.4121</sonar.version>
     <spotless.version>2.43.0</spotless.version>
@@ -86,6 +86,10 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-security</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+    </dependency>
 
     <!-- ── JWT ───────────────────────────────────────────── -->
     <dependency>
@@ -147,6 +151,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>junit-jupiter</artifactId>
       <version>${testcontainers.version}</version>
@@ -195,7 +204,13 @@
           </includes>
           <systemPropertyVariables>
             <spring.profiles.active>test</spring.profiles.active>
+            <DOCKER_HOST>tcp://localhost:2375</DOCKER_HOST>
+            <DOCKER_API_VERSION>1.47</DOCKER_API_VERSION>
           </systemPropertyVariables>
+          <environmentVariables>
+            <DOCKER_HOST>tcp://localhost:2375</DOCKER_HOST>
+            <DOCKER_API_VERSION>1.47</DOCKER_API_VERSION>
+          </environmentVariables>
         </configuration>
       </plugin>
 
