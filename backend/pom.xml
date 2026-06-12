@@ -244,12 +244,11 @@
           </includes>
           <systemPropertyVariables>
             <spring.profiles.active>test</spring.profiles.active>
-            <DOCKER_HOST>tcp://localhost:2375</DOCKER_HOST>
-            <DOCKER_API_VERSION>1.47</DOCKER_API_VERSION>
+            <api.version>1.41</api.version>
           </systemPropertyVariables>
           <environmentVariables>
             <DOCKER_HOST>tcp://localhost:2375</DOCKER_HOST>
-            <DOCKER_API_VERSION>1.47</DOCKER_API_VERSION>
+            <TESTCONTAINERS_HOST_OVERRIDE>localhost</TESTCONTAINERS_HOST_OVERRIDE>
           </environmentVariables>
         </configuration>
       </plugin>

@@ -8,6 +8,7 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -62,6 +63,16 @@ public class GlobalExceptionHandler {
     problem.setInstance(URI.create(request.getRequestURI()));
     problem.setProperty("errors", fieldErrors);
     return ResponseEntity.badRequest().body(problem);
+  }
+
+  @ExceptionHandler(AccessDeniedException.class)
+  public ResponseEntity<ProblemDetail> handleAccessDenied(
+      AccessDeniedException ex, HttpServletRequest request) {
+    ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Access denied");
+    problem.setType(URI.create(PROBLEM_BASE_URI + "/access-denied"));
+    problem.setTitle("Access Denied");
+    problem.setInstance(URI.create(request.getRequestURI()));
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(problem);
   }
 
   @ExceptionHandler(ConstraintViolationException.class)
