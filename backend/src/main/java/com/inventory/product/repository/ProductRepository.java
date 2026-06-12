@@ -31,6 +31,9 @@ public interface ProductRepository
           + " ASC")
   List<Product> findLowStockProducts();
 
+  @Query("SELECT p FROM Product p WHERE p.active = true AND p.stock = 0 ORDER BY p.name ASC")
+  List<Product> findCriticalStockProducts();
+
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("SELECT p FROM Product p WHERE p.id = :id")
   Optional<Product> findByIdForUpdate(@Param("id") Long id);
