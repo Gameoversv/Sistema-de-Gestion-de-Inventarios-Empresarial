@@ -40,6 +40,13 @@ public class Product extends BaseEntity {
   @Column(nullable = false)
   private Integer stock;
 
+  @Min(0)
+  @Column(name = "minimum_stock", nullable = false)
+  private Integer minimumStock;
+
+  @Column(nullable = false)
+  private Boolean active;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "category_id")
   private Category category;

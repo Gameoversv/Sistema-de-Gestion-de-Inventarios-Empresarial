@@ -1,8 +1,9 @@
 package com.inventory.stock.service;
 
 import com.inventory.common.exception.BusinessException;
+import com.inventory.common.exception.ResourceNotFoundException;
 import com.inventory.product.domain.Product;
-import com.inventory.product.service.ProductService;
+import com.inventory.product.repository.ProductRepository;
 import com.inventory.stock.domain.StockMovement;
 import com.inventory.stock.domain.StockMovement.MovementType;
 import com.inventory.stock.repository.StockMovementRepository;
@@ -18,12 +19,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class StockServiceImpl implements StockService {
 
   private final StockMovementRepository movementRepository;
-  private final ProductService productService;
+  private final ProductRepository productRepository;
 
   @Override
   @Transactional
   public StockMovement register(Long productId, MovementType type, int quantity, String reason) {
-    Product product = productService.findById(productId);
+    Product product =
+        productRepository
+            .findById(productId)
+            .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + productId));
 
     int delta = type == MovementType.OUT ? -quantity : quantity;
     int newStock = product.getStock() + delta;
@@ -45,7 +49,10 @@ public class StockServiceImpl implements StockService {
 
   @Override
   public int currentStock(Long productId) {
-    return productService.findById(productId).getStock();
+    return productRepository
+        .findById(productId)
+        .map(Product::getStock)
+        .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + productId));
   }
 
   @Override
