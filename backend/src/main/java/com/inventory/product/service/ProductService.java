@@ -1,22 +1,24 @@
 package com.inventory.product.service;
 
-import com.inventory.product.domain.Product;
+import com.inventory.product.dto.ProductCreateRequest;
+import com.inventory.product.dto.ProductResponse;
+import com.inventory.product.dto.ProductUpdateRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface ProductService {
 
-  Product create(Product product);
+  ProductResponse create(ProductCreateRequest request);
 
-  Product findById(Long id);
+  ProductResponse findById(Long id);
 
-  Product findBySku(String sku);
+  ProductResponse findBySku(String sku);
 
-  Page<Product> findAll(Pageable pageable);
+  Page<ProductResponse> findAll(Pageable pageable);
 
-  Page<Product> search(String query, Pageable pageable);
+  Page<ProductResponse> search(String query, Pageable pageable);
 
-  Product update(Long id, Product product);
+  ProductResponse update(Long id, ProductUpdateRequest request);
 
   void delete(Long id);
 }
