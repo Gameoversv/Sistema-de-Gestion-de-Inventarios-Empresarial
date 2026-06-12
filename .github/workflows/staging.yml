@@ -1,0 +1,214 @@
+name: Staging — Deploy & Test
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+jobs:
+  deploy-and-test:
+    name: Deploy full stack → run post-deploy tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      # ── Generate .env from secrets ─────────────────────────────────────────
+      - name: Create .env
+        run: |
+          cat > .env << 'ENVEOF'
+          DB_HOST=postgres
+          DB_PORT=5432
+          DB_NAME=inventory_db
+          DB_USER=inventory_user
+          DB_PASSWORD=${{ secrets.STAGING_DB_PASSWORD }}
+          REDIS_HOST=redis
+          REDIS_PORT=6379
+          REDIS_PASSWORD=${{ secrets.STAGING_REDIS_PASSWORD }}
+          BACKEND_PORT=8080
+          SPRING_PROFILES_ACTIVE=staging
+          JWT_SECRET=${{ secrets.STAGING_JWT_SECRET }}
+          JWT_EXPIRATION_MS=86400000
+          LOG_LEVEL=INFO
+          KEYCLOAK_PORT=8180
+          KEYCLOAK_ADMIN=admin
+          KEYCLOAK_ADMIN_PASSWORD=${{ secrets.STAGING_KEYCLOAK_ADMIN_PASSWORD }}
+          KC_DB_NAME=keycloak_db
+          KC_DB_USER=keycloak_user
+          KC_DB_PASSWORD=${{ secrets.STAGING_KC_DB_PASSWORD }}
+          KC_REALM=inventory
+          KC_BACKEND_CLIENT_SECRET=${{ secrets.STAGING_KC_BACKEND_CLIENT_SECRET }}
+          KC_USER_ADMIN_USERNAME=inv_admin
+          KC_USER_ADMIN_PASSWORD=${{ secrets.STAGING_KC_USER_ADMIN_PASSWORD }}
+          KC_USER_CLERK_USERNAME=inv_clerk
+          KC_USER_CLERK_PASSWORD=${{ secrets.STAGING_KC_USER_CLERK_PASSWORD }}
+          KC_USER_AUDITOR_USERNAME=inv_auditor
+          KC_USER_AUDITOR_PASSWORD=${{ secrets.STAGING_KC_USER_AUDITOR_PASSWORD }}
+          KC_USER_VIEWER_USERNAME=inv_viewer
+          KC_USER_VIEWER_PASSWORD=${{ secrets.STAGING_KC_USER_VIEWER_PASSWORD }}
+          GRAFANA_ADMIN_PASSWORD=${{ secrets.STAGING_GRAFANA_ADMIN_PASSWORD }}
+          GRAFANA_PORT=3001
+          PROMETHEUS_PORT=9090
+          FRONTEND_PORT=3000
+          VITE_API_BASE_URL=http://localhost:8080
+          APP_ENV=staging
+          ENVEOF
+
+      # ── Deploy ────────────────────────────────────────────────────────────
+      - name: Deploy stack (docker compose up)
+        run: docker compose up -d --build
+
+      # ── Wait for services ─────────────────────────────────────────────────
+      - name: Wait — Keycloak healthy
+        run: |
+          echo "Waiting for Keycloak..."
+          for i in $(seq 1 24); do
+            if curl -sf http://localhost:8180/health/ready > /dev/null 2>&1; then
+              echo "Keycloak ready after $((i * 10))s"
+              break
+            fi
+            [ "$i" = "24" ] && echo "ERROR: Keycloak timeout" && exit 1
+            echo "  attempt $i/24, retrying in 10s..."
+            sleep 10
+          done
+
+      - name: Wait — Backend healthy
+        run: |
+          echo "Waiting for backend..."
+          for i in $(seq 1 18); do
+            if curl -sf http://localhost:8080/actuator/health > /dev/null 2>&1; then
+              echo "Backend ready after $((i * 10))s"
+              break
+            fi
+            [ "$i" = "18" ] && echo "ERROR: Backend timeout" && exit 1
+            echo "  attempt $i/18, retrying in 10s..."
+            sleep 10
+          done
+
+      # ── API tests (against running system) ───────────────────────────────
+      - name: API smoke & integration tests
+        run: |
+          set -e
+          BASE=http://localhost:8080
+          KC=http://localhost:8180
+
+          # ── Get JWT from live Keycloak ──────────────────────────────────
+          echo "==> Obtaining JWT token from live Keycloak..."
+          TOKEN=$(curl -sf \
+            "$KC/realms/inventory/protocol/openid-connect/token" \
+            -d "client_id=inventory-frontend" \
+            -d "username=inv_admin" \
+            -d "password=${{ secrets.STAGING_KC_USER_ADMIN_PASSWORD }}" \
+            -d "grant_type=password" \
+            -d "scope=openid product:view product:manage stock:view stock:manage report:view audit:view user:manage" \
+            | jq -r '.access_token')
+
+          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+            echo "ERROR: failed to obtain JWT from Keycloak"
+            exit 1
+          fi
+          echo "✓ JWT token obtained"
+
+          check() {
+            local label="$1" expected="$2" url="$3"
+            local status
+            status=$(curl -s -o /dev/null -w "%{http_code}" \
+              -H "Authorization: Bearer $TOKEN" "$url")
+            if [ "$status" = "$expected" ]; then
+              echo "✓ $label → $status"
+            else
+              echo "✗ $label expected $expected, got $status"
+              exit 1
+            fi
+          }
+
+          # ── Health ─────────────────────────────────────────────────────
+          curl -sf "$BASE/actuator/health" | jq .
+          echo "✓ Health endpoint OK"
+
+          # ── Authenticated endpoints ─────────────────────────────────────
+          check "GET /categories"              200 "$BASE/categories"
+          check "GET /products"               200 "$BASE/products"
+          check "GET /api/stock/movements"         200 "$BASE/api/stock/movements"
+          check "GET /api/reports/dashboard-metrics" 200 "$BASE/api/reports/dashboard-metrics"
+          check "GET /api/audit/stock-movements"   200 "$BASE/api/audit/stock-movements"
+
+          # ── Security: must reject unauthenticated requests ──────────────
+          UNAUTH=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/products")
+          if [ "$UNAUTH" = "401" ]; then
+            echo "✓ Unauthenticated request correctly rejected (401)"
+          else
+            echo "✗ Expected 401 for unauthenticated request, got $UNAUTH"
+            exit 1
+          fi
+
+          # ── Role boundary: viewer cannot create products ────────────────
+          # Viewer must not be able to successfully create a product (must not get 201)
+          VIEWER_TOKEN=$(curl -s \
+            "$KC/realms/inventory/protocol/openid-connect/token" \
+            -d "client_id=inventory-frontend" \
+            -d "username=inv_viewer" \
+            -d "password=${{ secrets.STAGING_KC_USER_VIEWER_PASSWORD }}" \
+            -d "grant_type=password" \
+            -d "scope=openid product:view stock:view" \
+            | jq -r '.access_token // empty')
+
+          VIEWER_CREATE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST -H "Authorization: Bearer $VIEWER_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"name":"test","sku":"SKU-RBAC-TEST","price":1.00,"stock":1,"minimumStock":0,"categoryId":1}' \
+            "$BASE/products")
+          if [ "$VIEWER_CREATE" != "201" ] && [ "$VIEWER_CREATE" != "200" ]; then
+            echo "✓ Viewer role blocked from POST /products ($VIEWER_CREATE)"
+          else
+            echo "✗ Viewer should not be able to create products, got $VIEWER_CREATE"
+            exit 1
+          fi
+
+          echo ""
+          echo "✅ All API integration tests passed"
+
+      # ── Integration tests (Spring context vs live Postgres) ──────────────
+      - name: Run IT tests against live DB
+        working-directory: backend
+        run: |
+          ./mvnw test -B \
+            -Dtest=StockServiceConcurrencyIT \
+            -DfailIfNoTests=false \
+            -Dspring.datasource.url=jdbc:postgresql://localhost:5432/inventory_db \
+            "-Dspring.datasource.username=inventory_user" \
+            "-Dspring.datasource.password=${{ secrets.STAGING_DB_PASSWORD }}" \
+            -Dspring.jpa.hibernate.ddl-auto=validate \
+            -Dspotless.check.skip=true
+
+      # ── Security scan ─────────────────────────────────────────────────────
+      - name: OWASP ZAP baseline security scan
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: 'http://localhost:8080'
+          cmd_options: '-I'
+          allow_issue_writing: false
+
+      # ── Artifacts ────────────────────────────────────────────────────────
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-test-reports
+          path: |
+            backend/target/surefire-reports/
+            report_html.html
+          retention-days: 14
+
+      # ── Teardown ──────────────────────────────────────────────────────────
+      - name: Teardown stack
+        if: always()
+        run: docker compose down -v

@@ -74,8 +74,6 @@ spring:
 # ── Server ──────────────────────────────────────────────────────────────────
 server:
   port: ${BACKEND_PORT:8080}
-  servlet:
-    context-path: /api/v1
   error:
     include-message: never
     include-stacktrace: never
