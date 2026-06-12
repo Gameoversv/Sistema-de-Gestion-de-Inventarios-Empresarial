@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.health.HealthEndpoint;
 import org.springframework.boot.actuate.info.InfoEndpoint;
+import org.springframework.boot.actuate.metrics.export.prometheus.PrometheusScrapeEndpoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
@@ -60,8 +61,13 @@ public class SecurityConfig {
                     // AntPathRequestMatcher bypasses MvcRequestMatcher resolution in test slices
                     .requestMatchers(new AntPathRequestMatcher("/health"))
                     .permitAll()
-                    // actuator health + info public — required for docker healthcheck
-                    .requestMatchers(EndpointRequest.to(HealthEndpoint.class, InfoEndpoint.class))
+                    // actuator health + info + prometheus public — healthcheck and Prometheus
+                    // scrape
+                    .requestMatchers(
+                        EndpointRequest.to(
+                            HealthEndpoint.class,
+                            InfoEndpoint.class,
+                            PrometheusScrapeEndpoint.class))
                     .permitAll()
                     // remaining actuator endpoints require authentication
                     .requestMatchers(EndpointRequest.toAnyEndpoint())

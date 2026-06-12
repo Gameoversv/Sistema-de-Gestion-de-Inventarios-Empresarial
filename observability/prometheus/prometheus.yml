@@ -8,6 +8,6 @@ scrape_configs:
       - targets: ['localhost:9090']
 
   - job_name: 'inventory-backend'
-    metrics_path: '/actuator/prometheus'
+    metrics_path: '/api/v1/actuator/prometheus'
     static_configs:
       - targets: ['inventory-backend:8080']
