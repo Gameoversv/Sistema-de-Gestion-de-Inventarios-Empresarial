@@ -121,6 +121,23 @@ app:
   cors:
     allowed-origins: http://localhost:3000
 
+# ── SpringDoc / Swagger UI ───────────────────────────────────────────────────────
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    oauth:
+      client-id: ${KC_CLIENT_ID:inventory-frontend}
+      use-pkce-with-authorization-code-grant: true
+    try-it-out-enabled: true
+    operations-sorter: alpha
+    tags-sorter: alpha
+    default-models-expand-depth: 1
+  default-produces-media-type: application/json
+  show-actuator: false
+
 # ── Logging (base) ─────────────────────────────────────────────────────────────
 logging:
   level:
