@@ -8,7 +8,8 @@
   },
   "scripts": {
     "prepare": "husky",
-    "commitlint": "commitlint --from HEAD~1 --to HEAD --verbose"
+    "commitlint": "commitlint --from HEAD~1 --to HEAD --verbose",
+    "test": "node -e \"const fs=require('fs');if(fs.existsSync('backend/pom.xml')){const {execSync}=require('child_process');execSync('cd backend && mvnw.cmd test -q',{stdio:'inherit',shell:true})}else{console.log('backend not present, skipping tests')}\""
   },
   "repository": {
     "type": "git",

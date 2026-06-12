@@ -1,0 +1,29 @@
+name: Promote to Staging
+
+on:
+  push:
+    branches:
+      - develop-rebuilt
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git bot identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge develop-rebuilt into staging
+        run: |
+          git checkout staging
+          git merge origin/develop-rebuilt --no-ff -m "chore: promote develop-rebuilt to staging [skip ci]"
+          git push origin staging

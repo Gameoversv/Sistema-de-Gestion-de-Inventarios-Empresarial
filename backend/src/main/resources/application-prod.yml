@@ -1,0 +1,48 @@
+# Profile: prod
+# Production — hardened, minimal surface, no sensitive output
+spring:
+  flyway:
+    baseline-on-migrate: false
+    out-of-order: false
+
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 20000
+
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # restrict surface in prod — prometheus via internal network only
+        include: health,prometheus
+  endpoint:
+    health:
+      show-details: never
+  tracing:
+    sampling:
+      probability: 0.1
+
+app:
+  cors:
+    allowed-origins: https://inventory.example.com
+
+logging:
+  level:
+    root: WARN
+    com.inventory: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: ERROR
+    org.flywaydb: WARN

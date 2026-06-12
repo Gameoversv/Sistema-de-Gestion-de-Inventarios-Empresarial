@@ -1,0 +1,37 @@
+# Profile: staging
+# Pre-production — mirrors prod config but with more visibility
+spring:
+  flyway:
+    baseline-on-migrate: false
+
+  jpa:
+    show-sql: false
+
+  datasource:
+    hikari:
+      maximum-pool-size: 15
+      minimum-idle: 3
+
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+
+management:
+  endpoint:
+    health:
+      show-details: when_authorized
+  tracing:
+    sampling:
+      probability: 0.5
+
+app:
+  cors:
+    allowed-origins: https://staging.inventory.example.com
+
+logging:
+  level:
+    root: INFO
+    com.inventory: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: WARN

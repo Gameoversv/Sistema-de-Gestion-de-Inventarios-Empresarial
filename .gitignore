@@ -91,3 +91,8 @@ logs/
 # ================================
 coverage/
 .nyc_output/
+
+# ================================
+# Documentos internos / privados
+# ================================
+INFORME_TECNICO.md

@@ -1,0 +1,16 @@
+# Profile: test — Testcontainers overrides datasource via dynamic properties
+spring:
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+  jpa:
+    show-sql: true
+
+  # JwtDecoder is @MockBean in tests — no issuer-uri needed
+
+logging:
+  level:
+    com.inventory: DEBUG
+    org.springframework.security: WARN
+    org.hibernate.SQL: DEBUG
