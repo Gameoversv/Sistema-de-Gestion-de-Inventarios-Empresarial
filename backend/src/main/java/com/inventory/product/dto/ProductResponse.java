@@ -10,6 +10,8 @@ public record ProductResponse(
     String description,
     BigDecimal price,
     Integer stock,
+    Integer minimumStock,
+    Boolean active,
     Long categoryId,
     String categoryName,
     Instant createdAt,

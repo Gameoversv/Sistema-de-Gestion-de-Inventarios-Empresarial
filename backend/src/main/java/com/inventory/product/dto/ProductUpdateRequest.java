@@ -13,4 +13,6 @@ public record ProductUpdateRequest(
     String description,
     @NotNull @DecimalMin("0.00") BigDecimal price,
     @NotNull @Min(0) Integer stock,
+    @NotNull @Min(0) Integer minimumStock,
+    @NotNull Boolean active,
     Long categoryId) {}

@@ -25,6 +25,10 @@ public final class ProductSpecification {
     return (root, query, cb) -> cb.equal(root.get("category").get("id"), categoryId);
   }
 
+  public static Specification<Product> isActive(Boolean active) {
+    return (root, query, cb) -> cb.equal(root.get("active"), active);
+  }
+
   public static Specification<Product> nameOrSkuContains(String q) {
     return Specification.where(nameContains(q)).or(skuContains(q));
   }

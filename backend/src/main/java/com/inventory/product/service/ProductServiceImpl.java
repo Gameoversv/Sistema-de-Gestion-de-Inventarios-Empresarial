@@ -5,14 +5,17 @@ import com.inventory.common.exception.ResourceNotFoundException;
 import com.inventory.product.domain.Category;
 import com.inventory.product.domain.Product;
 import com.inventory.product.dto.ProductCreateRequest;
+import com.inventory.product.dto.ProductPatchRequest;
 import com.inventory.product.dto.ProductResponse;
 import com.inventory.product.dto.ProductUpdateRequest;
 import com.inventory.product.mapper.ProductMapper;
 import com.inventory.product.repository.CategoryRepository;
 import com.inventory.product.repository.ProductRepository;
+import com.inventory.product.repository.ProductSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +35,8 @@ public class ProductServiceImpl implements ProductService {
       throw new ConflictException("SKU already exists: " + request.sku());
     }
     Product product = productMapper.toEntity(request);
+    product.setMinimumStock(request.minimumStock() != null ? request.minimumStock() : 0);
+    product.setActive(request.active() != null ? request.active() : Boolean.TRUE);
     if (request.categoryId() != null) {
       product.setCategory(resolveCategory(request.categoryId()));
     }
@@ -55,13 +60,19 @@ public class ProductServiceImpl implements ProductService {
   }
 
   @Override
-  public Page<ProductResponse> findAll(Pageable pageable) {
-    return productRepository.findAll(pageable).map(productMapper::toResponse);
-  }
-
-  @Override
-  public Page<ProductResponse> search(String query, Pageable pageable) {
-    return productRepository.search(query, pageable).map(productMapper::toResponse);
+  public Page<ProductResponse> findAll(
+      String search, Long categoryId, Boolean active, Pageable pageable) {
+    Specification<Product> spec = Specification.where(null);
+    if (search != null && !search.isBlank()) {
+      spec = spec.and(ProductSpecification.nameOrSkuContains(search));
+    }
+    if (categoryId != null) {
+      spec = spec.and(ProductSpecification.hasCategory(categoryId));
+    }
+    if (active != null) {
+      spec = spec.and(ProductSpecification.isActive(active));
+    }
+    return productRepository.findAll(spec, pageable).map(productMapper::toResponse);
   }
 
   @Override
@@ -82,11 +93,32 @@ public class ProductServiceImpl implements ProductService {
 
   @Override
   @Transactional
-  public void delete(Long id) {
-    if (!productRepository.existsById(id)) {
-      throw new ResourceNotFoundException("Product not found: " + id);
+  public ProductResponse patch(Long id, ProductPatchRequest request) {
+    Product existing =
+        productRepository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
+    if (request.sku() != null
+        && !request.sku().equals(existing.getSku())
+        && productRepository.existsBySku(request.sku())) {
+      throw new ConflictException("SKU already exists: " + request.sku());
     }
-    productRepository.deleteById(id);
+    productMapper.patchEntity(request, existing);
+    if (request.categoryId() != null) {
+      existing.setCategory(resolveCategory(request.categoryId()));
+    }
+    return productMapper.toResponse(productRepository.save(existing));
+  }
+
+  @Override
+  @Transactional
+  public void delete(Long id) {
+    Product product =
+        productRepository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
+    product.setActive(Boolean.FALSE);
+    productRepository.save(product);
   }
 
   private Category resolveCategory(Long categoryId) {
