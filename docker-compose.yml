@@ -50,6 +50,78 @@ services:
       timeout: 5s
       retries: 5
 
+  # ── Keycloak Database ───────────────────────────────────────────────────────
+  keycloak-db:
+    image: postgres:16-alpine
+    container_name: inventory-keycloak-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${KC_DB_NAME:-keycloak_db}
+      POSTGRES_USER: ${KC_DB_USER:-keycloak_user}
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD}
+    volumes:
+      - keycloak_db_data:/var/lib/postgresql/data
+    networks:
+      - inventory-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${KC_DB_USER:-keycloak_user} -d ${KC_DB_NAME:-keycloak_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ── Keycloak ─────────────────────────────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: inventory-keycloak
+    restart: unless-stopped
+    command: start-dev --import-realm
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/${KC_DB_NAME:-keycloak_db}
+      KC_DB_USERNAME: ${KC_DB_USER:-keycloak_user}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "${KEYCLOAK_PORT:-8180}:8080"
+    volumes:
+      - ./scripts/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    networks:
+      - inventory-net
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && printf 'GET /health/ready HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && timeout 5 cat <&3 | grep -q UP"]
+      interval: 15s
+      timeout: 10s
+      retries: 15
+      start_period: 60s
+
+  # ── Keycloak Init (one-shot: creates scopes + test users) ──────────────────
+  keycloak-init:
+    image: alpine:3.19
+    container_name: inventory-keycloak-init
+    restart: "no"
+    env_file:
+      - .env
+    environment:
+      KC_URL: http://keycloak:8080
+      KC_REALM: ${KC_REALM:-inventory}
+    volumes:
+      - ./scripts/keycloak/init-users.sh:/init-users.sh:ro
+    entrypoint: ["sh", "/init-users.sh"]
+    networks:
+      - inventory-net
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
   # ── Spring Boot Backend ─────────────────────────────────────────────────────
   backend:
     build:
@@ -73,6 +145,9 @@ services:
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
       BACKEND_PORT: 8080
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/${KC_REALM:-inventory}
+      KC_REALM: ${KC_REALM:-inventory}
+      KC_BACKEND_CLIENT_SECRET: ${KC_BACKEND_CLIENT_SECRET}
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     networks:
@@ -81,6 +156,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      keycloak:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/api/v1/actuator/health || exit 1"]
@@ -124,6 +201,8 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  keycloak_db_data:
     driver: local
   redis_data:
     driver: local
