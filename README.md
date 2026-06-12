@@ -58,6 +58,113 @@ docker compose up -d
 docker compose logs -f
 ```
 
+## Seguridad y Endpoints de API
+
+Base URL: `http://localhost:8080/api/v1`
+
+### Endpoints públicos (sin token)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/v1/health` | Health check de la aplicación |
+| GET | `/api/v1/actuator/health` | Health de Spring Actuator (Docker probes) |
+
+```bash
+# Health check — sin autenticación
+curl -s http://localhost:8080/api/v1/health | jq .
+# { "status": "UP", "timestamp": "2024-01-15T10:30:00Z" }
+```
+
+### Endpoints protegidos (requieren JWT de Keycloak)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/v1/me` | Info del usuario autenticado (claims del JWT) |
+| GET | `/api/v1/ping` | Ping con subject y authorities |
+
+#### Obtener token de Keycloak
+
+```bash
+TOKEN=$(curl -s -X POST \
+  http://localhost:8180/realms/inventory/protocol/openid-connect/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=password" \
+  -d "client_id=inventory-api" \
+  -d "username=admin@example.com" \
+  -d "password=changeme" \
+  | jq -r '.access_token')
+```
+
+#### GET /api/v1/me
+
+```bash
+curl -s http://localhost:8080/api/v1/me \
+  -H "Authorization: Bearer $TOKEN" | jq .
+```
+
+Respuesta de ejemplo:
+```json
+{
+  "subject": "a1b2c3d4-...",
+  "email": "admin@example.com",
+  "preferredUsername": "admin",
+  "roles": ["inventory-admin"],
+  "scopes": ["openid", "profile", "email"],
+  "expiresAt": "2024-01-15T11:30:00Z"
+}
+```
+
+#### GET /api/v1/ping
+
+```bash
+curl -s http://localhost:8080/api/v1/ping \
+  -H "Authorization: Bearer $TOKEN" | jq .
+```
+
+Respuesta de ejemplo:
+```json
+{
+  "status": "ok",
+  "subject": "admin@example.com",
+  "authorities": "[ROLE_inventory-admin, SCOPE_openid, SCOPE_profile]"
+}
+```
+
+#### Sin token — respuesta 401
+
+```bash
+curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/v1/me
+# 401
+```
+
+### CORS por perfil
+
+| Perfil | Orígenes permitidos |
+|--------|---------------------|
+| `default` | `http://localhost:3000` |
+| `dev` | `http://localhost:3000`, `http://localhost:5173`, `http://localhost:4200` |
+| `staging` | `https://staging.inventory.example.com` |
+| `prod` | `https://inventory.example.com` |
+
+Configurar orígenes en el `application-{profile}.yml` correspondiente bajo `app.cors.allowed-origins`.
+
+### Mapeo de autoridades JWT
+
+El `JwtAuthenticationConverter` extrae dos tipos de autoridades del token:
+
+- **Roles de Keycloak** (`realm_access.roles`) → prefijo `ROLE_`
+  - Ej: `"inventory-admin"` → `ROLE_inventory-admin`
+- **OAuth2 scopes** (claim `scope`, separados por espacio) → prefijo `SCOPE_`
+  - Ej: `"openid profile"` → `SCOPE_openid`, `SCOPE_profile`
+
+Usar `@PreAuthorize` en controllers para autorización granular:
+```java
+@PreAuthorize("hasRole('inventory-admin')")
+@PreAuthorize("hasAuthority('SCOPE_email')")
+```
+
+---
+
 ## Convención de Ramas
 
 | Prefijo | Uso |
