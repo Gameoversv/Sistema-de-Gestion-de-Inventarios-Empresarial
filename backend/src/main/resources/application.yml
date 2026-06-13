@@ -101,6 +101,11 @@ management:
     tags:
       application: ${spring.application.name}
       profile: ${spring.profiles.active:default}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      slo:
+        http.server.requests: 50ms,100ms,200ms,500ms,1s,2s
   tracing:
     sampling:
       probability: 1.0
