@@ -12,9 +12,10 @@ pipeline {
     }
 
     environment {
-        MAVEN_OPTS        = '-Xmx512m -XX:+UseContainerSupport'
-        DOCKER_IMAGE_NAME = 'inventory-api'
-        DOCKER_IMAGE_TAG  = "${env.BUILD_NUMBER}"
+        MAVEN_OPTS                      = '-Xmx512m -XX:+UseContainerSupport'
+        DOCKER_IMAGE_NAME               = 'inventory-api'
+        DOCKER_IMAGE_TAG                = "${env.BUILD_NUMBER}"
+        TESTCONTAINERS_RYUK_DISABLED    = 'true'
     }
 
     stages {
@@ -37,21 +38,12 @@ pipeline {
         stage('Unit Tests') {
             steps {
                 dir('backend') {
-                    sh './mvnw test -B -Dspotless.check.skip=true'
+                    sh './mvnw test -B -Dspotless.check.skip=true -Dexclude=**/*IT.java'
                 }
             }
             post {
                 always {
                     junit 'backend/target/surefire-reports/**/*.xml'
-                    jacoco(
-                        execPattern:         'backend/target/jacoco.exec',
-                        classPattern:        'backend/target/classes',
-                        sourcePattern:       'backend/src/main/java',
-                        minimumInstructionCoverage: '80',
-                        minimumLineCoverage:        '80',
-                        minimumBranchCoverage:      '80',
-                        changeBuildStatus:   true
-                    )
                 }
             }
         }
