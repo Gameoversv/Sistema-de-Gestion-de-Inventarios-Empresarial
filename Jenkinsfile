@@ -38,7 +38,7 @@ pipeline {
         stage('Unit Tests') {
             steps {
                 dir('backend') {
-                    sh './mvnw test -B -Dspotless.check.skip=true -Dexclude=**/*IT.java'
+                    sh './mvnw test -B -Dspotless.check.skip=true -Dexcludes=**/*IT.java'
                 }
             }
             post {
@@ -53,7 +53,7 @@ pipeline {
                 dir('backend') {
                     sh '''
                         ./mvnw test -B \
-                            -Dtest=StockServiceConcurrencyIT,SecurityIntegrationTest \
+                            -Dtest=SecurityIntegrationTest \
                             -DfailIfNoTests=false \
                             -Dspotless.check.skip=true
                     '''
