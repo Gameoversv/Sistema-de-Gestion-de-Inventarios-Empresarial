@@ -82,7 +82,7 @@ export function DashboardPage() {
     staleTime: 30_000,
   })
 
-  const chartData = topProducts?.products.slice(0, 8).map((p) => ({
+  const chartData = topProducts?.products?.slice(0, 8).map((p) => ({
     name: p.name.length > 18 ? p.name.slice(0, 18) + '…' : p.name,
     valor: Number(p.inventoryValue.toFixed(0)),
     stock: p.currentStock,
@@ -165,11 +165,11 @@ export function DashboardPage() {
         {/* Recent movements */}
         <div className="lg:col-span-2 rounded-xl border border-gray-200 bg-white p-5">
           <h3 className="mb-4 text-sm font-semibold text-gray-900">Movimientos recientes</h3>
-          {recentMovements?.movements.length === 0 ? (
+          {(recentMovements?.movements?.length ?? 0) === 0 ? (
             <p className="text-sm text-gray-400">Sin movimientos</p>
           ) : (
             <div className="space-y-3">
-              {recentMovements?.movements.map((m) => {
+              {recentMovements?.movements?.map((m) => {
                 const Icon = MOVEMENT_ICON[m.type] ?? Minus
                 return (
                   <div key={m.id} className="flex items-start gap-3">

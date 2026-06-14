@@ -131,16 +131,19 @@ export interface RecentMovementsResponse {
 }
 
 export interface AuditRevisionResponse {
-  revisionId: number
-  revisionDate: string
+  revisionNumber: number
+  revisionTimestamp: string
+  revisedBy: string
   revisionType: 'ADD' | 'MOD' | 'DEL'
-  username: string
+  movementId: number
   productId: number
+  sku: string
   productName: string
   movementType: string
   quantity: number
   quantityBefore: number
   quantityAfter: number
+  performedBy: string
   reason: string | null
 }
 

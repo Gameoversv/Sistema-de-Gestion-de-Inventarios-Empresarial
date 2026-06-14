@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import keycloak from '@/lib/keycloak'
 
 interface AuthContextValue {
@@ -12,28 +12,31 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+// Init once at module level — outside React lifecycle, immune to StrictMode double-run
+const _initPromise: Promise<boolean> = keycloak
+  .init({
+    onLoad: 'check-sso',
+    silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
+    checkLoginIframe: false,
+    pkceMethod: 'S256',
+  })
+  .then((authenticated) => {
+    if (!authenticated) {
+      // Not logged in — redirect to Keycloak (won't return)
+      keycloak.login()
+      return new Promise<boolean>(() => {})
+    }
+    return true
+  })
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [authenticated, setAuthenticated] = useState(false)
-  const [initialized, setInitialized] = useState(false)
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    keycloak
-      .init({ onLoad: 'login-required', checkLoginIframe: false })
-      .then((auth) => {
-        setAuthenticated(auth)
-        setInitialized(true)
-
-        // refresh token every 4 minutes
-        setInterval(() => {
-          keycloak.updateToken(60).catch(() => keycloak.login())
-        }, 240_000)
-      })
-      .catch(() => {
-        setInitialized(true)
-      })
+    _initPromise.then(() => setReady(true)).catch(() => setReady(true))
   }, [])
 
-  if (!initialized) {
+  if (!ready) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-950">
         <div className="flex flex-col items-center gap-4">
@@ -49,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     .filter(Boolean) ?? []
 
   const value: AuthContextValue = {
-    authenticated,
+    authenticated: keycloak.authenticated ?? false,
     token: keycloak.token,
     username: keycloak.tokenParsed?.preferred_username as string | undefined,
     scopes,

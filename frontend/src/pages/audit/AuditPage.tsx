@@ -84,8 +84,8 @@ export function AuditPage() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {data?.map((rev) => (
-                <tr key={rev.revisionId} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs text-gray-400">#{rev.revisionId}</td>
+                <tr key={`${rev.revisionNumber}-${rev.movementId}`} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 font-mono text-xs text-gray-400">#{rev.revisionNumber}</td>
                   <td className="px-4 py-3">
                     <Badge variant={REV_BADGE[rev.revisionType] ?? 'gray'}>
                       {REV_LABEL[rev.revisionType] ?? rev.revisionType}
@@ -93,16 +93,16 @@ export function AuditPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="font-medium text-gray-900">{rev.productName}</div>
-                    <div className="text-xs text-gray-400">ID: {rev.productId}</div>
+                    <div className="text-xs text-gray-400">{rev.sku}</div>
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-600">{rev.movementType}</td>
                   <td className="px-4 py-3 text-right font-semibold">{rev.quantity}</td>
                   <td className="px-4 py-3 text-right text-xs text-gray-500">
                     {rev.quantityBefore} → {rev.quantityAfter}
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-600">{rev.username}</td>
+                  <td className="px-4 py-3 text-xs text-gray-600">{rev.revisedBy}</td>
                   <td className="px-4 py-3 text-xs text-gray-400">
-                    {new Date(rev.revisionDate).toLocaleString('es-DO', {
+                    {new Date(rev.revisionTimestamp).toLocaleString('es-DO', {
                       month: 'short',
                       day: 'numeric',
                       hour: '2-digit',

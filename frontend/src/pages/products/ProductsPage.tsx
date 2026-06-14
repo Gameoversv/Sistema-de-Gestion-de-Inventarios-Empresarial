@@ -106,7 +106,7 @@ export function ProductsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {data?.content.map((p) => (
+              {data?.content?.map((p) => (
                 <tr key={p.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3 font-mono text-xs text-gray-600">{p.sku}</td>
                   <td className="px-4 py-3">
@@ -154,7 +154,7 @@ export function ProductsPage() {
                   </PermissionGuard>
                 </tr>
               ))}
-              {data?.content.length === 0 && (
+              {data?.content?.length === 0 && (
                 <tr>
                   <td colSpan={7} className="py-16 text-center text-sm text-gray-400">
                     No se encontraron productos

@@ -249,7 +249,7 @@ export function StockPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {data?.content.map((m) => {
+                {data?.content?.map((m) => {
                   const Icon = TYPE_ICON[m.type] ?? Minus
                   return (
                     <tr key={m.id} className="hover:bg-gray-50">
@@ -287,7 +287,7 @@ export function StockPage() {
                     </tr>
                   )
                 })}
-                {data?.content.length === 0 && (
+                {data?.content?.length === 0 && (
                   <tr>
                     <td colSpan={6} className="py-16 text-center text-sm text-gray-400">
                       Sin movimientos registrados

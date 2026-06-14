@@ -56,13 +56,13 @@ export function ReportsPage() {
   })
 
   const barData =
-    topByValue?.products.slice(0, 8).map((p) => ({
+    topByValue?.products?.slice(0, 8).map((p) => ({
       name: p.name.length > 16 ? p.name.slice(0, 16) + '…' : p.name,
       valor: Number(p.inventoryValue.toFixed(0)),
     })) ?? []
 
   const pieData =
-    topByQty?.products.slice(0, 8).map((p, i) => ({
+    topByQty?.products?.slice(0, 8).map((p, i) => ({
       name: p.name.length > 16 ? p.name.slice(0, 16) + '…' : p.name,
       value: p.currentStock,
       fill: COLORS[i % COLORS.length],
@@ -163,7 +163,7 @@ export function ReportsPage() {
       </div>
 
       {/* Low stock table */}
-      {(lowStock?.items.length ?? 0) > 0 && (
+      {(lowStock?.items?.length ?? 0) > 0 && (
         <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
           <div className="border-b border-gray-200 px-5 py-3 flex items-center gap-2">
             <TrendingDown className="h-4 w-4 text-amber-500" />
@@ -185,7 +185,7 @@ export function ReportsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {lowStock?.items.map((item) => (
+              {lowStock?.items?.map((item) => (
                 <tr key={item.productId} className="hover:bg-amber-50">
                   <td className="px-4 py-3 font-mono text-xs text-gray-600">{item.sku}</td>
                   <td className="px-4 py-3 font-medium text-gray-900">{item.name}</td>
@@ -203,14 +203,14 @@ export function ReportsPage() {
       )}
 
       {/* Critical stock */}
-      {(criticalStock?.products.length ?? 0) > 0 && (
+      {(criticalStock?.products?.length ?? 0) > 0 && (
         <div className="rounded-xl border border-red-200 bg-white overflow-hidden">
           <div className="border-b border-red-200 bg-red-50 px-5 py-3 flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-red-500" />
             <h3 className="text-sm font-semibold text-red-800">Productos sin stock (crítico)</h3>
           </div>
           <div className="divide-y divide-gray-100">
-            {criticalStock?.products.map((p) => (
+            {criticalStock?.products?.map((p) => (
               <div key={p.id} className="flex items-center justify-between px-5 py-3">
                 <div>
                   <p className="text-sm font-medium text-gray-900">{p.name}</p>
