@@ -38,7 +38,7 @@ pipeline {
         stage('Unit Tests') {
             steps {
                 dir('backend') {
-                    sh './mvnw test -B -Dspotless.check.skip=true -Dexcludes=**/*IT.java'
+                    sh './mvnw test -B -Dspotless.check.skip=true -Dtest=!StockServiceConcurrencyIT'
                 }
             }
             post {
