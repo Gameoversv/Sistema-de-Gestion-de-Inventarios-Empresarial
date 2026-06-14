@@ -7,8 +7,11 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '10'))
     }
 
+    tools {
+        jdk 'jdk-21'
+    }
+
     environment {
-        JAVA_VERSION      = '21'
         MAVEN_OPTS        = '-Xmx512m -XX:+UseContainerSupport'
         DOCKER_IMAGE_NAME = 'inventory-api'
         DOCKER_IMAGE_TAG  = "${env.BUILD_NUMBER}"
@@ -44,7 +47,9 @@ pipeline {
                         execPattern:         'backend/target/jacoco.exec',
                         classPattern:        'backend/target/classes',
                         sourcePattern:       'backend/src/main/java',
-                        minimumInstructionCoverage: '60',
+                        minimumInstructionCoverage: '80',
+                        minimumLineCoverage:        '80',
+                        minimumBranchCoverage:      '80',
                         changeBuildStatus:   true
                     )
                 }
