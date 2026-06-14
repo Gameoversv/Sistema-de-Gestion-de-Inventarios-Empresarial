@@ -169,6 +169,21 @@ services:
       retries: 3
       start_period: 60s
 
+  # ── Frontend (React) ────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: inventory-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    networks:
+      - inventory-net
+    depends_on:
+      backend:
+        condition: service_healthy
+
   # ── Prometheus ──────────────────────────────────────────────────────────────
   prometheus:
     image: prom/prometheus:latest
