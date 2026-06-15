@@ -231,7 +231,7 @@
         </configuration>
       </plugin>
 
-      <!-- ── Surefire (JUnit 5) ────────────────────────── -->
+      <!-- ── Surefire (JUnit 5 — unit tests only) ───────── -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -240,16 +240,38 @@
           <includes>
             <include>**/*Test.java</include>
             <include>**/*Tests.java</include>
-            <include>**/*IT.java</include>
           </includes>
+          <excludes>
+            <exclude>**/*IT.java</exclude>
+          </excludes>
           <systemPropertyVariables>
             <spring.profiles.active>test</spring.profiles.active>
             <api.version>1.41</api.version>
           </systemPropertyVariables>
-          <environmentVariables>
-            <DOCKER_HOST>tcp://localhost:2375</DOCKER_HOST>
-            <TESTCONTAINERS_HOST_OVERRIDE>localhost</TESTCONTAINERS_HOST_OVERRIDE>
-          </environmentVariables>
+        </configuration>
+      </plugin>
+
+      <!-- ── Failsafe (integration tests — *IT.java) ──── -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>3.2.5</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <argLine>-XX:+EnableDynamicAgentLoading</argLine>
+          <includes>
+            <include>**/*IT.java</include>
+          </includes>
+          <systemPropertyVariables>
+            <spring.profiles.active>test</spring.profiles.active>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
 
