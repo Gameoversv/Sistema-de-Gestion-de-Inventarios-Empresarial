@@ -48,4 +48,19 @@ test.describe('Productos', () => {
     await expect(page.locator('text=Producto actualizado')).toBeVisible({ timeout: 10000 })
     await expect(page.locator(`text=${updatedName}`)).toBeVisible({ timeout: 8000 })
   })
+
+  test('desactivar producto', async ({ page }) => {
+    // Wait for table to load
+    await expect(page.locator('table tbody tr').first()).toBeVisible({ timeout: 8000 })
+
+    // Click deactivate icon on first product
+    await page.click('button[title="Desactivar"]')
+
+    // Confirm modal appears and click confirm
+    await expect(page.locator('text=Confirmar desactivación')).toBeVisible()
+    await page.click('button:has-text("Desactivar")')
+
+    // Success toast confirms deactivation
+    await expect(page.locator('text=desactivado')).toBeVisible({ timeout: 8000 })
+  })
 })
