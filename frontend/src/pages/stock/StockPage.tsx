@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { ArrowUpRight, ArrowDownRight, Minus, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
+import { ArrowUpRight, ArrowDownRight, Minus, ChevronLeft, ChevronRight, AlertCircle, Download } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '@/lib/api'
 import type { StockMovementResponse, StockMovementRequest, ProductResponse, Page } from '@/types/index'
@@ -211,6 +211,35 @@ function AlertsPanel() {
   )
 }
 
+// ── CSV Export ───────────────────────────────────────────
+function exportToCSV(movements: StockMovementResponse[]): void {
+  const headers = ['Tipo', 'Producto', 'SKU', 'Cantidad', 'Antes', 'Después', 'Usuario', 'Fecha', 'Motivo']
+  const rows = movements.map((m) => [
+    TYPE_LABEL[m.type] ?? m.type,
+    m.productName,
+    m.sku,
+    String(m.quantity),
+    String(m.quantityBefore),
+    String(m.quantityAfter),
+    m.performedBy,
+    new Date(m.createdAt).toLocaleString('es-DO'),
+    m.reason ?? '',
+  ])
+
+  const csvContent = [headers, ...rows]
+    .map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(','))
+    .join('\n')
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const today = new Date().toISOString().slice(0, 10)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `movimientos-stock-${today}.csv`
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
 // ── StockPage ────────────────────────────────────────────
 export function StockPage() {
   const [page, setPage] = useState(0)
@@ -229,8 +258,16 @@ export function StockPage() {
       {/* Right: movements table */}
       <div className="lg:col-span-2 space-y-4">
         <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-          <div className="border-b border-gray-200 px-5 py-3">
+          <div className="border-b border-gray-200 px-5 py-3 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-gray-900">Historial de movimientos</h3>
+            <button
+              onClick={() => exportToCSV(data?.content ?? [])}
+              disabled={!data?.content?.length}
+              className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Exportar CSV
+            </button>
           </div>
           {isLoading ? (
             <div className="p-4">

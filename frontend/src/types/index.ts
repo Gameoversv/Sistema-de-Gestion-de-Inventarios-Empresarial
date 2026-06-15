@@ -28,6 +28,7 @@ export interface ProductUpdateRequest {
   name: string
   description?: string
   price: number
+  stock: number
   minimumStock: number
   categoryId: number
   active: boolean

@@ -65,6 +65,7 @@ export function ProductFormModal({ product, onClose }: Props) {
             name: data.name,
             description: data.description,
             price: Number(data.price),
+            stock: Number(data.stock),
             minimumStock: Number(data.minimumStock),
             categoryId: Number(data.categoryId),
             active: data.active ?? true,
