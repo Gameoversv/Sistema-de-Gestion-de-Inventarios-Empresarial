@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.health.HealthEndpoint;
@@ -117,32 +118,71 @@ public class SecurityConfig {
     return converter;
   }
 
-  // Extracts realm roles (ROLE_ prefix) and OAuth2 scopes (SCOPE_ prefix) from the JWT.
-  // Keycloak puts realm roles at realm_access.roles; scopes are in the space-separated "scope"
-  // claim.
+  // Extracts realm roles (ROLE_ prefix) and effective OAuth2 scopes (SCOPE_ prefix) from the JWT.
+  // Scopes are intersected with the role-permitted set so that Keycloak optional scopes cannot
+  // grant capabilities beyond what the user's realm role allows.
   private Collection<GrantedAuthority> extractAuthorities(Jwt jwt) {
     List<GrantedAuthority> authorities = new ArrayList<>();
 
+    Set<String> roles = new java.util.HashSet<>();
     Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
     if (realmAccess != null) {
       @SuppressWarnings("unchecked")
-      List<String> roles = (List<String>) realmAccess.get("roles");
-      if (roles != null) {
-        roles.stream()
-            .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-            .forEach(authorities::add);
+      List<String> roleList = (List<String>) realmAccess.get("roles");
+      if (roleList != null) {
+        roleList.forEach(
+            role -> {
+              roles.add(role);
+              authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+            });
       }
     }
 
+    Set<String> permitted = permittedScopesForRoles(roles);
     String scope = jwt.getClaimAsString("scope");
     if (scope != null && !scope.isBlank()) {
       for (String s : scope.split(" ")) {
-        if (!s.isBlank()) {
+        if (!s.isBlank() && permitted.contains(s)) {
           authorities.add(new SimpleGrantedAuthority("SCOPE_" + s));
         }
       }
     }
 
     return List.copyOf(authorities);
+  }
+
+  // Maps realm roles to the maximum set of scopes that role may hold.
+  // Roles checked in order of privilege; first match wins.
+  private Set<String> permittedScopesForRoles(Set<String> roles) {
+    if (roles.contains("inventory-admin")) {
+      return Set.of(
+          "product:view",
+          "product:manage",
+          "stock:view",
+          "stock:manage",
+          "report:view",
+          "user:manage",
+          "audit:view",
+          "openid",
+          "email",
+          "profile");
+    }
+    if (roles.contains("warehouse-clerk")) {
+      return Set.of(
+          "product:view",
+          "product:manage",
+          "stock:view",
+          "stock:manage",
+          "report:view",
+          "openid",
+          "email",
+          "profile");
+    }
+    if (roles.contains("auditor")) {
+      return Set.of(
+          "product:view", "stock:view", "report:view", "audit:view", "openid", "email", "profile");
+    }
+    // viewer and any other role: read-only
+    return Set.of("product:view", "stock:view", "report:view", "openid", "email", "profile");
   }
 }
