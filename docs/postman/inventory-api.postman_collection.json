@@ -16,6 +16,16 @@
       "value": "<JWT_TOKEN>",
       "type": "string",
       "description": "Bearer token obtenido de Keycloak"
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categoryId",
+      "value": "",
+      "type": "string"
     }
   ],
   "auth": {
@@ -49,7 +59,19 @@
               ]
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('response time < 500ms', () => pm.expect(pm.response.responseTime).to.be.below(500));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -70,7 +92,20 @@
               ]
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('response is array', () => { const b = pm.response.json(); pm.expect(b).to.be.an('array'); });",
+                  "pm.test('Content-Type is JSON', () => pm.response.to.have.header('Content-Type', /json/));"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Obtener categoría por ID",
@@ -87,7 +122,19 @@
               ]
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('response has id and name', () => { const b = pm.response.json(); pm.expect(b).to.have.property('id'); pm.expect(b).to.have.property('name'); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Crear categoría",
@@ -113,7 +160,19 @@
               ]
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('response has id', () => { const b = pm.response.json(); pm.expect(b).to.have.property('id'); pm.collectionVariables.set('categoryId', b.id); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Actualizar categoría",
@@ -140,7 +199,19 @@
               ]
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('name updated', () => { const b = pm.response.json(); pm.expect(b).to.have.property('name'); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Eliminar categoría",
@@ -157,7 +228,18 @@
               ]
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -207,7 +289,20 @@
               ]
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('response has content array', () => { const b = pm.response.json(); pm.expect(b).to.have.property('content'); pm.expect(b.content).to.be.an('array'); });",
+                  "pm.test('response has pagination metadata', () => { const b = pm.response.json(); pm.expect(b).to.have.property('totalElements'); pm.expect(b).to.have.property('totalPages'); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Obtener producto por ID",
@@ -224,7 +319,19 @@
               ]
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('response has product fields', () => { const b = pm.response.json(); pm.expect(b).to.have.property('id'); pm.expect(b).to.have.property('sku'); pm.expect(b).to.have.property('name'); pm.expect(b).to.have.property('stock'); pm.expect(b).to.have.property('price'); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Crear producto",
@@ -250,7 +357,19 @@
               ]
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('response has product id and sku', () => { const b = pm.response.json(); pm.expect(b).to.have.property('id'); pm.expect(b).to.have.property('sku'); pm.collectionVariables.set('productId', b.id); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Actualizar producto (PUT)",
@@ -277,7 +396,19 @@
               ]
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('product fields updated', () => { const b = pm.response.json(); pm.expect(b).to.have.property('id'); pm.expect(b).to.have.property('name'); pm.expect(b).to.have.property('stock'); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Actualización parcial de producto (PATCH)",
@@ -304,7 +435,19 @@
               ]
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('patch applied', () => { const b = pm.response.json(); pm.expect(b).to.have.property('id'); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Desactivar producto (soft delete)",
@@ -321,7 +464,19 @@
               ]
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('product is inactive', () => { const b = pm.response.json(); pm.expect(b.active).to.be.false; });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Buscar productos por nombre/SKU",
@@ -351,7 +506,19 @@
               ]
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('response is paginated', () => { const b = pm.response.json(); pm.expect(b).to.have.property('content'); });"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Filtrar productos por categoría",
@@ -385,7 +552,19 @@
               ]
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('response has content', () => { const b = pm.response.json(); pm.expect(b).to.have.property('content'); pm.expect(b.content).to.be.an('array'); });"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -414,6 +593,18 @@
               "status": "Not Found",
               "code": 404,
               "body": "{\n  \"type\": \"https://inventory.api/problems/not-found\",\n  \"title\": \"Resource Not Found\",\n  \"status\": 404,\n  \"detail\": \"Product not found: 999999\",\n  \"instance\": \"/api/v1/products/999999\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 404', () => pm.response.to.have.status(404));",
+                  "pm.test('error body has status 404 and detail', () => { const b = pm.response.json(); pm.expect(b).to.have.property('status'); pm.expect(b).to.have.property('detail'); pm.expect(b.status).to.equal(404); });"
+                ]
+              }
             }
           ]
         },
@@ -448,6 +639,18 @@
               "code": 409,
               "body": "{\n  \"type\": \"https://inventory.api/problems/conflict\",\n  \"title\": \"Conflict\",\n  \"status\": 409,\n  \"detail\": \"SKU already exists: EXISTING-SKU\",\n  \"instance\": \"/api/v1/products\"\n}"
             }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 409', () => pm.response.to.have.status(409));",
+                  "pm.test('error body has conflict status', () => { const b = pm.response.json(); pm.expect(b).to.have.property('status'); pm.expect(b.status).to.equal(409); });"
+                ]
+              }
+            }
           ]
         },
         {
@@ -480,6 +683,18 @@
               "status": "Bad Request",
               "code": 400,
               "body": "{\n  \"type\": \"https://inventory.api/problems/validation-error\",\n  \"title\": \"Validation Error\",\n  \"status\": 400,\n  \"detail\": \"Validation failed\",\n  \"instance\": \"/api/v1/products\",\n  \"errors\": {\n    \"sku\": \"must not be blank\",\n    \"name\": \"must not be blank\",\n    \"price\": \"must be greater than or equal to 0.00\"\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 400', () => pm.response.to.have.status(400));",
+                  "pm.test('error body has validation errors', () => { const b = pm.response.json(); pm.expect(b).to.have.property('status'); pm.expect(b.status).to.equal(400); });"
+                ]
+              }
             }
           ]
         }
