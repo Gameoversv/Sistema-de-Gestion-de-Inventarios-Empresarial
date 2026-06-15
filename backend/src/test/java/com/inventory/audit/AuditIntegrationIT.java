@@ -120,8 +120,7 @@ class AuditIntegrationIT {
 
     Number latestRev = (Number) revisions.get(revisions.size() - 1);
     Product auditedState =
-        AuditReaderFactory.get(entityManager)
-            .find(Product.class, saved.getId(), latestRev);
+        AuditReaderFactory.get(entityManager).find(Product.class, saved.getId(), latestRev);
 
     assertThat(auditedState.getActive()).isFalse();
   }
