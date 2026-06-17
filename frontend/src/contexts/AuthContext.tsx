@@ -5,9 +5,30 @@ interface AuthContextValue {
   authenticated: boolean
   token: string | undefined
   username: string | undefined
+  roles: string[]
   scopes: string[]
   hasScope: (scope: string) => boolean
   logout: () => void
+}
+
+// Mirrors permittedScopesForRoles() in SecurityConfig.java — keep in sync
+function permittedScopesForRoles(roles: string[]): Set<string> {
+  if (roles.includes('inventory-admin')) {
+    return new Set([
+      'product:view', 'product:manage', 'stock:view', 'stock:manage',
+      'report:view', 'user:manage', 'audit:view',
+    ])
+  }
+  if (roles.includes('warehouse-clerk')) {
+    return new Set([
+      'product:view', 'product:manage', 'stock:view', 'stock:manage', 'report:view',
+    ])
+  }
+  if (roles.includes('auditor')) {
+    return new Set(['product:view', 'stock:view', 'report:view', 'audit:view'])
+  }
+  // viewer and any other role: read-only
+  return new Set(['product:view', 'stock:view', 'report:view'])
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -22,7 +43,6 @@ const _initPromise: Promise<boolean> = keycloak
   })
   .then((authenticated) => {
     if (!authenticated) {
-      // Not logged in — redirect to Keycloak (won't return)
       keycloak.login()
       return new Promise<boolean>(() => {})
     }
@@ -47,14 +67,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     )
   }
 
-  const scopes: string[] = (keycloak.tokenParsed?.scope as string | undefined)
-    ?.split(' ')
-    .filter(Boolean) ?? []
+  const realmRoles: string[] =
+    (keycloak.tokenParsed?.realm_access as { roles?: string[] } | undefined)?.roles ?? []
+
+  const tokenScopes: string[] =
+    (keycloak.tokenParsed?.scope as string | undefined)?.split(' ').filter(Boolean) ?? []
+
+  const permitted = permittedScopesForRoles(realmRoles)
+  const scopes = tokenScopes.filter((s) => permitted.has(s))
 
   const value: AuthContextValue = {
     authenticated: keycloak.authenticated ?? false,
     token: keycloak.token,
     username: keycloak.tokenParsed?.preferred_username as string | undefined,
+    roles: realmRoles,
     scopes,
     hasScope: (scope: string) => scopes.includes(scope),
     logout: () => keycloak.logout({ redirectUri: window.location.origin }),

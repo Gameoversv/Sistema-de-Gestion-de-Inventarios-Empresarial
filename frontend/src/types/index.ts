@@ -148,6 +148,31 @@ export interface AuditRevisionResponse {
   reason: string | null
 }
 
+export interface ProductAuditResponse {
+  revisionNumber: number
+  revisionTimestamp: string
+  revisedBy: string
+  revisionType: 'ADD' | 'MOD' | 'DEL'
+  productId: number
+  sku: string
+  name: string
+  price: number
+  stock: number
+  minimumStock: number
+  active: boolean
+  categoryName: string | null
+}
+
+export interface UnifiedAuditEntry {
+  revisionNumber: number
+  revisionTimestamp: string
+  revisedBy: string
+  revisionType: 'ADD' | 'MOD' | 'DEL'
+  entityType: 'PRODUCT' | 'CATEGORY' | 'STOCK_MOVEMENT' | 'USER'
+  entityId: number
+  summary: string
+}
+
 export interface Page<T> {
   content: T[]
   totalElements: number

@@ -136,7 +136,7 @@ class ReportServiceTest {
     LowStockReportResponse result = reportService.lowStockAlert(0);
 
     assertThat(result.threshold()).isZero();
-    assertThat(result.totalItems()).isEqualTo(2);
+    assertThat(result.count()).isEqualTo(2);
     assertThat(result.items()).hasSize(2);
   }
 
@@ -150,7 +150,7 @@ class ReportServiceTest {
     LowStockReportResponse result = reportService.lowStockAlert(3);
 
     assertThat(result.threshold()).isEqualTo(3);
-    assertThat(result.totalItems()).isEqualTo(1);
+    assertThat(result.count()).isEqualTo(1);
     assertThat(result.items()).hasSize(1);
     assertThat(result.items().get(0).sku()).isEqualTo("SKU-1");
   }
@@ -187,7 +187,7 @@ class ReportServiceTest {
 
     LowStockReportResponse result = reportService.lowStockAlert(0);
 
-    assertThat(result.totalItems()).isZero();
+    assertThat(result.count()).isZero();
     assertThat(result.items()).isEmpty();
   }
 }

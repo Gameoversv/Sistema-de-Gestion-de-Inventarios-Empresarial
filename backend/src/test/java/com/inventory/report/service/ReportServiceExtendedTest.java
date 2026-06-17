@@ -62,11 +62,11 @@ class ReportServiceExtendedTest {
 
     CriticalStockResponse result = reportService.criticalStock();
 
-    assertThat(result.totalCritical()).isEqualTo(1);
-    assertThat(result.items()).hasSize(1);
-    assertThat(result.items().get(0).sku()).isEqualTo("SKU-Z");
-    assertThat(result.items().get(0).currentStock()).isEqualTo(0);
-    assertThat(result.items().get(0).deficit()).isEqualTo(5);
+    assertThat(result.count()).isEqualTo(1);
+    assertThat(result.products()).hasSize(1);
+    assertThat(result.products().get(0).sku()).isEqualTo("SKU-Z");
+    assertThat(result.products().get(0).currentStock()).isEqualTo(0);
+    assertThat(result.products().get(0).deficit()).isEqualTo(5);
   }
 
   @Test
@@ -76,8 +76,8 @@ class ReportServiceExtendedTest {
 
     CriticalStockResponse result = reportService.criticalStock();
 
-    assertThat(result.totalCritical()).isZero();
-    assertThat(result.items()).isEmpty();
+    assertThat(result.count()).isZero();
+    assertThat(result.products()).isEmpty();
   }
 
   // ── topProducts ───────────────────────────────────────────────────────────
@@ -93,10 +93,10 @@ class ReportServiceExtendedTest {
     TopProductsResponse result = reportService.topProducts(10, "value");
 
     assertThat(result.metric()).isEqualTo("value");
-    assertThat(result.items())
+    assertThat(result.products())
         .extracting(TopProductDto::sku)
         .containsExactly("SKU-B", "SKU-C", "SKU-A");
-    assertThat(result.items().get(0).inventoryValue()).isEqualByComparingTo("500.00");
+    assertThat(result.products().get(0).inventoryValue()).isEqualByComparingTo("500.00");
   }
 
   @Test
@@ -110,7 +110,7 @@ class ReportServiceExtendedTest {
     TopProductsResponse result = reportService.topProducts(10, "quantity");
 
     assertThat(result.metric()).isEqualTo("quantity");
-    assertThat(result.items())
+    assertThat(result.products())
         .extracting(TopProductDto::sku)
         .containsExactly("SKU-B", "SKU-C", "SKU-A");
   }
@@ -126,7 +126,7 @@ class ReportServiceExtendedTest {
     TopProductsResponse result = reportService.topProducts(2, "value");
 
     assertThat(result.limit()).isEqualTo(2);
-    assertThat(result.items()).hasSize(2);
+    assertThat(result.products()).hasSize(2);
   }
 
   @Test
@@ -138,8 +138,8 @@ class ReportServiceExtendedTest {
 
     TopProductsResponse result = reportService.topProducts(10, "value");
 
-    assertThat(result.items()).hasSize(1);
-    assertThat(result.items().get(0).sku()).isEqualTo("SKU-A");
+    assertThat(result.products()).hasSize(1);
+    assertThat(result.products().get(0).sku()).isEqualTo("SKU-A");
   }
 
   @Test

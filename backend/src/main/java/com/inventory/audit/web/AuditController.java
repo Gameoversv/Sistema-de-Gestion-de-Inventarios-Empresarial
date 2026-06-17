@@ -1,7 +1,11 @@
 package com.inventory.audit.web;
 
 import com.inventory.audit.dto.AuditRevisionResponse;
+import com.inventory.audit.dto.ProductAuditResponse;
+import com.inventory.audit.dto.UnifiedAuditEntry;
+import com.inventory.audit.service.ProductAuditService;
 import com.inventory.audit.service.StockAuditService;
+import com.inventory.audit.service.UnifiedAuditService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -33,9 +37,15 @@ import org.springframework.web.bind.annotation.RestController;
     responseCode = "403",
     description = "Scope audit:view requerido",
     content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+/**
+ * Controlador REST que expone el historial de auditoría Envers de movimientos de stock.
+ * Todos los endpoints requieren el scope {@code audit:view} y autenticación JWT de Keycloak.
+ */
 public class AuditController {
 
   private final StockAuditService stockAuditService;
+  private final ProductAuditService productAuditService;
+  private final UnifiedAuditService unifiedAuditService;
 
   @GetMapping("/stock-movements")
   @PreAuthorize("hasAuthority('SCOPE_audit:view')")
@@ -58,5 +68,39 @@ public class AuditController {
           Instant from,
       @Parameter(description = "Fecha fin (ISO-8601)") @RequestParam(required = false) Instant to) {
     return stockAuditService.findMovementHistory(productId, username, from, to);
+  }
+
+  @GetMapping("/products")
+  @PreAuthorize("hasAuthority('SCOPE_audit:view')")
+  @Operation(
+      summary = "Historial de revisiones de productos (Envers)",
+      description = "Devuelve todos los cambios auditados sobre productos. Filtro opcional: username.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Lista de revisiones de productos",
+            content = @Content(schema = @Schema(implementation = ProductAuditResponse.class)))
+      })
+  public List<ProductAuditResponse> productHistory(
+      @Parameter(description = "Filtrar por nombre de usuario") @RequestParam(required = false)
+          String username) {
+    return productAuditService.findProductHistory(username);
+  }
+
+  @GetMapping("/all")
+  @PreAuthorize("hasAuthority('SCOPE_audit:view')")
+  @Operation(
+      summary = "Historial unificado de auditoría (Envers)",
+      description = "Devuelve todos los cambios de todas las entidades auditadas: productos, categorías, movimientos de stock y usuarios, ordenados por revisión descendente.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Lista unificada de eventos de auditoría",
+            content = @Content(schema = @Schema(implementation = UnifiedAuditEntry.class)))
+      })
+  public List<UnifiedAuditEntry> unifiedHistory() {
+    return unifiedAuditService.findAll();
   }
 }
