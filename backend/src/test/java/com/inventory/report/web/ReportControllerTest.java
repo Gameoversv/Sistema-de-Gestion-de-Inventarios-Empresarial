@@ -31,11 +31,13 @@ class ReportControllerTest {
 
   // ── GET /api/reports/stock-summary ────────────────────────────────────────
 
+  // Verifica que acceder a stock-summary sin autenticación retorna 401.
   @Test
   void stockSummary_anonymous_returns401() throws Exception {
     mockMvc.perform(get("/api/reports/stock-summary")).andExpect(status().isUnauthorized());
   }
 
+  // Verifica que un scope insuficiente (stock:view) retorna 403 en stock-summary.
   @Test
   void stockSummary_withoutReportViewScope_returns403() throws Exception {
     mockMvc
@@ -48,6 +50,7 @@ class ReportControllerTest {
         .andExpect(status().isForbidden());
   }
 
+  // Verifica que con scope report:view se obtiene 200 con el resumen de stock completo.
   @Test
   void stockSummary_withReportViewScope_returns200WithBody() throws Exception {
     var response =
@@ -74,6 +77,7 @@ class ReportControllerTest {
         .andExpect(jsonPath("$.byCategory[0].productCount").value(9));
   }
 
+  // Verifica que stock-summary con byCategory vacío retorna 200 con array vacío.
   @Test
   void stockSummary_withReportViewScope_emptyCategories_returns200() throws Exception {
     var response = new StockSummaryResponse(0, 0, 0, BigDecimal.ZERO, List.of());
@@ -94,11 +98,13 @@ class ReportControllerTest {
 
   // ── GET /api/reports/low-stock ────────────────────────────────────────────
 
+  // Verifica que acceder a low-stock sin autenticación retorna 401.
   @Test
   void lowStock_anonymous_returns401() throws Exception {
     mockMvc.perform(get("/api/reports/low-stock")).andExpect(status().isUnauthorized());
   }
 
+  // Verifica que un scope insuficiente (audit:view) retorna 403 en low-stock.
   @Test
   void lowStock_withoutReportViewScope_returns403() throws Exception {
     mockMvc
@@ -111,6 +117,7 @@ class ReportControllerTest {
         .andExpect(status().isForbidden());
   }
 
+  // Verifica que con scope report:view y threshold por defecto se retorna 200 con ítems.
   @Test
   void lowStock_withReportViewScope_defaultThreshold_returns200WithItems() throws Exception {
     var item = new LowStockItemDto(1L, "SKU-X", "Widget", 2, 10, 8, "General");
@@ -125,12 +132,13 @@ class ReportControllerTest {
                         .jwt(j -> j.subject("analyst"))
                         .authorities(new SimpleGrantedAuthority("SCOPE_report:view"))))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.totalItems").value(1))
+        .andExpect(jsonPath("$.count").value(1))
         .andExpect(jsonPath("$.items[0].sku").value("SKU-X"))
         .andExpect(jsonPath("$.items[0].currentStock").value(2))
         .andExpect(jsonPath("$.items[0].deficit").value(8));
   }
 
+  // Verifica que el parámetro threshold se propaga correctamente al servicio de reportes.
   @Test
   void lowStock_withThresholdParam_passesThresholdToService() throws Exception {
     var response = new LowStockReportResponse(5, 0, List.of());

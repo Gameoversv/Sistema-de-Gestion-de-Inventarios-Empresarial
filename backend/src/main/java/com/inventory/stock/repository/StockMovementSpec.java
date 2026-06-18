@@ -8,6 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 import org.springframework.data.jpa.domain.Specification;
 
+/**
+ * Fábrica de especificaciones JPA para filtrar movimientos de stock dinámicamente. Genera
+ * predicados combinados por producto, tipo de movimiento (IN/OUT/ADJUSTMENT) y rango de fechas
+ * (from/to), ignorando los parámetros nulos.
+ */
 public final class StockMovementSpec {
 
   private StockMovementSpec() {}

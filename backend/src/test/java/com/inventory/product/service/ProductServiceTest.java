@@ -75,6 +75,7 @@ class ProductServiceTest {
 
   // ── create ────────────────────────────────────────────────────────────────
 
+  // Verifica que se crea y retorna el producto correctamente cuando el SKU es único.
   @Test
   @DisplayName("create - producto creado correctamente cuando el SKU es único")
   void create_uniqueSku_returnsResponse() {
@@ -92,6 +93,7 @@ class ProductServiceTest {
     verify(productRepository).save(product);
   }
 
+  // Verifica que un SKU duplicado lanza ConflictException sin persistir el producto.
   @Test
   @DisplayName("create - lanza ConflictException cuando el SKU ya existe")
   void create_duplicateSku_throwsConflict() {
@@ -106,6 +108,7 @@ class ProductServiceTest {
     verify(productRepository, never()).save(any());
   }
 
+  // Verifica que se resuelve y asigna la categoría cuando se especifica categoryId.
   @Test
   @DisplayName("create - resuelve categoría cuando categoryId no es null")
   void create_withCategory_resolvesCategory() {
@@ -124,6 +127,7 @@ class ProductServiceTest {
     assertThat(product.getCategory()).isEqualTo(category);
   }
 
+  // Verifica que una categoría inexistente lanza ResourceNotFoundException al crear producto.
   @Test
   @DisplayName("create - lanza ResourceNotFoundException cuando la categoría no existe")
   void create_categoryNotFound_throwsNotFound() {
@@ -141,6 +145,7 @@ class ProductServiceTest {
 
   // ── findById ──────────────────────────────────────────────────────────────
 
+  // Verifica que findById retorna el producto cuando el ID existe en el repositorio.
   @Test
   @DisplayName("findById - retorna producto cuando existe")
   void findById_existingId_returnsResponse() {
@@ -152,6 +157,7 @@ class ProductServiceTest {
     assertThat(result.id()).isEqualTo(1L);
   }
 
+  // Verifica que findById lanza ResourceNotFoundException cuando el ID no existe.
   @Test
   @DisplayName("findById - lanza ResourceNotFoundException cuando no existe")
   void findById_missingId_throwsNotFound() {
@@ -164,6 +170,7 @@ class ProductServiceTest {
 
   // ── findBySku ─────────────────────────────────────────────────────────────
 
+  // Verifica que findBySku retorna el producto cuando el SKU existe en el repositorio.
   @Test
   @DisplayName("findBySku - retorna producto cuando el SKU existe")
   void findBySku_existingSku_returnsResponse() {
@@ -175,6 +182,7 @@ class ProductServiceTest {
     assertThat(result.sku()).isEqualTo("SKU-001");
   }
 
+  // Verifica que findBySku lanza ResourceNotFoundException cuando el SKU no existe.
   @Test
   @DisplayName("findBySku - lanza ResourceNotFoundException cuando el SKU no existe")
   void findBySku_missingSku_throwsNotFound() {
@@ -187,6 +195,7 @@ class ProductServiceTest {
 
   // ── update ────────────────────────────────────────────────────────────────
 
+  // Verifica que se actualiza el producto correctamente cuando el SKU no cambia.
   @Test
   @DisplayName("update - actualiza producto correctamente cuando el SKU no cambia")
   void update_sameSku_updatesSuccessfully() {
@@ -203,6 +212,7 @@ class ProductServiceTest {
     verify(productRepository).save(product);
   }
 
+  // Verifica que cambiar el SKU a uno ya existente lanza ConflictException.
   @Test
   @DisplayName("update - lanza ConflictException cuando cambia SKU a uno existente")
   void update_skuChangedToDuplicate_throwsConflict() {
@@ -217,6 +227,7 @@ class ProductServiceTest {
         .hasMessageContaining("SKU-999");
   }
 
+  // Verifica que actualizar un producto inexistente lanza ResourceNotFoundException.
   @Test
   @DisplayName("update - lanza ResourceNotFoundException cuando el producto no existe")
   void update_missingProduct_throwsNotFound() {
@@ -231,6 +242,7 @@ class ProductServiceTest {
 
   // ── delete ────────────────────────────────────────────────────────────────
 
+  // Verifica que delete realiza un soft delete poniendo active en false y persistiendo.
   @Test
   @DisplayName("delete - realiza soft delete poniendo active=false")
   void delete_existingProduct_setsActiveToFalse() {
@@ -244,6 +256,7 @@ class ProductServiceTest {
     verify(productRepository).save(product);
   }
 
+  // Verifica que eliminar un producto inexistente lanza ResourceNotFoundException.
   @Test
   @DisplayName("delete - lanza ResourceNotFoundException cuando el producto no existe")
   void delete_missingProduct_throwsNotFound() {
@@ -256,6 +269,7 @@ class ProductServiceTest {
 
   // ── findAll ───────────────────────────────────────────────────────────────
 
+  // Verifica que findAll sin filtros retorna todos los productos paginados correctamente.
   @Test
   @DisplayName("findAll - aplica spec vacía cuando sin filtros y retorna página")
   void findAll_noFilters_returnsMappedPage() {

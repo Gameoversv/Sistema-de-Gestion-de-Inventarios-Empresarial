@@ -49,11 +49,13 @@ class CategoryControllerTest {
 
   // ── GET /categories ───────────────────────────────────────────────────────
 
+  // Verifica que listar categorías sin autenticación retorna 401.
   @Test
   void list_anonymous_returns401() throws Exception {
     mockMvc.perform(get("/categories")).andExpect(status().isUnauthorized());
   }
 
+  // Verifica que con scope product:view se obtiene 200 y la lista de categorías.
   @Test
   void list_withProductViewScope_returns200WithList() throws Exception {
     when(categoryService.findAll()).thenReturn(List.of(sampleCategory()));
@@ -70,6 +72,7 @@ class CategoryControllerTest {
         .andExpect(jsonPath("$[0].name").value("Electronics"));
   }
 
+  // Verifica que con scope product:manage se obtiene 200 con lista vacía cuando no hay categorías.
   @Test
   void list_withProductManageScope_returns200EmptyList() throws Exception {
     when(categoryService.findAll()).thenReturn(List.of());
@@ -85,6 +88,7 @@ class CategoryControllerTest {
         .andExpect(jsonPath("$").isArray());
   }
 
+  // Verifica que un scope insuficiente (audit:view) retorna 403 al listar categorías.
   @Test
   void list_withInsufficientScope_returns403() throws Exception {
     mockMvc
@@ -99,6 +103,7 @@ class CategoryControllerTest {
 
   // ── GET /categories/{id} ─────────────────────────────────────────────────
 
+  // Verifica que obtener una categoría existente por ID retorna 200 con los datos correctos.
   @Test
   void getById_existingCategory_returns200() throws Exception {
     when(categoryService.findById(1L)).thenReturn(sampleCategory());
@@ -115,6 +120,7 @@ class CategoryControllerTest {
         .andExpect(jsonPath("$.name").value("Electronics"));
   }
 
+  // Verifica que buscar una categoría inexistente retorna 404.
   @Test
   void getById_missingCategory_returns404() throws Exception {
     when(categoryService.findById(99L))
@@ -130,6 +136,7 @@ class CategoryControllerTest {
         .andExpect(status().isNotFound());
   }
 
+  // Verifica que buscar una categoría por ID sin autenticación retorna 401.
   @Test
   void getById_anonymous_returns401() throws Exception {
     mockMvc.perform(get("/categories/1")).andExpect(status().isUnauthorized());
@@ -137,11 +144,13 @@ class CategoryControllerTest {
 
   // ── POST /categories ──────────────────────────────────────────────────────
 
+  // Verifica que crear una categoría sin autenticación retorna 401.
   @Test
   void create_anonymous_returns401() throws Exception {
     mockMvc.perform(post("/categories")).andExpect(status().isUnauthorized());
   }
 
+  // Verifica que con solo scope product:view no se puede crear una categoría (retorna 403).
   @Test
   void create_viewScopeOnly_returns403() throws Exception {
     var request = new CategoryCreateRequest("Electronics", null);
@@ -158,6 +167,7 @@ class CategoryControllerTest {
         .andExpect(status().isForbidden());
   }
 
+  // Verifica que con scope product:manage y datos válidos se crea la categoría con 201.
   @Test
   void create_validRequest_returns201() throws Exception {
     var request = new CategoryCreateRequest("Electronics", "Electronic products");
@@ -177,6 +187,7 @@ class CategoryControllerTest {
         .andExpect(jsonPath("$.name").value("Electronics"));
   }
 
+  // Verifica que crear una categoría con nombre en blanco retorna 400.
   @Test
   void create_blankName_returns400() throws Exception {
     mockMvc
@@ -191,6 +202,7 @@ class CategoryControllerTest {
         .andExpect(status().isBadRequest());
   }
 
+  // Verifica que crear una categoría sin campo name retorna 400.
   @Test
   void create_missingName_returns400() throws Exception {
     mockMvc
@@ -207,6 +219,7 @@ class CategoryControllerTest {
 
   // ── PUT /categories/{id} ─────────────────────────────────────────────────
 
+  // Verifica que actualizar una categoría con datos válidos retorna 200 con la respuesta.
   @Test
   void update_validRequest_returns200() throws Exception {
     var request = new CategoryUpdateRequest("Updated Electronics", "Updated description");
@@ -225,6 +238,7 @@ class CategoryControllerTest {
         .andExpect(jsonPath("$.name").value("Electronics"));
   }
 
+  // Verifica que actualizar una categoría inexistente retorna 404.
   @Test
   void update_notFound_returns404() throws Exception {
     var request = new CategoryUpdateRequest("Electronics", null);
@@ -243,6 +257,7 @@ class CategoryControllerTest {
         .andExpect(status().isNotFound());
   }
 
+  // Verifica que actualizar una categoría con nombre en blanco retorna 400.
   @Test
   void update_blankName_returns400() throws Exception {
     mockMvc
@@ -257,6 +272,7 @@ class CategoryControllerTest {
         .andExpect(status().isBadRequest());
   }
 
+  // Verifica que actualizar una categoría sin autenticación retorna 401.
   @Test
   void update_anonymous_returns401() throws Exception {
     mockMvc.perform(put("/categories/1")).andExpect(status().isUnauthorized());
@@ -264,6 +280,7 @@ class CategoryControllerTest {
 
   // ── DELETE /categories/{id} ───────────────────────────────────────────────
 
+  // Verifica que eliminar una categoría existente retorna 204 y delega al servicio.
   @Test
   void delete_existingCategory_returns204() throws Exception {
     mockMvc
@@ -278,11 +295,13 @@ class CategoryControllerTest {
     verify(categoryService).delete(1L);
   }
 
+  // Verifica que eliminar una categoría sin autenticación retorna 401.
   @Test
   void delete_anonymous_returns401() throws Exception {
     mockMvc.perform(delete("/categories/1")).andExpect(status().isUnauthorized());
   }
 
+  // Verifica que con solo scope product:view no se puede eliminar una categoría (retorna 403).
   @Test
   void delete_viewScopeOnly_returns403() throws Exception {
     mockMvc
@@ -295,6 +314,7 @@ class CategoryControllerTest {
         .andExpect(status().isForbidden());
   }
 
+  // Verifica que eliminar una categoría inexistente retorna 404.
   @Test
   void delete_notFound_returns404() throws Exception {
     doThrow(new ResourceNotFoundException("Category not found: 99"))

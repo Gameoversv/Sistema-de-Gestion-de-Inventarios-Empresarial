@@ -15,6 +15,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Configuración de SpringDoc OpenAPI que define la documentación interactiva de la API. Registra el
+ * esquema de seguridad OAuth2/Keycloak con Authorization Code + PKCE, los scopes disponibles y
+ * cuatro grupos de rutas (productos, stock, reportes, auditoría).
+ */
 @Configuration
 public class OpenApiConfig {
 

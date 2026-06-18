@@ -4,6 +4,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.util.List;
 
+/**
+ * DTO con el resumen global del inventario: totales de productos, productos activos, productos con
+ * stock bajo, valor total monetario y desglose de stock por categoría.
+ */
 @Schema(description = "Resumen de niveles de stock del inventario")
 public record StockSummaryResponse(
     @Schema(description = "Total de productos registrados", example = "120") int totalProducts,

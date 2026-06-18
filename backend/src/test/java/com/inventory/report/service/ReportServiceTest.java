@@ -45,6 +45,7 @@ class ReportServiceTest {
 
   // ── stockSummary ──────────────────────────────────────────────────────────
 
+  // Verifica que stockSummary calcula correctamente totales, bajo stock y valor para activos.
   @Test
   @DisplayName("stockSummary returns correct totals for active products")
   void stockSummary_activeProducts_returnsCorrectTotals() {
@@ -65,6 +66,7 @@ class ReportServiceTest {
     assertThat(result.byCategory().get(0).totalStock()).isEqualTo(23);
   }
 
+  // Verifica que productos inactivos se excluyen del conteo activo y del valor de inventario.
   @Test
   @DisplayName("stockSummary excludes inactive products from active metrics and value")
   void stockSummary_withInactiveProducts_excludesThemFromActiveMetrics() {
@@ -82,6 +84,7 @@ class ReportServiceTest {
     assertThat(result.byCategory().get(0).productCount()).isEqualTo(1);
   }
 
+  // Verifica que productos sin categoría se agrupan bajo el nombre "Sin categoría".
   @Test
   @DisplayName("stockSummary groups products without category under 'Sin categoría'")
   void stockSummary_nullCategory_groupsUnderSinCategoria() {
@@ -94,6 +97,7 @@ class ReportServiceTest {
     assertThat(result.byCategory().get(0).categoryName()).isEqualTo("Sin categoría");
   }
 
+  // Verifica que stockSummary retorna ceros y lista vacía cuando el repositorio está vacío.
   @Test
   @DisplayName("stockSummary returns zeros when repository is empty")
   void stockSummary_emptyRepository_returnsZeros() {
@@ -108,6 +112,7 @@ class ReportServiceTest {
     assertThat(result.byCategory()).isEmpty();
   }
 
+  // Verifica que las categorías en byCategory se ordenan alfabéticamente.
   @Test
   @DisplayName("stockSummary sorts byCategory alphabetically")
   void stockSummary_multipleCategories_sortedAlphabetically() {
@@ -126,6 +131,7 @@ class ReportServiceTest {
 
   // ── lowStockAlert ─────────────────────────────────────────────────────────
 
+  // Verifica que con threshold=0 se retornan todos los productos del repositorio sin filtrar.
   @Test
   @DisplayName("lowStockAlert threshold=0 returns all products from repository")
   void lowStockAlert_thresholdZero_returnsAll() {
@@ -140,6 +146,7 @@ class ReportServiceTest {
     assertThat(result.items()).hasSize(2);
   }
 
+  // Verifica que con threshold positivo solo se incluyen productos con stock <= threshold.
   @Test
   @DisplayName("lowStockAlert threshold>0 filters to products with stock <= threshold")
   void lowStockAlert_thresholdPositive_filtersItems() {
@@ -155,6 +162,7 @@ class ReportServiceTest {
     assertThat(result.items().get(0).sku()).isEqualTo("SKU-1");
   }
 
+  // Verifica que el déficit de un ítem es minimumStock menos el stock actual.
   @Test
   @DisplayName("lowStockAlert item deficit equals minimumStock minus currentStock")
   void lowStockAlert_itemDeficit_isMinimumStockMinusCurrentStock() {
@@ -169,6 +177,7 @@ class ReportServiceTest {
     assertThat(item.deficit()).isEqualTo(7);
   }
 
+  // Verifica que un ítem sin categoría se mapea con el nombre "Sin categoría".
   @Test
   @DisplayName("lowStockAlert item with null category maps to 'Sin categoría'")
   void lowStockAlert_nullCategoryItem_mapsToSinCategoria() {
@@ -180,6 +189,7 @@ class ReportServiceTest {
     assertThat(result.items().get(0).categoryName()).isEqualTo("Sin categoría");
   }
 
+  // Verifica que lowStockAlert retorna lista vacía cuando no hay productos con bajo stock.
   @Test
   @DisplayName("lowStockAlert returns empty list when no low-stock products exist")
   void lowStockAlert_noLowStock_returnsEmpty() {

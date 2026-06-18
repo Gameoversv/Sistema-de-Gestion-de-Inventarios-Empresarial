@@ -4,6 +4,11 @@ import com.inventory.stock.domain.StockMovement.MovementType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 
+/**
+ * DTO de salida con el resultado completo de un movimiento de inventario registrado. Incluye id del
+ * movimiento, datos del producto, tipo, cantidades (antes/después), motivo, referencia documental,
+ * usuario y timestamp de creación.
+ */
 @Schema(description = "Resultado del movimiento de inventario registrado")
 public record StockMovementResponse(
     @Schema(description = "ID del movimiento", example = "100") Long id,

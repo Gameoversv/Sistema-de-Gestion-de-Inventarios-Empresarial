@@ -35,6 +35,11 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+/**
+ * Configuración central de Spring Security. Establece la política stateless con JWT de Keycloak,
+ * CORS configurable, rutas públicas (Swagger, health, Prometheus) y extrae roles y scopes del token
+ * intersectándolos con los permisos máximos que el rol del usuario puede tener.
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity

@@ -6,6 +6,11 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 import org.hibernate.envers.Audited;
 
+/**
+ * Entidad JPA que representa una categoría de productos del inventario. El nombre debe ser único.
+ * Todas las modificaciones quedan registradas automáticamente por Hibernate Envers para
+ * trazabilidad de cambios.
+ */
 @Entity
 @Table(name = "categories")
 @Audited

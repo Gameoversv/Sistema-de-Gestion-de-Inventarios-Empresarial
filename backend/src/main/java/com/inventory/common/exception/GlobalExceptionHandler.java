@@ -16,6 +16,11 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+/**
+ * Manejador global de excepciones que convierte errores de dominio, validación y acceso en
+ * respuestas estructuradas siguiendo el formato RFC 9457 {@code ProblemDetail}. Cubre: recurso no
+ * encontrado, conflicto, regla de negocio, validación, acceso denegado y errores inesperados.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

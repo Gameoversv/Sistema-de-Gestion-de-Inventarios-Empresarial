@@ -6,6 +6,10 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+/**
+ * DTO de entrada para registrar un movimiento de stock. Requiere el producto, el tipo de movimiento
+ * (IN/OUT/ADJUSTMENT), la cantidad y opcionalmente motivo y referencia documental.
+ */
 @Schema(description = "Datos para registrar un movimiento de inventario")
 public record StockMovementRequest(
     @Schema(description = "ID del producto", example = "1") @NotNull Long productId,

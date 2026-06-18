@@ -26,6 +26,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Implementación del servicio de reportes. Calcula métricas del inventario consultando productos,
+ * categorías y movimientos de stock. Todas las operaciones son de solo lectura. Los cálculos de
+ * valor total y agrupaciones por categoría se realizan en memoria sobre el conjunto activo de
+ * productos.
+ */
 @Service
 @RequiredArgsConstructor
 public class ReportServiceImpl implements ReportService {

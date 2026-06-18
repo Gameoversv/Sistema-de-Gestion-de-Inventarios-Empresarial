@@ -12,6 +12,12 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+/**
+ * Repositorio JPA para {@link com.inventory.product.domain.Product}. Combina JpaRepository con
+ * JpaSpecificationExecutor para filtrado dinámico. Incluye búsqueda por SKU, texto libre,
+ * categoría, productos con stock bajo o en cero, y bloqueo pesimista para actualizaciones
+ * concurrentes de stock.
+ */
 public interface ProductRepository
     extends JpaRepository<Product, Long>, JpaSpecificationExecutor<Product> {
 

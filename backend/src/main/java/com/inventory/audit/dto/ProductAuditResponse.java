@@ -5,8 +5,8 @@ import java.time.Instant;
 import org.hibernate.envers.RevisionType;
 
 /**
- * DTO de respuesta para revisiones de auditoría Envers sobre la entidad {@code Product}.
- * Captura el estado del producto (SKU, nombre, precio, stock, categoría) en cada revisión.
+ * DTO de respuesta para revisiones de auditoría Envers sobre la entidad {@code Product}. Captura el
+ * estado del producto (SKU, nombre, precio, stock, categoría) en cada revisión.
  */
 public record ProductAuditResponse(
     int revisionNumber,

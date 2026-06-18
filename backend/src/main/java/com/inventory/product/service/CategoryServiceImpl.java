@@ -12,6 +12,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Implementación del servicio de categorías. Aplica CRUD sobre la entidad Category, validando que
+ * el nombre sea único antes de crear o actualizar. Las escrituras se realizan en transacciones
+ * independientes; las lecturas son de solo lectura.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)

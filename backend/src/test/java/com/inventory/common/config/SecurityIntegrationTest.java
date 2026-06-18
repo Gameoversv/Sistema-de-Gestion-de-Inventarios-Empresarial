@@ -24,11 +24,13 @@ class SecurityIntegrationTest {
   // Prevents Spring from contacting Keycloak at startup to fetch JWKS
   @MockBean JwtDecoder jwtDecoder;
 
+  // Verifica que una petición sin token JWT al endpoint /ping retorna 401.
   @Test
   void anonymous_returns401() throws Exception {
     mockMvc.perform(get("/ping")).andExpect(status().isUnauthorized());
   }
 
+  // Verifica que un JWT válido permite acceder a /ping y retorna el subject en la respuesta.
   @Test
   void withJwt_returns200() throws Exception {
     mockMvc
@@ -38,6 +40,7 @@ class SecurityIntegrationTest {
         .andExpect(jsonPath("$.subject").value("user-abc"));
   }
 
+  // Verifica que un JWT con rol de administrador incluye las autoridades en la respuesta de /ping.
   @Test
   void withAdminRole_returns200() throws Exception {
     mockMvc

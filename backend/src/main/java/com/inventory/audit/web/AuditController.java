@@ -38,8 +38,8 @@ import org.springframework.web.bind.annotation.RestController;
     description = "Scope audit:view requerido",
     content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
 /**
- * Controlador REST que expone el historial de auditoría Envers de movimientos de stock.
- * Todos los endpoints requieren el scope {@code audit:view} y autenticación JWT de Keycloak.
+ * Controlador REST que expone el historial de auditoría Envers de movimientos de stock. Todos los
+ * endpoints requieren el scope {@code audit:view} y autenticación JWT de Keycloak.
  */
 public class AuditController {
 
@@ -74,7 +74,8 @@ public class AuditController {
   @PreAuthorize("hasAuthority('SCOPE_audit:view')")
   @Operation(
       summary = "Historial de revisiones de productos (Envers)",
-      description = "Devuelve todos los cambios auditados sobre productos. Filtro opcional: username.")
+      description =
+          "Devuelve todos los cambios auditados sobre productos. Filtro opcional: username.")
   @ApiResponses(
       value = {
         @ApiResponse(
@@ -92,7 +93,9 @@ public class AuditController {
   @PreAuthorize("hasAuthority('SCOPE_audit:view')")
   @Operation(
       summary = "Historial unificado de auditoría (Envers)",
-      description = "Devuelve todos los cambios de todas las entidades auditadas: productos, categorías, movimientos de stock y usuarios, ordenados por revisión descendente.")
+      description =
+          "Devuelve todos los cambios de todas las entidades auditadas: productos, categorías,"
+              + " movimientos de stock y usuarios, ordenados por revisión descendente.")
   @ApiResponses(
       value = {
         @ApiResponse(

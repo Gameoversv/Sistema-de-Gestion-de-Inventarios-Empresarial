@@ -16,8 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Servicio que consulta el historial de revisiones de productos usando Hibernate Envers.
- * Devuelve las revisiones ordenadas de más reciente a más antigua.
+ * Servicio que consulta el historial de revisiones de productos usando Hibernate Envers. Devuelve
+ * las revisiones ordenadas de más reciente a más antigua.
  */
 @Slf4j
 @Service
@@ -54,7 +54,8 @@ public class ProductAuditService {
         categoryName = product.getCategory().getName();
       }
     } catch (LazyInitializationException ex) {
-      log.warn("Could not resolve category for product id={}: {}", product.getId(), ex.getMessage());
+      log.warn(
+          "Could not resolve category for product id={}: {}", product.getId(), ex.getMessage());
     }
 
     return new ProductAuditResponse(

@@ -12,6 +12,12 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 
+/**
+ * Interfaz MapStruct que gestiona las conversiones entre la entidad {@link
+ * com.inventory.product.domain.Product} y sus DTOs de entrada (create, update, patch) y salida.
+ * Generada en tiempo de compilación como bean de Spring. Los campos de auditoría y relaciones se
+ * mapean manualmente.
+ */
 @Mapper(componentModel = "spring")
 public interface ProductMapper {
 

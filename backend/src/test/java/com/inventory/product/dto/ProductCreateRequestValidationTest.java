@@ -20,6 +20,7 @@ class ProductCreateRequestValidationTest {
     validator = Validation.buildDefaultValidatorFactory().getValidator();
   }
 
+  // Verifica que un request con todos los campos válidos no genera violaciones de constraints.
   @Test
   @DisplayName("request válido no produce violaciones")
   void validRequest_noViolations() {
@@ -32,6 +33,7 @@ class ProductCreateRequestValidationTest {
     assertThat(violations).isEmpty();
   }
 
+  // Verifica que un SKU en blanco genera una violación en el campo sku.
   @Test
   @DisplayName("sku en blanco produce violación en campo sku")
   void blankSku_violatesNotBlank() {
@@ -44,6 +46,7 @@ class ProductCreateRequestValidationTest {
     assertThat(violations).anyMatch(v -> v.getPropertyPath().toString().equals("sku"));
   }
 
+  // Verifica que un SKU nulo genera una violación en el campo sku.
   @Test
   @DisplayName("sku nulo produce violación")
   void nullSku_violatesNotBlank() {
@@ -56,6 +59,7 @@ class ProductCreateRequestValidationTest {
     assertThat(violations).anyMatch(v -> v.getPropertyPath().toString().equals("sku"));
   }
 
+  // Verifica que un SKU mayor a 100 caracteres genera una violación de tamaño en sku.
   @Test
   @DisplayName("sku mayor a 100 caracteres produce violación de tamaño")
   void skuExceeds100Chars_violatesSize() {
@@ -69,6 +73,7 @@ class ProductCreateRequestValidationTest {
     assertThat(violations).anyMatch(v -> v.getPropertyPath().toString().equals("sku"));
   }
 
+  // Verifica que un nombre en blanco genera una violación en el campo name.
   @Test
   @DisplayName("name en blanco produce violación")
   void blankName_violatesNotBlank() {
@@ -81,6 +86,7 @@ class ProductCreateRequestValidationTest {
     assertThat(violations).anyMatch(v -> v.getPropertyPath().toString().equals("name"));
   }
 
+  // Verifica que un nombre mayor a 255 caracteres genera una violación de tamaño en name.
   @Test
   @DisplayName("name mayor a 255 caracteres produce violación de tamaño")
   void nameExceeds255Chars_violatesSize() {
@@ -94,6 +100,7 @@ class ProductCreateRequestValidationTest {
     assertThat(violations).anyMatch(v -> v.getPropertyPath().toString().equals("name"));
   }
 
+  // Verifica que un precio nulo genera una violación en el campo price.
   @Test
   @DisplayName("price nulo produce violación")
   void nullPrice_violatesNotNull() {
@@ -105,6 +112,7 @@ class ProductCreateRequestValidationTest {
     assertThat(violations).anyMatch(v -> v.getPropertyPath().toString().equals("price"));
   }
 
+  // Verifica que un precio negativo genera una violación de mínimo decimal en price.
   @Test
   @DisplayName("price negativo produce violación de mínimo decimal")
   void negativePrice_violatesDecimalMin() {
@@ -117,6 +125,7 @@ class ProductCreateRequestValidationTest {
     assertThat(violations).anyMatch(v -> v.getPropertyPath().toString().equals("price"));
   }
 
+  // Verifica que un stock nulo genera una violación en el campo stock.
   @Test
   @DisplayName("stock nulo produce violación")
   void nullStock_violatesNotNull() {
@@ -129,6 +138,7 @@ class ProductCreateRequestValidationTest {
     assertThat(violations).anyMatch(v -> v.getPropertyPath().toString().equals("stock"));
   }
 
+  // Verifica que un stock negativo genera una violación de mínimo en el campo stock.
   @Test
   @DisplayName("stock negativo produce violación de mínimo")
   void negativeStock_violatesMin() {
@@ -141,6 +151,7 @@ class ProductCreateRequestValidationTest {
     assertThat(violations).anyMatch(v -> v.getPropertyPath().toString().equals("stock"));
   }
 
+  // Verifica que un minimumStock negativo genera una violación de mínimo en ese campo.
   @Test
   @DisplayName("minimumStock negativo produce violación de mínimo")
   void negativeMinimumStock_violatesMin() {
@@ -153,6 +164,7 @@ class ProductCreateRequestValidationTest {
     assertThat(violations).anyMatch(v -> v.getPropertyPath().toString().equals("minimumStock"));
   }
 
+  // Verifica que un precio de cero es válido porque DecimalMin es inclusivo.
   @Test
   @DisplayName("precio cero es válido (DecimalMin inclusive)")
   void zeroPriceIsValid() {

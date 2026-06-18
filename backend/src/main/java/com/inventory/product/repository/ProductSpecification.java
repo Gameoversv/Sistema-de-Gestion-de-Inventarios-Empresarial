@@ -3,6 +3,11 @@ package com.inventory.product.repository;
 import com.inventory.product.domain.Product;
 import org.springframework.data.jpa.domain.Specification;
 
+/**
+ * Fábrica de especificaciones JPA (patrón Specification) para filtrar productos dinámicamente.
+ * Provee predicados por SKU exacto, fragmento de SKU, fragmento de nombre, categoría y estado
+ * activo, combinables mediante {@code Specification.where(...).and(...)}.
+ */
 public final class ProductSpecification {
 
   private ProductSpecification() {}

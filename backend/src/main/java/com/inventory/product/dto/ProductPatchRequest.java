@@ -5,6 +5,11 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
+/**
+ * DTO de entrada para actualización parcial (PATCH) de un producto. Todos los campos son
+ * opcionales; solo los campos no nulos se aplican sobre la entidad existente mediante la estrategia
+ * {@code IGNORE} de MapStruct.
+ */
 public record ProductPatchRequest(
     @Size(max = 100) String sku,
     @Size(max = 255) String name,

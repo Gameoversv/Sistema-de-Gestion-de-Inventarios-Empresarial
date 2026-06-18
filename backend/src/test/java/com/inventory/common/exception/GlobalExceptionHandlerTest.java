@@ -26,6 +26,7 @@ class GlobalExceptionHandlerTest {
 
   // ── ResourceNotFoundException → 404 ──────────────────────────────────────
 
+  // Verifica que ResourceNotFoundException produce un ProblemDetail con status 404.
   @Test
   void handleNotFound_throwsResourceNotFound_returns404WithProblemDetail() throws Exception {
     mockMvc
@@ -38,6 +39,7 @@ class GlobalExceptionHandlerTest {
 
   // ── ConflictException → 409 ───────────────────────────────────────────────
 
+  // Verifica que ConflictException produce un ProblemDetail con status 409.
   @Test
   void handleConflict_throwsConflict_returns409WithProblemDetail() throws Exception {
     mockMvc
@@ -50,6 +52,7 @@ class GlobalExceptionHandlerTest {
 
   // ── BusinessException → 422 ───────────────────────────────────────────────
 
+  // Verifica que BusinessException produce un ProblemDetail con status 422.
   @Test
   void handleBusiness_throwsBusinessException_returns422WithProblemDetail() throws Exception {
     mockMvc
@@ -62,6 +65,7 @@ class GlobalExceptionHandlerTest {
 
   // ── MethodArgumentNotValidException → 400 ────────────────────────────────
 
+  // Verifica que un campo vacío en el body genera 400 con errores por campo en la respuesta.
   @Test
   void handleValidation_blankName_returns400WithFieldErrors() throws Exception {
     mockMvc
@@ -76,6 +80,7 @@ class GlobalExceptionHandlerTest {
         .andExpect(jsonPath("$.errors.name").exists());
   }
 
+  // Verifica que un campo requerido faltante en el body genera 400 con status correcto.
   @Test
   void handleValidation_missingField_returns400WithStatus() throws Exception {
     mockMvc
@@ -90,6 +95,7 @@ class GlobalExceptionHandlerTest {
 
   // ── AccessDeniedException → 403 ───────────────────────────────────────────
 
+  // Verifica que AccessDeniedException produce un ProblemDetail con status 403.
   @Test
   void handleAccessDenied_throwsAccessDenied_returns403WithProblemDetail() throws Exception {
     mockMvc
@@ -102,6 +108,7 @@ class GlobalExceptionHandlerTest {
 
   // ── ConstraintViolationException → 400 ───────────────────────────────────
 
+  // Verifica que ConstraintViolationException produce un ProblemDetail con status 400.
   @Test
   void handleConstraint_throwsConstraintViolation_returns400WithProblemDetail() throws Exception {
     mockMvc
@@ -113,6 +120,7 @@ class GlobalExceptionHandlerTest {
 
   // ── NoResourceFoundException → 404 (unmapped path) ───────────────────────
 
+  // Verifica que una ruta que no existe en el servidor retorna 404.
   @Test
   void handleNoResource_unknownPath_returns404() throws Exception {
     mockMvc
@@ -123,6 +131,7 @@ class GlobalExceptionHandlerTest {
 
   // ── Generic Exception → 500 ───────────────────────────────────────────────
 
+  // Verifica que una excepción inesperada produce un ProblemDetail con status 500.
   @Test
   void handleGeneric_unexpectedException_returns500WithProblemDetail() throws Exception {
     mockMvc
@@ -135,6 +144,7 @@ class GlobalExceptionHandlerTest {
 
   // ── Unauthenticated access ────────────────────────────────────────────────
 
+  // Verifica que cualquier endpoint del handler retorna 401 cuando no hay autenticación.
   @Test
   void anyEndpoint_anonymous_returns401() throws Exception {
     mockMvc.perform(get("/test-handler/not-found")).andExpect(status().isUnauthorized());

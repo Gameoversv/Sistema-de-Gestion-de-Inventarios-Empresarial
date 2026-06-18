@@ -4,6 +4,10 @@ import com.inventory.stock.domain.StockMovement.MovementType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 
+/**
+ * DTO que representa un movimiento de stock reciente para el reporte del dashboard. Incluye datos
+ * del movimiento y del producto asociado, incluyendo stock antes y después.
+ */
 @Schema(description = "Movimiento de stock reciente")
 public record RecentMovementDto(
     @Schema(description = "ID del movimiento", example = "250") Long id,

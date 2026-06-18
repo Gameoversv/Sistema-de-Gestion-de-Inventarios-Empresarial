@@ -19,6 +19,7 @@ class CategoryCreateRequestValidationTest {
     validator = Validation.buildDefaultValidatorFactory().getValidator();
   }
 
+  // Verifica que un request con nombre y descripción válidos no genera violaciones de constrains.
   @Test
   @DisplayName("request válido no produce violaciones")
   void validRequest_noViolations() {
@@ -29,6 +30,7 @@ class CategoryCreateRequestValidationTest {
     assertThat(violations).isEmpty();
   }
 
+  // Verifica que un nombre nulo genera una violación en el campo name.
   @Test
   @DisplayName("name nulo produce violación")
   void nullName_violatesNotBlank() {
@@ -39,6 +41,7 @@ class CategoryCreateRequestValidationTest {
     assertThat(violations).anyMatch(v -> v.getPropertyPath().toString().equals("name"));
   }
 
+  // Verifica que un nombre en blanco genera una violación en el campo name.
   @Test
   @DisplayName("name en blanco produce violación")
   void blankName_violatesNotBlank() {
@@ -49,6 +52,7 @@ class CategoryCreateRequestValidationTest {
     assertThat(violations).anyMatch(v -> v.getPropertyPath().toString().equals("name"));
   }
 
+  // Verifica que un nombre mayor a 100 caracteres genera una violación de tamaño en name.
   @Test
   @DisplayName("name mayor a 100 caracteres produce violación de tamaño")
   void nameExceeds100Chars_violatesSize() {
@@ -59,6 +63,7 @@ class CategoryCreateRequestValidationTest {
     assertThat(violations).anyMatch(v -> v.getPropertyPath().toString().equals("name"));
   }
 
+  // Verifica que la descripción es un campo opcional y puede ser nula sin producir violaciones.
   @Test
   @DisplayName("description nula es permitida (campo opcional)")
   void nullDescription_isValid() {
@@ -69,6 +74,7 @@ class CategoryCreateRequestValidationTest {
     assertThat(violations).isEmpty();
   }
 
+  // Verifica que un nombre de exactamente 100 caracteres es válido (límite inclusivo).
   @Test
   @DisplayName("name exactamente 100 caracteres es válido")
   void nameExactly100Chars_isValid() {

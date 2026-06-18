@@ -7,6 +7,11 @@ import java.util.UUID;
 import lombok.*;
 import org.hibernate.envers.Audited;
 
+/**
+ * Entidad JPA que representa un usuario local del sistema sincronizado con Keycloak. Almacena el
+ * UUID de Keycloak como identificador externo, email, nombre de visualización, rol de la aplicación
+ * (ADMIN, MANAGER, VIEWER) y estado de activación. Auditada por Envers.
+ */
 @Entity
 @Table(name = "app_users")
 @Audited

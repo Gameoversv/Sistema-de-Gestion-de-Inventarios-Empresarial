@@ -7,6 +7,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
+/**
+ * DTO de entrada para reemplazar completamente un producto (PUT). Todos los campos son
+ * obligatorios, a diferencia de {@link ProductPatchRequest} que es parcial.
+ */
 public record ProductUpdateRequest(
     @NotBlank @Size(max = 100) String sku,
     @NotBlank @Size(max = 255) String name,

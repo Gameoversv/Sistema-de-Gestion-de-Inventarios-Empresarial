@@ -21,7 +21,8 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -60,67 +61,96 @@ class AuditIntegrationIT {
   @Autowired private ProductRepository productRepository;
   @Autowired private CategoryRepository categoryRepository;
   @Autowired private EntityManager entityManager;
+  @Autowired private PlatformTransactionManager transactionManager;
 
+  private TransactionTemplate tx;
   private Category category;
 
   @BeforeEach
   void setUp() {
-    productRepository.deleteAll();
-    categoryRepository.deleteAll();
-
-    category = new Category();
-    category.setName("Audit-Cat-" + System.nanoTime());
-    category.setDescription("Audit IT category");
-    categoryRepository.save(category);
+    tx = new TransactionTemplate(transactionManager);
+    tx.execute(
+        status -> {
+          productRepository.deleteAll();
+          categoryRepository.deleteAll();
+          category = new Category();
+          category.setName("Audit-Cat-" + System.nanoTime());
+          category.setDescription("Audit IT category");
+          return categoryRepository.save(category);
+        });
   }
 
+  // Verifica que al crear un producto Envers registra exactamente una revisión en BD.
   @Test
   @DisplayName("create product — Envers records exactly one revision")
-  @Transactional
   void createProduct_createsOneEnversRevision() {
-    Product product = buildProduct("AUDIT-IT-001", "Auditable Widget", 5);
-    Product saved = productRepository.saveAndFlush(product);
+    Long id =
+        tx.execute(
+            status -> {
+              Product p = buildProduct("SKU-" + System.nanoTime(), "Auditable Widget", 5);
+              return productRepository.saveAndFlush(p).getId();
+            });
 
     List<?> revisions =
-        AuditReaderFactory.get(entityManager).getRevisions(Product.class, saved.getId());
+        tx.execute(status -> AuditReaderFactory.get(entityManager).getRevisions(Product.class, id));
 
     assertThat(revisions).hasSize(1);
   }
 
+  // Verifica que al crear y luego actualizar un producto Envers registra dos revisiones.
   @Test
   @DisplayName("create then update product — Envers records two revisions")
-  @Transactional
   void createThenUpdateProduct_createsTwoEnversRevisions() {
-    Product product = buildProduct("AUDIT-IT-002", "Widget v1", 10);
-    Product saved = productRepository.saveAndFlush(product);
+    Long id =
+        tx.execute(
+            status -> {
+              Product p = buildProduct("SKU-" + System.nanoTime(), "Widget v1", 10);
+              return productRepository.saveAndFlush(p).getId();
+            });
 
-    saved.setName("Widget v2");
-    productRepository.saveAndFlush(saved);
+    tx.execute(
+        status -> {
+          Product p = productRepository.findById(id).orElseThrow();
+          p.setName("Widget v2");
+          return productRepository.saveAndFlush(p);
+        });
 
     List<?> revisions =
-        AuditReaderFactory.get(entityManager).getRevisions(Product.class, saved.getId());
+        tx.execute(status -> AuditReaderFactory.get(entityManager).getRevisions(Product.class, id));
 
     assertThat(revisions).hasSize(2);
   }
 
+  // Verifica que al desactivar un producto Envers captura el estado con active=false.
   @Test
   @DisplayName("deactivate product — Envers captures state change in new revision")
-  @Transactional
   void deactivateProduct_capturesRevisionWithActiveFalse() {
-    Product product = buildProduct("AUDIT-IT-003", "Deactivatable Widget", 3);
-    Product saved = productRepository.saveAndFlush(product);
+    Long id =
+        tx.execute(
+            status -> {
+              Product p = buildProduct("SKU-" + System.nanoTime(), "Deactivatable Widget", 3);
+              return productRepository.saveAndFlush(p).getId();
+            });
 
-    saved.setActive(false);
-    productRepository.saveAndFlush(saved);
+    tx.execute(
+        status -> {
+          Product p = productRepository.findById(id).orElseThrow();
+          p.setActive(false);
+          return productRepository.saveAndFlush(p);
+        });
 
     List<?> revisions =
-        AuditReaderFactory.get(entityManager).getRevisions(Product.class, saved.getId());
+        tx.execute(status -> AuditReaderFactory.get(entityManager).getRevisions(Product.class, id));
 
     assertThat(revisions).hasSize(2);
 
-    Number latestRev = (Number) revisions.get(revisions.size() - 1);
     Product auditedState =
-        AuditReaderFactory.get(entityManager).find(Product.class, saved.getId(), latestRev);
+        tx.execute(
+            status -> {
+              List<?> revs = AuditReaderFactory.get(entityManager).getRevisions(Product.class, id);
+              Number latestRev = (Number) revs.get(revs.size() - 1);
+              return AuditReaderFactory.get(entityManager).find(Product.class, id, latestRev);
+            });
 
     assertThat(auditedState.getActive()).isFalse();
   }

@@ -33,11 +33,13 @@ class ReportControllerExtendedTest {
 
   // ── GET /api/reports/critical-stock ──────────────────────────────────────
 
+  // Verifica que acceder a critical-stock sin autenticación retorna 401.
   @Test
   void criticalStock_anonymous_returns401() throws Exception {
     mockMvc.perform(get("/api/reports/critical-stock")).andExpect(status().isUnauthorized());
   }
 
+  // Verifica que un scope insuficiente (stock:view) retorna 403 en critical-stock.
   @Test
   void criticalStock_withoutReportViewScope_returns403() throws Exception {
     mockMvc
@@ -50,6 +52,7 @@ class ReportControllerExtendedTest {
         .andExpect(status().isForbidden());
   }
 
+  // Verifica que con scope report:view se obtiene 200 con los productos en stock crítico.
   @Test
   void criticalStock_withReportViewScope_returns200WithBody() throws Exception {
     var item = new LowStockItemDto(1L, "SKU-Z", "Widget", 0, 5, 5, "General");
@@ -64,19 +67,21 @@ class ReportControllerExtendedTest {
                         .jwt(j -> j.subject("analyst"))
                         .authorities(new SimpleGrantedAuthority("SCOPE_report:view"))))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.totalCritical").value(1))
-        .andExpect(jsonPath("$.items[0].sku").value("SKU-Z"))
-        .andExpect(jsonPath("$.items[0].currentStock").value(0))
-        .andExpect(jsonPath("$.items[0].deficit").value(5));
+        .andExpect(jsonPath("$.count").value(1))
+        .andExpect(jsonPath("$.products[0].sku").value("SKU-Z"))
+        .andExpect(jsonPath("$.products[0].currentStock").value(0))
+        .andExpect(jsonPath("$.products[0].deficit").value(5));
   }
 
   // ── GET /api/reports/top-products ─────────────────────────────────────────
 
+  // Verifica que acceder a top-products sin autenticación retorna 401.
   @Test
   void topProducts_anonymous_returns401() throws Exception {
     mockMvc.perform(get("/api/reports/top-products")).andExpect(status().isUnauthorized());
   }
 
+  // Verifica que un scope insuficiente (audit:view) retorna 403 en top-products.
   @Test
   void topProducts_withoutReportViewScope_returns403() throws Exception {
     mockMvc
@@ -89,6 +94,7 @@ class ReportControllerExtendedTest {
         .andExpect(status().isForbidden());
   }
 
+  // Verifica que con scope report:view y parámetros por defecto se retorna 200 con el ranking.
   @Test
   void topProducts_withReportViewScope_defaultParams_returns200() throws Exception {
     var item =
@@ -113,10 +119,11 @@ class ReportControllerExtendedTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.limit").value(10))
         .andExpect(jsonPath("$.metric").value("value"))
-        .andExpect(jsonPath("$.items[0].sku").value("LAPTOP-001"))
-        .andExpect(jsonPath("$.items[0].stock").value(50));
+        .andExpect(jsonPath("$.products[0].sku").value("LAPTOP-001"))
+        .andExpect(jsonPath("$.products[0].stock").value(50));
   }
 
+  // Verifica que los parámetros limit y metric se propagan correctamente al servicio.
   @Test
   void topProducts_withCustomParams_passesParamsToService() throws Exception {
     var response = new TopProductsResponse(5, "quantity", List.of());
@@ -139,11 +146,13 @@ class ReportControllerExtendedTest {
 
   // ── GET /api/reports/dashboard-metrics ───────────────────────────────────
 
+  // Verifica que acceder a dashboard-metrics sin autenticación retorna 401.
   @Test
   void dashboardMetrics_anonymous_returns401() throws Exception {
     mockMvc.perform(get("/api/reports/dashboard-metrics")).andExpect(status().isUnauthorized());
   }
 
+  // Verifica que un scope insuficiente (product:view) retorna 403 en dashboard-metrics.
   @Test
   void dashboardMetrics_withoutReportViewScope_returns403() throws Exception {
     mockMvc
@@ -156,6 +165,7 @@ class ReportControllerExtendedTest {
         .andExpect(status().isForbidden());
   }
 
+  // Verifica que con scope report:view se retorna 200 con todas las métricas del dashboard.
   @Test
   void dashboardMetrics_withReportViewScope_returns200WithAllFields() throws Exception {
     var response =
@@ -190,11 +200,13 @@ class ReportControllerExtendedTest {
 
   // ── GET /api/reports/recent-movements ─────────────────────────────────────
 
+  // Verifica que acceder a recent-movements sin autenticación retorna 401.
   @Test
   void recentMovements_anonymous_returns401() throws Exception {
     mockMvc.perform(get("/api/reports/recent-movements")).andExpect(status().isUnauthorized());
   }
 
+  // Verifica que un scope insuficiente (stock:manage) retorna 403 en recent-movements.
   @Test
   void recentMovements_withoutReportViewScope_returns403() throws Exception {
     mockMvc
@@ -207,6 +219,7 @@ class ReportControllerExtendedTest {
         .andExpect(status().isForbidden());
   }
 
+  // Verifica que con scope report:view se retorna 200 con los movimientos recientes mapeados.
   @Test
   void recentMovements_withReportViewScope_returns200WithBody() throws Exception {
     var movement =
@@ -240,6 +253,7 @@ class ReportControllerExtendedTest {
         .andExpect(jsonPath("$.movements[0].performedBy").value("admin"));
   }
 
+  // Verifica que el parámetro limit se propaga correctamente al servicio de reportes.
   @Test
   void recentMovements_withCustomLimit_passesLimitToService() throws Exception {
     var response = new RecentMovementsResponse(5, 0, List.of());

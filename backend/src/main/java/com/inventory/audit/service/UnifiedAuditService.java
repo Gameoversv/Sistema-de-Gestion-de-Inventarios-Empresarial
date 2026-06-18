@@ -17,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.LazyInitializationException;
 import org.hibernate.envers.AuditReaderFactory;
 import org.hibernate.envers.RevisionType;
-import org.hibernate.envers.query.AuditEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -96,8 +95,8 @@ public class UnifiedAuditService {
   }
 
   private String buildProductSummary(Product p) {
-    return "%s | %s | Stock: %d | $%s".formatted(
-        p.getSku(), p.getName(), p.getStock(), p.getPrice());
+    return "%s | %s | Stock: %d | $%s"
+        .formatted(p.getSku(), p.getName(), p.getStock(), p.getPrice());
   }
 
   private String buildCategorySummary(Category c) {
@@ -116,7 +115,7 @@ public class UnifiedAuditService {
   }
 
   private String buildUserSummary(AppUser u) {
-    return "%s (%s) | Rol: %s".formatted(
-        u.getDisplayName() != null ? u.getDisplayName() : "", u.getEmail(), u.getRole());
+    return "%s (%s) | Rol: %s"
+        .formatted(u.getDisplayName() != null ? u.getDisplayName() : "", u.getEmail(), u.getRole());
   }
 }

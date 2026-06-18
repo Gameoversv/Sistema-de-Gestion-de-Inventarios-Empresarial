@@ -36,6 +36,11 @@ import org.springframework.web.bind.annotation.RestController;
     responseCode = "403",
     description = "Scope report:view requerido",
     content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+/**
+ * Controlador REST para los reportes del dashboard de inventario ({@code /api/reports}). Expone
+ * endpoints de solo lectura para resumen de stock, alertas, top productos, métricas globales y
+ * movimientos recientes. Todos requieren scope {@code report:view}.
+ */
 public class ReportController {
 
   private final ReportService reportService;

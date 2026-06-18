@@ -33,6 +33,11 @@ import org.springframework.web.bind.annotation.*;
     responseCode = "403",
     description = "Scope insuficiente",
     content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+/**
+ * Controlador REST para la gestión de categorías de productos ({@code /categories}). Las
+ * operaciones de lectura requieren scope {@code product:view} o {@code product:manage}; las de
+ * escritura requieren solo {@code product:manage}.
+ */
 public class CategoryController {
 
   private final CategoryService categoryService;

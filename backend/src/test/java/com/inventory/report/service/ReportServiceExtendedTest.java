@@ -54,6 +54,7 @@ class ReportServiceExtendedTest {
 
   // ── criticalStock ──────────────────────────────────────────────────────────
 
+  // Verifica que criticalStock retorna solo los productos con stock igual a cero.
   @Test
   @DisplayName("criticalStock returns only products with stock = 0")
   void criticalStock_returnsOnlyZeroStockProducts() {
@@ -69,6 +70,7 @@ class ReportServiceExtendedTest {
     assertThat(result.products().get(0).deficit()).isEqualTo(5);
   }
 
+  // Verifica que criticalStock retorna respuesta vacía cuando no hay productos con stock cero.
   @Test
   @DisplayName("criticalStock returns empty response when no zero-stock products")
   void criticalStock_noZeroStock_returnsEmpty() {
@@ -82,6 +84,7 @@ class ReportServiceExtendedTest {
 
   // ── topProducts ───────────────────────────────────────────────────────────
 
+  // Verifica que con metric=value los productos se ordenan por precio×stock descendente.
   @Test
   @DisplayName("topProducts metric=value sorts by price*stock descending")
   void topProducts_byValue_sortsByInventoryValueDescending() {
@@ -99,6 +102,7 @@ class ReportServiceExtendedTest {
     assertThat(result.products().get(0).inventoryValue()).isEqualByComparingTo("500.00");
   }
 
+  // Verifica que con metric=quantity los productos se ordenan por unidades en stock descendente.
   @Test
   @DisplayName("topProducts metric=quantity sorts by stock units descending")
   void topProducts_byQuantity_sortsByStockDescending() {
@@ -115,6 +119,7 @@ class ReportServiceExtendedTest {
         .containsExactly("SKU-B", "SKU-C", "SKU-A");
   }
 
+  // Verifica que el parámetro limit se respeta y solo se retornan N productos.
   @Test
   @DisplayName("topProducts respects limit parameter")
   void topProducts_limitsResults() {
@@ -129,6 +134,7 @@ class ReportServiceExtendedTest {
     assertThat(result.products()).hasSize(2);
   }
 
+  // Verifica que los productos inactivos se excluyen del ranking de top productos.
   @Test
   @DisplayName("topProducts excludes inactive products")
   void topProducts_excludesInactiveProducts() {
@@ -142,6 +148,7 @@ class ReportServiceExtendedTest {
     assertThat(result.products().get(0).sku()).isEqualTo("SKU-A");
   }
 
+  // Verifica que con limit<=0 se usa el valor por defecto de 10.
   @Test
   @DisplayName("topProducts uses default limit=10 when limit<=0")
   void topProducts_zeroLimit_usesDefault10() {
@@ -154,6 +161,7 @@ class ReportServiceExtendedTest {
 
   // ── dashboardMetrics ──────────────────────────────────────────────────────
 
+  // Verifica que dashboardMetrics agrega correctamente todos los contadores del dashboard.
   @Test
   @DisplayName("dashboardMetrics aggregates all counters correctly")
   void dashboardMetrics_aggregatesCountersCorrectly() {
@@ -186,6 +194,7 @@ class ReportServiceExtendedTest {
     assertThat(result.lastMovementAt()).isEqualTo(Instant.parse("2026-05-29T10:00:00Z"));
   }
 
+  // Verifica que lastMovementAt es null cuando no existen movimientos de stock registrados.
   @Test
   @DisplayName("dashboardMetrics returns null lastMovementAt when no movements exist")
   void dashboardMetrics_noMovements_lastMovementAtIsNull() {
@@ -202,6 +211,7 @@ class ReportServiceExtendedTest {
 
   // ── recentMovements ───────────────────────────────────────────────────────
 
+  // Verifica que recentMovements retorna los movimientos mapeados correctamente al DTO.
   @Test
   @DisplayName("recentMovements returns movements mapped to DTO")
   void recentMovements_returnsMappedMovements() {
@@ -234,6 +244,7 @@ class ReportServiceExtendedTest {
     assertThat(dto.performedBy()).isEqualTo("admin");
   }
 
+  // Verifica que con limit<=0 se usa el valor por defecto de 20 movimientos recientes.
   @Test
   @DisplayName("recentMovements uses default limit=20 when limit<=0")
   void recentMovements_zeroLimit_usesDefault20() {
@@ -244,6 +255,7 @@ class ReportServiceExtendedTest {
     assertThat(result.limit()).isEqualTo(20);
   }
 
+  // Verifica que recentMovements retorna lista vacía cuando no existen movimientos.
   @Test
   @DisplayName("recentMovements returns empty list when no movements exist")
   void recentMovements_noMovements_returnsEmpty() {

@@ -8,6 +8,11 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
+/**
+ * DTO de entrada validado para crear un nuevo producto. Incluye SKU único obligatorio, nombre,
+ * descripción opcional, precio, stock inicial, stock mínimo de alerta, estado activo y la categoría
+ * a la que pertenece.
+ */
 @Schema(description = "Datos para crear un nuevo producto")
 public record ProductCreateRequest(
     @Schema(description = "Código único de producto", example = "LAPTOP-001")

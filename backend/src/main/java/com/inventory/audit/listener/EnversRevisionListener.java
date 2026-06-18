@@ -7,6 +7,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
+/**
+ * Listener de Hibernate Envers que se ejecuta en cada nueva revisión y captura el nombre de usuario
+ * del token JWT activo en el {@code SecurityContext}, grabándolo en {@link
+ * com.inventory.audit.domain.RevisionInfo} para trazabilidad completa.
+ */
 public class EnversRevisionListener implements RevisionListener {
 
   @Override

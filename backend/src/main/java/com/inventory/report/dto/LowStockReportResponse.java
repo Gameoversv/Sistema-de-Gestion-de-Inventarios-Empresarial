@@ -4,8 +4,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
 /**
- * DTO de respuesta del reporte de stock bajo. Contiene el umbral aplicado en el filtro,
- * el total de productos que lo superan y el detalle de cada uno como {@link LowStockItemDto}.
+ * DTO de respuesta del reporte de stock bajo. Contiene el umbral aplicado en el filtro, el total de
+ * productos que lo superan y el detalle de cada uno como {@link LowStockItemDto}.
  */
 @Schema(description = "Reporte de productos bajo stock mínimo")
 public record LowStockReportResponse(

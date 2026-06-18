@@ -7,6 +7,11 @@ import com.inventory.product.dto.ProductUpdateRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+/**
+ * Contrato del servicio de productos. Define operaciones CRUD, búsqueda paginada con filtros
+ * dinámicos (texto, categoría, estado activo), actualización parcial (patch) y soft delete mediante
+ * desactivación del producto.
+ */
 public interface ProductService {
 
   ProductResponse create(ProductCreateRequest request);

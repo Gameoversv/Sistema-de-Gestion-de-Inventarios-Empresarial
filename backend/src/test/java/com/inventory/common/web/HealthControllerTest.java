@@ -21,11 +21,13 @@ class HealthControllerTest {
 
   @MockBean JwtDecoder jwtDecoder;
 
+  // Verifica que el endpoint /health es accesible sin autenticación y retorna 200.
   @Test
   void anonymous_canAccessHealth() throws Exception {
     mockMvc.perform(get("/health")).andExpect(status().isOk());
   }
 
+  // Verifica que /health retorna status "UP" y un timestamp no vacío en la respuesta.
   @Test
   void health_returnsStatusUp() throws Exception {
     mockMvc

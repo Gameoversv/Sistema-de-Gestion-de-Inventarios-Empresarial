@@ -7,6 +7,11 @@ import java.math.BigDecimal;
 import lombok.*;
 import org.hibernate.envers.Audited;
 
+/**
+ * Entidad JPA que representa un producto del inventario con SKU único, precio, nivel de stock
+ * actual, stock mínimo de alerta y referencia a su categoría. El soft delete se implementa con el
+ * campo {@code active}. Auditada por Hibernate Envers.
+ */
 @Entity
 @Table(name = "products")
 @Audited
