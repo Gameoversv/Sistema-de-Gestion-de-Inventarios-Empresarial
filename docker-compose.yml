@@ -150,7 +150,6 @@ services:
       # jwk-set-uri: internal Docker URL to fetch signing keys without leaving the network
       KC_JWK_SET_URI: http://keycloak:8080/realms/${KC_REALM:-inventory}/protocol/openid-connect/certs
       KC_REALM: ${KC_REALM:-inventory}
-      KC_BACKEND_CLIENT_SECRET: ${KC_BACKEND_CLIENT_SECRET}
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     networks:
