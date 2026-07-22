@@ -2,6 +2,7 @@ package com.inventory.common.config;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -133,7 +134,7 @@ public class SecurityConfig {
   private Collection<GrantedAuthority> extractAuthorities(Jwt jwt) {
     List<GrantedAuthority> authorities = new ArrayList<>();
 
-    Set<String> roles = new java.util.HashSet<>();
+    Set<String> roles = new HashSet<>();
     Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
     if (realmAccess != null) {
       @SuppressWarnings("unchecked")
@@ -160,38 +161,45 @@ public class SecurityConfig {
     return List.copyOf(authorities);
   }
 
-  // Maps realm roles to the maximum set of scopes that role may hold.
-  // Roles checked in order of privilege; first match wins.
+  // Scopes OIDC estándar: no otorgan ninguna capacidad de negocio por sí solos, pero se
+  // conservan en el token de quien tenga al menos un rol reconocido.
+  private static final Set<String> BASE_SCOPES = Set.of("openid", "email", "profile");
+
+  // Techo de scopes por rol de realm. Keycloak emite scopes opcionales sin comprobar el rol
+  // (ver docs/testing/reportes/G-6-escalada-de-scopes.md), así que esta tabla es el control
+  // efectivo: lo que no aparezca aquí se descarta del token.
+  private static final Map<String, Set<String>> SCOPES_BY_ROLE =
+      Map.of(
+          "inventory-admin",
+              Set.of(
+                  "product:view",
+                  "product:manage",
+                  "stock:view",
+                  "stock:manage",
+                  "report:view",
+                  "user:manage",
+                  "audit:view"),
+          "warehouse-clerk",
+              Set.of("product:view", "product:manage", "stock:view", "stock:manage", "report:view"),
+          "auditor", Set.of("product:view", "stock:view", "report:view", "audit:view"),
+          "viewer", Set.of("product:view", "stock:view", "report:view"));
+
+  // Devuelve la UNIÓN de los scopes de todos los roles reconocidos del usuario.
+  // Sin ningún rol reconocido no se concede nada: denegar por defecto.
   private Set<String> permittedScopesForRoles(Set<String> roles) {
-    if (roles.contains("inventory-admin")) {
-      return Set.of(
-          "product:view",
-          "product:manage",
-          "stock:view",
-          "stock:manage",
-          "report:view",
-          "user:manage",
-          "audit:view",
-          "openid",
-          "email",
-          "profile");
+    Set<String> permitted = new HashSet<>();
+    for (String role : roles) {
+      Set<String> roleScopes = SCOPES_BY_ROLE.get(role);
+      if (roleScopes != null) {
+        permitted.addAll(roleScopes);
+      }
     }
-    if (roles.contains("warehouse-clerk")) {
-      return Set.of(
-          "product:view",
-          "product:manage",
-          "stock:view",
-          "stock:manage",
-          "report:view",
-          "openid",
-          "email",
-          "profile");
+
+    if (permitted.isEmpty()) {
+      return Set.of();
     }
-    if (roles.contains("auditor")) {
-      return Set.of(
-          "product:view", "stock:view", "report:view", "audit:view", "openid", "email", "profile");
-    }
-    // viewer and any other role: read-only
-    return Set.of("product:view", "stock:view", "report:view", "openid", "email", "profile");
+
+    permitted.addAll(BASE_SCOPES);
+    return Set.copyOf(permitted);
   }
 }
