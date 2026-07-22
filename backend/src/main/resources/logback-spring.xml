@@ -2,10 +2,12 @@
 <configuration>
 
   <!-- ── Dev / Test: colored human-readable text ──────────────────────── -->
+  <!-- traceId/spanId también en consola: sin ellos no se puede seguir una
+       petición contra Tempo cuando se depura en local. -->
   <springProfile name="dev | test">
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
       <encoder>
-        <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) [%15.15thread] %cyan(%-40.40logger{39}) : %msg%n</pattern>
+        <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) [%15.15thread] [%X{traceId:-},%X{spanId:-}] %cyan(%-40.40logger{39}) : %msg%n</pattern>
         <charset>UTF-8</charset>
       </encoder>
     </appender>
@@ -15,9 +17,26 @@
   </springProfile>
 
   <!-- ── Staging / Prod: structured JSON (one object per line) ─────────── -->
+  <!-- Los seis campos exigidos: traceId y spanId los propaga Micrometer
+       Tracing al MDC; correlationId, user y endpoint los pone
+       CorrelationIdFilter / AuthenticatedUserMdcFilter; level lo emite el
+       propio encoder. `includeMdcData` los saca como campos de primer nivel. -->
   <springProfile name="staging | prod">
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-      <encoder class="ch.qos.logback.classic.encoder.JsonEncoder"/>
+      <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+        <fieldNames>
+          <timestamp>timestamp</timestamp>
+          <level>level</level>
+          <thread>thread</thread>
+          <logger>logger</logger>
+          <message>message</message>
+          <stackTrace>stackTrace</stackTrace>
+          <levelValue>[ignore]</levelValue>
+          <version>[ignore]</version>
+        </fieldNames>
+        <includeMdc>true</includeMdc>
+        <customFields>{"service":"inventory-api"}</customFields>
+      </encoder>
     </appender>
     <root level="INFO">
       <appender-ref ref="CONSOLE"/>

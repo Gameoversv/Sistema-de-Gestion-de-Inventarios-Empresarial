@@ -1,5 +1,10 @@
-// Alloy actúa de collector: recibe telemetría por OTLP y la reparte a Tempo.
-// El backend exporta a http://alloy:4318/v1/traces.
+// Alloy actúa de collector: recibe trazas por OTLP y recoge los logs de todos
+// los contenedores por el socket de Docker.
+//   trazas → Tempo   (otelcol.*)
+//   logs   → Loki    (discovery.docker → loki.source.docker → loki.process → loki.write)
+// El backend exporta trazas a http://alloy:4318/v1/traces.
+
+// ─────────────────────────────── Trazas ────────────────────────────────────
 
 otelcol.receiver.otlp "default" {
   http {
@@ -32,5 +37,74 @@ otelcol.exporter.otlp "tempo" {
     tls {
       insecure = true
     }
+  }
+}
+
+// ──────────────────────────────── Logs ─────────────────────────────────────
+
+// Descubre todos los contenedores del host. Se recogen los logs de los 14
+// servicios, no solo los del backend: una caída de Keycloak o de Postgres tiene
+// que ser visible en Grafana igual que un error de la API.
+discovery.docker "containers" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "10s"
+}
+
+// Etiquetas de bajo cardinal. El nombre del servicio de Compose es la etiqueta
+// principal de consulta: {service="backend"}.
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_log_stream"]
+    target_label  = "stream"
+  }
+}
+
+loki.source.docker "containers" {
+  host             = "unix:///var/run/docker.sock"
+  targets          = discovery.relabel.containers.output
+  forward_to       = [loki.process.backend_json.receiver]
+  refresh_interval = "10s"
+}
+
+// El backend emite JSON por línea en staging/prod. Se extrae el nivel como
+// etiqueta —cardinalidad fija, cinco valores— y se conserva la línea íntegra:
+// traceId, spanId, correlationId, usuario y endpoint siguen dentro del JSON y
+// Grafana los enlaza con Tempo mediante los derived fields del datasource.
+loki.process "backend_json" {
+  stage.match {
+    selector = "{service=\"backend\"}"
+
+    stage.json {
+      expressions = {
+        level = "level",
+      }
+    }
+
+    stage.labels {
+      values = {
+        level = "",
+      }
+    }
+  }
+
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
   }
 }

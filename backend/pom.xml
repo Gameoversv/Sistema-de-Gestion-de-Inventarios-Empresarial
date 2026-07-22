@@ -29,6 +29,7 @@
     <spotless.version>2.43.0</spotless.version>
     <google-java-format.version>1.22.0</google-java-format.version>
     <mapstruct.version>1.6.3</mapstruct.version>
+    <logstash-encoder.version>8.0</logstash-encoder.version>
 
     <!-- SonarQube properties (override via CI env vars) -->
     <sonar.host.url>http://localhost:9000</sonar.host.url>
@@ -102,6 +103,15 @@
       <groupId>net.ttddyy.observation</groupId>
       <artifactId>datasource-micrometer-spring-boot</artifactId>
       <version>${datasource-micrometer.version}</version>
+    </dependency>
+
+    <!-- Encoder JSON de Logback: emite el MDC como campos de primer nivel
+         (traceId, spanId, correlationId, user, endpoint), que es lo que Loki y
+         Grafana consultan. El JsonEncoder nativo los anida bajo "mdc". -->
+    <dependency>
+      <groupId>net.logstash.logback</groupId>
+      <artifactId>logstash-logback-encoder</artifactId>
+      <version>${logstash-encoder.version}</version>
     </dependency>
 
     <!-- ── Security ──────────────────────────────────────── -->

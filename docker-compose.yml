@@ -248,11 +248,34 @@ services:
     networks:
       - inventory-net
 
+  # ── Loki (almacenamiento y consulta de logs) ────────────────────────────────
+  loki:
+    image: grafana/loki:3.3.2
+    container_name: inventory-loki
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/loki.yml"]
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+    volumes:
+      - ./observability/loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+    networks:
+      - inventory-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:3100/ready | grep -q ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   # ── Alloy (collector: recibe OTLP del backend y lo reparte) ─────────────────
   alloy:
     image: grafana/alloy:v1.5.1
     container_name: inventory-alloy
     restart: unless-stopped
+    # El socket de Docker pertenece a root:root con permisos 660. Alloy corre
+    # como uid 473 y sin esto no puede leer los logs de los contenedores.
+    user: root
     command:
       - run
       - --server.http.listen-addr=0.0.0.0:12345
@@ -263,10 +286,14 @@ services:
     volumes:
       - ./observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
       - alloy_data:/var/lib/alloy/data
+      # Solo lectura: Alloy descubre contenedores y consume sus logs, nunca los
+      # controla.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - inventory-net
     depends_on:
       - tempo
+      - loki
 
   # ── Alertmanager (enrutado y agrupación de las 5 alertas) ───────────────────
   alertmanager:
@@ -311,6 +338,8 @@ volumes:
   alertmanager_data:
     driver: local
   tempo_data:
+    driver: local
+  loki_data:
     driver: local
   alloy_data:
     driver: local
