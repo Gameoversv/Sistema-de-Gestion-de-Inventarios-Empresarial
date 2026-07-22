@@ -94,3 +94,25 @@ groups:
             revisar el bloqueo por fuerza bruta de Keycloak, que el realm tiene
             activo. Si vienen de una sola y coinciden con un despliegue, suele ser
             un token expirado que el frontend no está renovando (ver SEC-2).
+
+  # Alerta de negocio, más allá de las cinco obligatorias. La hacen posible las
+  # métricas de OBS-2/E-3: sin inventory_products_below_minimum no había forma de
+  # vigilar el evento de negocio más relevante del sistema.
+  - name: negocio
+    interval: 30s
+    rules:
+      - alert: ProductosBajoMinimo
+        expr: inventory_products_below_minimum > 0
+        for: 10m
+        labels:
+          severity: warning
+          componente: negocio
+        annotations:
+          resumen: "{{ $value | printf \"%.0f\" }} productos en el mínimo o por debajo"
+          descripcion: >-
+            Situación sostenida durante 10 minutos. El umbral es 0 a propósito:
+            cualquier producto bajo mínimo es una reposición pendiente.
+          runbook: >-
+            Listar los afectados en GET /stock/alerts, o en el dashboard de Negocio
+            por la serie inventory_stock_alerts_total, que desglosa por SKU cuál
+            cruzó el mínimo y cuándo. La acción es de reposición, no técnica.

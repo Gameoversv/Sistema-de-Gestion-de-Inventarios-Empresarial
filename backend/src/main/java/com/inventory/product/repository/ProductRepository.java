@@ -40,6 +40,13 @@ public interface ProductRepository
   @Query("SELECT p FROM Product p WHERE p.active = true AND p.stock = 0 ORDER BY p.name ASC")
   List<Product> findCriticalStockProducts();
 
+  /**
+   * Cuenta —sin materializar entidades— los productos bajo mínimo. La consume el gauge {@code
+   * inventory_products_below_minimum}, que se evalúa en cada scrape de Prometheus.
+   */
+  @Query("SELECT COUNT(p) FROM Product p WHERE p.active = true AND p.stock <= p.minimumStock")
+  long countLowStockProducts();
+
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("SELECT p FROM Product p WHERE p.id = :id")
   Optional<Product> findByIdForUpdate(@Param("id") Long id);

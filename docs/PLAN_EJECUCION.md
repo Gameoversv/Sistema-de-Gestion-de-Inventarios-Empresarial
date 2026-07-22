@@ -2,7 +2,7 @@
 
 **Fuente de verdad:** `Proyecto_Final_V3.pdf` (revisado íntegro el 2026-07-22)
 **Base de hallazgos:** [ANALISIS_BRECHAS.md](ANALISIS_BRECHAS.md)
-**Actualizado:** 2026-07-22, tras ejecutar las Olas 0 y 1 y contrastar todo contra el enunciado.
+**Actualizado:** 2026-07-22, tras cerrar la Ola 2 salvo los dashboards (Loki, OBS-4, OBS-6, OBS-2/E-3).
 
 > **Aviso de método.** La versión anterior de este plan tomaba como requisito el desglose del análisis de brechas, que en algunos puntos era interpretación propia y no texto del enunciado. Cada requisito de este documento está contrastado con el PDF. Cuando algo es criterio nuestro y no del enunciado, se marca como **[criterio propio]**.
 
@@ -17,7 +17,7 @@ El enunciado define **ocho** áreas. La versión anterior omitía la última.
 | Funcionalidad | 15% | ~85% | ~85% | ~98% |
 | Testing | 20% | ~60% | ~78% | ~90% |
 | Seguridad | 10% | ~70% | ~85% | ~90% |
-| Observabilidad | 15% | ~30% | ~78% | ~85% |
+| Observabilidad | 15% | ~30% | ~82% | ~85% |
 | CI/CD | 15% | ~60% | ~85% | ~90% |
 | Calidad de código | 10% | ~35% | ~45% | ~85% |
 | Documentación | 10% | ~25% | ~40% | ~90% |
@@ -42,9 +42,9 @@ El enunciado los lista de forma explícita. Sirve como checklist de cierre.
 | Docker Compose funcional | listo — **14 servicios** |
 | Jenkins pipeline | parcial — faltan 3 de las 10 etapas |
 | GitHub Actions pipeline | parcial — faltan security scan y quality gate |
-| Dashboards Grafana | parcial — 1 de 4; datasources de Prometheus y Tempo provisionados |
+| Dashboards Grafana | parcial — 1 de 4; datasources de Prometheus, Tempo y Loki provisionados |
 | Reportes de pruebas | parcial — surefire, failsafe y ZAP; faltan k6 y Newman |
-| Evidencias QA | parcial — 3 informes en `docs/testing/reportes/` |
+| Evidencias QA | parcial — 5 informes en `docs/testing/reportes/` |
 | Documentación completa | parcial |
 | **Presentación final funcional** | **no iniciada** |
 
@@ -111,7 +111,7 @@ El enunciado es literal: *"Integration Testing — Obligatorio utilizar: Testcon
 
 | Capa | Exigencia | Estado |
 |---|---|---|
-| 1. Unit | Servicios, validaciones, lógica | cumple — 263 tests |
+| 1. Unit | Servicios, validaciones, lógica | cumple — 284 tests |
 | 2. Integration | Testcontainers: **BD real, Keycloak**, integraciones | parcial — BD sí, **Keycloak no** (TEST-1) |
 | 3. API / Contract | Endpoints, contratos OpenAPI, status codes, payloads | parcial — Postman sin CI (TEST-3), RestAssured sin uso (TEST-2) |
 | 4. E2E | Snapshots, flujos, navegación, **roles**, seguridad, **responsive** | **no se ejecuta en CI** (C-1, TEST-7/8/9) |
@@ -129,7 +129,7 @@ El enunciado es literal: *"Integration Testing — Obligatorio utilizar: Testcon
 | Logs — Loki | **cumple** — ingiere los 14 contenedores, consultable por `{service=...}` |
 | Collector — Alloy | **cumple** — recibe OTLP y reenvía a Tempo; recoge logs y los envía a Loki |
 | Dashboards — Grafana | parcial — 1 de 4 |
-| Alerting — Alertmanager | **cumple** — 5 alertas, verificadas disparando |
+| Alerting — Alertmanager | **cumple** — las 5 obligatorias (dos verificadas disparando) + 1 de negocio |
 | Instrumentación — OpenTelemetry | **cumple** — bridge OTel + exportador OTLP |
 
 **Los 7 componentes obligatorios implementados.** Solo falta separar los dashboards.
@@ -138,7 +138,8 @@ El enunciado es literal: *"Integration Testing — Obligatorio utilizar: Testcon
 |---|---|---|
 | **Logs** | traceId, spanId, correlationId, nivel, usuario, endpoint | **6 de 6** — [informe](testing/reportes/OBS-4-logs-loki.md); solo en perfil `staging`/`prod` |
 | **Trazas** | request, database, external calls, errores distribuidos | **3 de 4** — falta verificar errores distribuidos |
-| **Alertas** | CPU, error rate, latencia, servicios caídos, fallos de autenticación | **5 de 5** — dos verificadas disparando |
+| **Alertas** | CPU, error rate, latencia, servicios caídos, fallos de autenticación | **5 de 5** — dos verificadas disparando; +1 de negocio (`ProductosBajoMinimo`) |
+| **Métricas de negocio** | [criterio propio] movimientos, unidades, alertas y productos bajo mínimo | **4 series** — [informe](testing/reportes/OBS-2-E-3-metricas-de-negocio.md) |
 
 ### 4.5 CI/CD (15%)
 
@@ -194,8 +195,8 @@ Cinco de los siete componentes obligatorios están ausentes. Es el bloque con m�
 | — | Tempo, Alloy y **Loki** en compose | 2,5 h | **hecho** — Loki ingiere los 14 contenedores |
 | **OBS-4** | Filtro MDC: `correlationId`, usuario, endpoint + logback con `traceId`/`spanId` | 1,5 h | **hecho** — 6/6 campos, [informe](testing/reportes/OBS-4-logs-loki.md) |
 | OBS-6 | Datasources `tempo.yml` y `loki.yml` con correlación traces↔logs | 30 min | **hecho** — derived field logs→trazas y `tracesToLogsV2` trazas→logs |
-| **OBS-2 + E-3** | `Counter` de alertas de stock y de movimientos por tipo | 1,5 h | **siguiente** |
-| **—** | Separar en 4 dashboards: Infraestructura, Aplicación, Negocio, Seguridad | 3 h | |
+| **OBS-2 + E-3** | `Counter` de alertas de stock y de movimientos por tipo | 1,5 h | **hecho** — 4 series + alerta de negocio, [informe](testing/reportes/OBS-2-E-3-metricas-de-negocio.md) |
+| **—** | Separar en 4 dashboards: Infraestructura, Aplicación, Negocio, Seguridad | 3 h | **siguiente** — es lo único que queda de la ola |
 
 > **Decisión pendiente para la demo:** el JSON estructurado solo se emite en los perfiles `staging` y `prod`. Con el `dev` por defecto de `.env`, el panel de logs no puede filtrar por usuario ni por endpoint. Hay que elegir con qué perfil se levanta el stack en la Ola 6.
 
