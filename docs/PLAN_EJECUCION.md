@@ -1,190 +1,313 @@
 # Plan de Ejecución Priorizado
 
-**Base:** [ANALISIS_BRECHAS.md](ANALISIS_BRECHAS.md) — 47 hallazgos verificados contra `Proyecto_Final_V3.pdf`
-**Fecha:** 2026-07-21
-**Criterio de orden:** puntos de evaluación recuperados por hora de trabajo, respetando dependencias técnicas.
+**Fuente de verdad:** `Proyecto_Final_V3.pdf` (revisado íntegro el 2026-07-22)
+**Base de hallazgos:** [ANALISIS_BRECHAS.md](ANALISIS_BRECHAS.md)
+**Actualizado:** 2026-07-22, tras ejecutar las Olas 0 y 1 y contrastar todo contra el enunciado.
+
+> **Aviso de método.** La versión anterior de este plan tomaba como requisito el desglose del análisis de brechas, que en algunos puntos era interpretación propia y no texto del enunciado. Cada requisito de este documento está contrastado con el PDF. Cuando algo es criterio nuestro y no del enunciado, se marca como **[criterio propio]**.
 
 ---
 
-## Situación de partida
+## 1. Evaluación — las ocho áreas
 
-| Área | Peso | Actual | Alcanzable | Δ |
+El enunciado define **ocho** áreas. La versión anterior omitía la última.
+
+| Área | Peso | Inicial | Actual | Alcanzable |
 |---|---|---|---|---|
-| Funcionalidad | 15% | ~85% | ~98% | +2,0 pts |
-| Testing | 20% | ~60% | ~90% | +6,0 pts |
-| Seguridad | 10% | ~70% | ~90% | +2,0 pts |
-| Observabilidad | 15% | ~30% | ~85% | +8,3 pts |
-| CI/CD | 15% | ~60% | ~90% | +4,5 pts |
-| Calidad de código | 10% | ~35% | ~85% | +5,0 pts |
-| Documentación | 10% | ~25% | ~90% | +6,5 pts |
-| **Total** | | **~55%** | **~89%** | **+34 pts** |
+| Funcionalidad | 15% | ~85% | ~85% | ~98% |
+| Testing | 20% | ~60% | ~78% | ~90% |
+| Seguridad | 10% | ~70% | ~85% | ~90% |
+| Observabilidad | 15% | ~30% | ~40% | ~85% |
+| CI/CD | 15% | ~60% | ~85% | ~90% |
+| Calidad de código | 10% | ~35% | ~45% | ~85% |
+| Documentación | 10% | ~25% | ~40% | ~90% |
+| **Presentación final** | **5%** | **0%** | **0%** | **~90%** |
 
-Esfuerzo total estimado: **60–75 horas**. Las primeras 12 horas recuperan cerca de la mitad de la brecha.
+Salvo la cobertura, medida sobre el artefacto de CI, los porcentajes son estimaciones.
 
----
-
-## OLA 0 — Quick wins (≈2,5 h, impacto desproporcionado)
-
-Todo aquí son ediciones de una línea o de configuración. Hacer primero, en un solo bloque.
-
-| # | Acción | Archivo | Esfuerzo |
+| Cobertura (artefacto JaCoCo en Actions) | Inicial | Actual | Umbral |
 |---|---|---|---|
-| **CI-1** | Añadir `main` a los triggers de `staging.yml` y ejecutarlo | `.github/workflows/staging.yml` | 15 min |
-| **CI-3** | Activar `required_status_checks` en la protección de `main` | GitHub Settings | 10 min |
-| **TEST-5** | `<argLine>@{argLine} -XX:+EnableDynamicAgentLoading</argLine>` en failsafe | `backend/pom.xml` | 10 min |
-| **TEST-6** | Corregir excludes de JaCoCo → `com/inventory/common/config/**` | `backend/pom.xml` | 10 min |
-| **ENV-2** | Jenkins: `./mvnw verify` en la etapa Integration Tests | `Jenkinsfile` | 15 min |
-| **G-7** | Eliminar `scripts/keycloak/realm-export.json` (copia muerta) | — | 10 min |
-| **BP-2** | `"secret": "${KC_BACKEND_CLIENT_SECRET}"` en el realm export | `keycloak/realm-export.json` | 20 min |
-| **S-4** | Quitar `JWT_SECRET` y `JWT_EXPIRATION_MS` residuales | `.env.example`, `docker-compose.yml` | 10 min |
-| **A-3** | Correo de equipo en lugar del personal en OpenAPI | `OpenApiConfig.java` | 5 min |
-| **DOC-2** | `mvn verify -P generate-docs` → commitear `docs/api/openapi.yaml` | — | 15 min |
-| **BP-3** | Alinear `CONTRIBUTING.md` con el flujo real (`main`) | `CONTRIBUTING.md` | 15 min |
-| **CI-4** | Borrar ramas `backup-*` y `feature/*` ya mergeadas | GitHub | 20 min |
-
-> **CI-1 es la acción de mayor retorno del plan.** El pipeline de staging lleva parado desde el 2026-06-05: reconectarlo revalida de golpe todo lo mergeado después (SPA, E2E, ITs, Jenkins, Grafana) y probablemente destape SEC-1 y G-6 sin trabajo adicional. Ejecutarlo **antes** de planificar el resto, porque sus resultados cambian prioridades.
+| BRANCH | 71,6 % | **83,2 %** | 80 % |
+| LINE | 84,9 % | **91,3 %** | 80 % |
 
 ---
 
-## OLA 1 — Bugs verificados (≈4 h)
+## 2. Entregables exigidos
 
-Defectos reales, no ausencias. Baratos y defienden Seguridad y Funcionalidad.
+El enunciado los lista de forma explícita. Sirve como checklist de cierre.
 
-| # | Acción | Esfuerzo | Nota |
-|---|---|---|---|
-| **G-5** | Fallback de `permittedScopesForRoles` → `Set.of()` (default-deny) | 15 min | + test |
-| **G-4** | Devolver la **unión** de scopes de todos los roles, no el primero | 30 min | + test multi-rol; replicar en `AuthContext.tsx` |
-| **G-6** | `docker compose down -v && up` y decodificar el token emitido | 30 min | Si faltan scopes → declararlos default o pedirlos en `login({ scope })` (+1 h) |
-| **SEC-1** | `VITE_API_BASE_URL` vacío en staging (usar proxy nginx) o CORS con origen real | 20 min | Lo confirma la ejecución de CI-1 |
-| **TEST-4** | `./mvnw verify` en CI como paso bloqueante | 15 min | Fallará: es el objetivo |
-| **E-1** | Migración V8: backfill + `SET NOT NULL` en columnas de snapshot | 30 min | Elimina los `"null"` del CSV |
-| **F-3** | Decidir y validar si `categoryId` es obligatorio | 15 min | |
-| **DATA-3** | Eliminar tabla `users` y entidad `User` muertas (o justificar) | 45 min | |
+| Entregable | Estado |
+|---|---|
+| Código fuente completo | listo |
+| Docker Compose funcional | listo — 11 servicios |
+| Jenkins pipeline | parcial — faltan 3 de las 10 etapas |
+| GitHub Actions pipeline | parcial — faltan security scan y quality gate |
+| Dashboards Grafana | parcial — 1 de 4 |
+| Reportes de pruebas | parcial — surefire, failsafe y ZAP; faltan k6 y Newman |
+| Evidencias QA | parcial — 2 informes en `docs/testing/reportes/` |
+| Documentación completa | parcial |
+| **Presentación final funcional** | **no iniciada** |
 
 ---
 
-## OLA 2 — Observabilidad (≈12 h, +8,3 pts — mayor déficit ponderado)
+## 3. Lo que cambió respecto al plan original
 
-**Orden obligatorio:** OBS-3 va primero. Sin exporters, dos de los cuatro dashboards y una de las cinco alertas no tienen datos posibles.
+Seis hallazgos de la ejecución alteran prioridades.
 
-| # | Acción | Esfuerzo |
+### 3.1 El mapa rol→scopes de Java es el único control de seguridad
+
+Verificado en vivo ([informe](testing/reportes/G-6-escalada-de-scopes.md)): Keycloak emite **cualquier scope a cualquier usuario autenticado**. `inv_viewer` obtuvo `product:manage`, `stock:manage`, `user:manage` y `audit:view`.
+
+**Consecuencia:** G-2 ("mover rol→permisos a Keycloak y eliminar la duplicación") no puede ejecutarse en el orden previsto. Primero hay que restringir los scopes en el IdP (**G-8**), y solo después simplificar el backend.
+
+### 3.2 La cobertura ya pasa el umbral
+
+83,2 % de ramas tras cubrir `UnifiedAuditService`. Desaparece el trabajo de cobertura previsto en la Ola 4.
+
+### 3.3 Había un check de CI que no ejecutaba nada
+
+`Integration Tests` invocaba goals de failsafe sueltos y terminaba en `No tests to run` en 12 s. Corregido; ahora ambos checks son obligatorios en `main`.
+
+### 3.4 Keycloak 24 no expone métricas de eventos
+
+`KC_METRICS_ENABLED` solo aporta métricas de Quarkus: `agroal`, `base`, `jvm`, `netty`, `process`, `system`, `vendor`, `worker`. Cero series de login.
+
+**Pero el enunciado pide "Fallos de autenticación", no "fallos de login en Keycloak".** Un 401 del backend es un fallo de autenticación y satisface el requisito. Se descarta el SPI de terceros. **[criterio propio]** queda anotado en mejoras que un 401 no detecta fuerza bruta contra el formulario de Keycloak, pese a que el realm tiene `bruteForceProtected: true`.
+
+### 3.5 Testcontainers con Keycloak vuelve a ser obligatorio
+
+El enunciado es literal: *"Integration Testing — Obligatorio utilizar: Testcontainers. **Debe probarse: Base de datos real, Keycloak, Integraciones**"*. La versión anterior de este plan bajó TEST-1 de prioridad por error. Se restituye.
+
+### 3.6 "Policies" aparece nombrado en el enunciado
+
+*"modelo de seguridad completamente granular basado en: Keycloak, OAuth2, JWT, Roles, Permisos, Scopes y **Policies**"*. G-1 (Authorization Services) deja de ser puramente opcional: o se implementa, o el ADR debe argumentar por qué los scopes cubren el modelo.
+
+---
+
+## 4. Trazabilidad: requisito del PDF → estado
+
+### 4.1 Alcance funcional (15%)
+
+| Requisito | Estado |
+|---|---|
+| Productos: agregar, editar, eliminar, visualizar con paginación/búsqueda/filtros/ordenamiento | **F-2** — falta ordenamiento en la tabla |
+| Stock: actualizar, alertas por mínimo, historial con 6 campos | cumple |
+| Auditoría con Hibernate Envers | cumple |
+| API REST con OpenAPI y Swagger UI | cumple |
+| Dashboard: productos críticos, **más vendidos**, historial reciente, métricas, indicadores | **D-1, D-2** — faltan 2 de 5 |
+
+### 4.2 Seguridad (10%)
+
+| Requisito | Estado |
+|---|---|
+| Keycloak + OAuth2 + JWT | cumple |
+| Matriz de 7 permisos | cumple — `user:manage` existe pero no protege nada (**A-2**) |
+| Protección de endpoints por permiso, no por rol | cumple — `@PreAuthorize` con `SCOPE_` |
+| Refresh tokens | **S-2** — sin test |
+| Expiración de sesiones | **SEC-2** — sin manejo de `onTokenExpired` |
+| Policies | **G-1** — implementar o justificar por ADR |
+
+### 4.3 Full Stack Testing (20%) — las 8 capas
+
+| Capa | Exigencia | Estado |
 |---|---|---|
-| **OBS-3** | Añadir `node-exporter`, `postgres-exporter` y scrape de Keycloak (`KC_METRICS_ENABLED`) a compose + `prometheus.yml` | 1,5 h |
-| **OBS-5** | `observability/prometheus/rules/alerts.yml` con las 5 alertas + Alertmanager en compose | 2 h |
-| **OBS-2** + **E-3** | `Counter` `inventory_stock_alerts_total{sku}` y contadores de movimientos por tipo | 1,5 h |
-| **OBS-1** | `micrometer-tracing-bridge-otel` + `opentelemetry-exporter-otlp`; `management.otlp.tracing.endpoint` | 2 h |
-| — | Alloy, Tempo y Loki en `docker-compose.yml` con sus configs | 2 h |
-| **OBS-4** | Filtro MDC con `correlationId`, usuario (`sub`) y endpoint + patrón logback con `traceId`/`spanId` | 1,5 h |
-| **OBS-6** | Datasources `tempo.yml` y `loki.yml`, con correlación traces↔logs | 30 min |
-| — | Separar en 4 dashboards: Infraestructura, Aplicación, Negocio y **Seguridad** | 3 h |
+| 1. Unit | Servicios, validaciones, lógica | cumple — 263 tests |
+| 2. Integration | Testcontainers: **BD real, Keycloak**, integraciones | parcial — BD sí, **Keycloak no** (TEST-1) |
+| 3. API / Contract | Endpoints, contratos OpenAPI, status codes, payloads | parcial — Postman sin CI (TEST-3), RestAssured sin uso (TEST-2) |
+| 4. E2E | Snapshots, flujos, navegación, **roles**, seguridad, **responsive** | **no se ejecuta en CI** (C-1, TEST-7/8/9) |
+| 5. Security | ZAP, JWT, permisos, CORS, Dependency Check/Snyk, autenticación | parcial — ZAP baseline sí; faltan T-5, TEST-11 |
+| 6. Performance | Stress, load, usuarios concurrentes, tiempo de respuesta, throughput | **cero** (T-3) |
+| 7. Data | Migraciones, integridad, **duplicados**, constraints, seeds | parcial (DATA-1/2, E-1) |
+| 8. Exploratory | Charters, bugs encontrados, escenarios | parcial — 2 informes, faltan charters (T-6) |
 
-Al terminar: levantar el stack completo y **capturar evidencia** (capturas con datos reales) para la presentación y la documentación.
+### 4.4 Observabilidad (15%)
+
+| Componente | Estado |
+|---|---|
+| Metrics — Prometheus | **cumple** — 5 targets tras OBS-3 |
+| Traces — Tempo | **ausente** |
+| Logs — Loki | **ausente** |
+| Collector — Alloy | **ausente** |
+| Dashboards — Grafana | parcial — 1 de 4 |
+| Alerting — Alertmanager | **ausente** |
+| Instrumentación — OpenTelemetry | **ausente** |
+
+| Métricas exigidas | CPU, Memoria, JVM, Latencia, Throughput, Error rate, DB pool | cumple (CPU y memoria de host desde OBS-3) |
+|---|---|---|
+| **Logs** | traceId, spanId, correlationId, nivel, usuario, endpoint | **1 de 6** (OBS-4) |
+| **Trazas** | request, database, external calls, errores distribuidos | **0 de 4** (OBS-1) |
+| **Alertas** | CPU, error rate, latencia, servicios caídos, fallos de autenticación | **0 de 5** — las 5 ya son escribibles |
+
+### 4.5 CI/CD (15%)
+
+El enunciado exige **10 etapas** de pipeline: Checkout, Build, Unit tests, Integration tests, API tests, E2E tests, Security scan, Quality gates, Docker build, Deployment.
+
+| Etapa | GitHub Actions | Jenkins |
+|---|---|---|
+| Checkout | sí | sí |
+| Build | sí | sí |
+| Unit tests | sí | sí |
+| Integration tests | sí | sí |
+| API tests | staging.yml | sí (smoke) |
+| E2E tests | **no** | **no** |
+| Security scan | staging.yml (ZAP) | **no** |
+| Quality gates | JaCoCo; falta Sonar | **no** |
+| Docker build | sí | sí |
+| Deployment | staging.yml | sí |
+
+Jenkins tiene 8 etapas; faltan E2E, security scan y quality gate (**C-4**).
+
+### 4.6 Calidad de código (10%)
+
+Exige SonarQube o SonarCloud midiendo Coverage, Bugs, Vulnerabilities, Code smells y Duplicación. **Nunca se ha ejecutado** (Q-1). Spotless está configurado y desactivado en todos los pipelines (Q-2).
+
+### 4.7 Repositorio y buenas prácticas
+
+| Requisito | Estado |
+|---|---|
+| Repositorio público | cumple |
+| README profesional | **D-1…D-4** — documenta rutas inexistentes |
+| **Issues** | 13 issues, todos épicas de fase; **ningún bug** (T-6) |
+| Pull Requests | cumple — #30 a #33 |
+| Branch strategy | cumple — `main` protegida, 2 checks obligatorios |
+| Conventional Commits | cumple — commitlint activo |
+| Code Reviews | **riesgo** — 6 de 10 PRs previas sin revisión (BP-1) |
+| Branch protection | cumple |
+| Secrets management / sin credenciales hardcodeadas | cumple tras BP-2 |
+| **Participación equitativa de ambos integrantes** | **riesgo** — evaluable según commits, ramas, issues y PRs |
 
 ---
 
-## OLA 3 — Capas de testing ausentes (≈14 h, +6 pts)
+## 5. Trabajo pendiente, priorizado
+
+### Ola 2 — Observabilidad (≈13 h) · MAYOR DÉFICIT
+
+Cinco de los siete componentes obligatorios están ausentes. Es el bloque con más puntos en juego.
+
+| # | Acción | Esfuerzo | Estado |
+|---|---|---|---|
+| OBS-3 | node-exporter, postgres-exporter, `KC_METRICS_ENABLED` | 1,5 h | **hecho** — 5/5 targets up |
+| **OBS-5** | `rules/alerts.yml` con las 5 alertas + Alertmanager en compose | 2 h | siguiente |
+| **OBS-1** | `micrometer-tracing-bridge-otel` + exportador OTLP | 2 h | |
+| **—** | Tempo, Loki y Alloy en compose con sus configs | 2,5 h | |
+| **OBS-4** | Filtro MDC: `correlationId`, usuario, endpoint + logback con `traceId`/`spanId` | 1,5 h | |
+| **OBS-6** | Datasources `tempo.yml` y `loki.yml` con correlación traces↔logs | 30 min | |
+| **OBS-2 + E-3** | `Counter` de alertas de stock y de movimientos por tipo | 1,5 h | |
+| **—** | Separar en 4 dashboards: Infraestructura, Aplicación, Negocio, Seguridad | 3 h | |
+
+Las 5 alertas ya son escribibles: CPU (`node_cpu_seconds_total`), error rate (`status=~"5.."`), latencia (`http_server_requests_seconds_bucket`), servicios caídos (`up`), fallos de autenticación (`status="401"`).
+
+Al terminar: **capturar evidencia con datos reales** para la presentación.
+
+### Ola 3 — Capas de testing ausentes (≈14 h)
 
 | # | Acción | Esfuerzo | Capa |
 |---|---|---|---|
-| **C-1** + **TEST-7** | Playwright en `staging.yml` con los 4 usuarios (`inv_admin`, `inv_clerk`, `inv_auditor`, `inv_viewer`) | 3 h | 4 |
-| **TEST-9** | Proyectos responsive: 375 / 768 / 1440 px | 45 min | 4 |
+| **C-1 + TEST-7** | Playwright en `staging.yml` con los 4 usuarios | 3 h | 4 |
+| **TEST-9** | Responsive: 375 / 768 / 1440 px | 45 min | 4 |
 | **TEST-8** | `toHaveScreenshot()` en dashboard, productos y stock | 1 h | 4 |
-| **T-3** | Suite k6: `load`, `stress`, `spike` con umbrales `p(95)<500ms`, `http_req_failed<1%` | 3 h | 6 |
-| **TEST-1** | `dasniko/testcontainers-keycloak` + IT con token real | 3 h | 2 |
-| **T-5** | OWASP Dependency Check (backend) y `npm audit`/Snyk (frontend) en CI | 45 min | 5 |
-| **TEST-3** + **TEST-2** | Newman en CI + dar uso real a RestAssured para validación de contrato OpenAPI | 2 h | 3 |
-| **TEST-11** | Test de CORS por perfil (`Access-Control-Allow-Origin`) | 30 min | 5 |
-| **DATA-1/2** | Tests de CHECK constraints y verificación de seeds | 1,5 h | 7 |
+| **TEST-1** | `dasniko/testcontainers-keycloak` + IT con token real — **obligatorio** | 3 h | 2 |
+| **T-3** | k6: load, stress, usuarios concurrentes, `p(95)<500ms` | 3 h | 6 |
+| **T-5** | OWASP Dependency Check y `npm audit`/Snyk en CI | 45 min | 5 |
+| **TEST-3 + TEST-2** | Newman en CI + RestAssured para contrato OpenAPI | 2 h | 3 |
+| **TEST-11** | Test de CORS por perfil | 30 min | 5 |
+| **DATA-1/2** | Constraints, seeds y **datos duplicados** | 1,5 h | 7 |
 
-> **C-1 + TEST-7 es la segunda mejor palanca del plan:** cierra un sub-requisito de la capa 4, ejercita G-4 y G-5, detecta SEC-1 y aporta la evidencia de "E2E contra sistema desplegado" que exige el bloque de Entornos.
+> **C-1 + TEST-7 es la mejor palanca disponible.** El enunciado exige E2E con roles, seguridad y responsive, ejecutados *contra el sistema desplegado*. Además es lo único que confirmaría SEC-1.
 
----
-
-## OLA 4 — Calidad y CI/CD (≈8 h, +9,5 pts combinados)
+### Ola 4 — Calidad y CI/CD (≈7 h)
 
 | # | Acción | Esfuerzo |
 |---|---|---|
-| **Q-1** | Job de SonarCloud con `SONAR_TOKEN` + `sonar.projectKey` + badge | 1,5 h |
-| **Q-3** | Job de frontend en CI: `npm ci && npm run lint && npm run test:coverage` | 45 min |
-| **Q-2** | Retirar `-Dspotless.check.skip=true` de los 8 puntos; `mvn spotless:apply` una vez | 45 min |
-| **Q-4** | Publicar cobertura (artefacto + badge real) | 30 min |
-| **ENV-1** | IT que reciba la URL de BD por configuración externa (sin `@DynamicPropertySource`) | 1 h |
-| **C-4** | Igualar etapas del `Jenkinsfile`: security scan, quality gate, E2E | 2 h |
-| **CI-2** | Crear tag `v1.0.0` y ejecutar `production.yml` por primera vez | 15 min |
-| — | Smoke test post-release en `production.yml` | 45 min |
-| **TEST-10** | ZAP autenticado (context + token) o `zap-full-scan` con umbral | 2 h |
+| **Q-1** | SonarCloud con las 5 métricas exigidas + badge | 1,5 h |
+| **Q-3** | Job de frontend en CI: lint + coverage | 45 min |
+| **Q-2** | Retirar `-Dspotless.check.skip=true` de los 8 puntos | 45 min |
+| **Q-4** | Publicar cobertura como artefacto + badge | 30 min |
+| **C-4** | Jenkins: añadir E2E, security scan y quality gate | 2 h |
+| **CI-2** | Tag `v1.0.0` y primera ejecución de `production.yml` | 15 min |
+| **—** | Smoke test post-release | 45 min |
+| **TEST-10** | ZAP autenticado o `zap-full-scan` con umbral | 2 h |
+| **ENV-1** | IT con URL de BD por configuración externa | 1 h |
 
-Al subir cobertura de ramas de 71% a ≥80% (necesario para TEST-4): priorizar ramas no cubiertas en `ProductServiceImpl`, `StockServiceImpl` y `GlobalExceptionHandler`.
+### Ola 5 — Documentación (≈11 h)
 
----
-
-## OLA 5 — Documentación (≈12 h, +6,5 pts)
-
-La peor relación esfuerzo/nota del plan es dejarla sin hacer: es el 10% con menor coste técnico.
-
-| Documento | Contenido mínimo | Esfuerzo |
+| Documento | Exigencia del PDF | Esfuerzo |
 |---|---|---|
-| `docs/requisitos/requisitos-funcionales-y-no-funcionales.md` | RF por módulo + RNF (rendimiento, seguridad, disponibilidad, mantenibilidad) | 3 h |
-| `docs/arquitectura/` | Diagramas en Mermaid: componentes, despliegue, ERD, secuencia OAuth2 | 3 h |
-| `docs/operacion/manual-mantenimiento.md` | Backups, migraciones, rotación de secretos, runbooks de las 5 alertas | 2 h |
-| `docs/testing/guia-de-pruebas.md` | Estrategia por capa, casos, resultados y defectos | 2 h |
-| **T-6** | `docs/testing/exploratory/`: charters, notas de sesión, bugs | 2 h |
-| **D-1…D-4** | Corregir README: stack real, badge, ejemplos de `@PreAuthorize`, `description` de `package.json` | 45 min |
+| `docs/requisitos/` | "documento detallado de requisitos funcionales y no funcionales" | 3 h |
+| `docs/arquitectura/` | "diagramas de arquitectura, guías de instalación y manuales de mantenimiento" | 3 h |
+| `docs/operacion/manual-mantenimiento.md` | idem + **la trampa del volumen de Keycloak** | 2 h |
+| `docs/testing/guia-de-pruebas.md` | "casos de prueba, resultados y cualquier defecto encontrado" | 2 h |
+| **T-6** | Charters y bugs como **issues de GitHub** | 1 h |
+| D-1…D-4 | README: stack real, badge, rutas correctas | 45 min |
 
-> **T-6 tiene material listo.** Convertir en issues de GitHub los hallazgos ya verificados —G-4, G-5, SEC-1, E-1, D-1— aporta trazabilidad real y resuelve de paso la ausencia total de issues de tipo bug.
+> **T-6 tiene material listo.** Los informes de [G-6](testing/reportes/G-6-escalada-de-scopes.md) y [G-4/G-5](testing/reportes/G-4-G-5-scopes-por-rol.md) son sesiones exploratorias con reproducción. Convertirlos en issues cierra la ausencia total de issues de tipo bug, que es evaluable.
 
----
+### Ola 6 — Presentación final (5%, ≈3 h) · NO INICIADA
 
-## OLA 6 — Alto coste, decidir explícitamente (≈15 h)
+Área completa sin empezar. Es un entregable explícito: *"presentación final funcional del sistema en clase"*.
 
-Ninguno es imprescindible para aprobar bien. Evaluar tiempo restante antes de entrar.
+| # | Acción | Esfuerzo |
+|---|---|---|
+| **P-1** | Guion de demo: alta de producto → movimiento de stock → alerta → auditoría → dashboard | 1 h |
+| **P-2** | Capturas de los 4 dashboards con datos reales y de una alerta disparada | 1 h |
+| **P-3** | Ensayo con el stack levantado desde cero (`down -v && up`) | 1 h |
 
-| # | Acción | Esfuerzo | Alternativa barata |
+### Ola 7 — Deuda abierta por los hallazgos (≈2,5 h)
+
+| # | Acción | Esfuerzo |
+|---|---|---|
+| **G-3a** | Unión de scopes en `AuthContext.tsx`; hoy replica el bug de primer-rol-gana | 45 min |
+| **G-8** | `scopeMappings` en Keycloak: corrección de raíz de G-6 y prerrequisito de G-2 | 1 h |
+| **S-4b** | Quitar `JWT_SECRET` y `JWT_EXPIRATION_MS` de `staging.yml` | 10 min |
+| **ADR-001** | Por qué el mapa rol→scopes vive en Java | 30 min |
+
+### Ola 8 — Alto coste, decidir explícitamente
+
+| # | Acción | Esfuerzo | Alternativa |
 |---|---|---|---|
-| **G-2** + **G-3** | Mover rol→permisos a Keycloak (roles compuestos) y eliminar la duplicación Java/TS | 5 h | ADR justificando la decisión actual (30 min) |
-| **G-1** | Keycloak Authorization Services: Resources + Policies + Permissions | 5 h | ADR explicando que los scopes cubren el modelo (30 min) |
-| **A-2** / **M-1** | `UserController` sobre la Admin API de Keycloak con `SCOPE_user:manage` | 4 h | ADR delegando la gestión a la consola (30 min) |
-| **A-1** | Unificar rutas bajo `/api/v1` | 3 h | **Riesgo alto**: toca backend, nginx, Postman, frontend y ambos pipelines |
+| **G-1** | Authorization Services: Resources, Policies, Permissions — **"Policies" está nombrado en el enunciado** | 5 h | ADR argumentando que scopes + roles cubren el modelo |
+| **G-2** | Mover rol→permisos a Keycloak (depende de G-8) | 4 h | ADR-001 |
+| **A-2 / M-1** | `UserController` sobre la Admin API — daría uso a `user:manage` | 4 h | ADR delegando a la consola |
+| **A-1** | Unificar rutas bajo `/api/v1` | 3 h | **Riesgo alto** cerca de la entrega; corregir el README como mínimo |
 
-> **Sobre A-1:** o se hace en la Ola 0–1, o no se hace. Un refactor de rutas cerca de la entrega rompe la demo. Si no se aborda, es obligatorio al menos corregir el README, que hoy documenta rutas `/api/v1` inexistentes y cuyos ejemplos `curl` fallan.
-
-> **Sobre G-1/G-2/A-2:** las tres alternativas baratas son ADRs. Un ADR que argumente una decisión técnica puntúa mucho mejor que un requisito silenciosamente ausente.
-
----
-
-## Mejoras funcionales (≈5 h, +2 pts — encajar donde quepa)
+### Mejoras funcionales (≈5 h)
 
 | # | Acción | Esfuerzo |
 |---|---|---|
-| **D-1** | `metric=sold` agregando movimientos `OUT` → panel "Productos más vendidos" | 1,5 h |
-| **F-2** | Headers de tabla ordenables en `ProductsPage` | 1 h |
-| **D-2** | Listar productos críticos en el dashboard (endpoint ya existe) | 45 min |
-| **D-3** | `topProducts` con query ordenada en BD en lugar de `findAll()` en memoria | 45 min |
-| **M-2** | `GET /api/stock/{productId}` protegido con `stock:view` | 30 min |
-| **F-1** | ADR-002 justificando el soft delete + renombrar a "Desactivar" en Swagger/UI | 30 min |
-| **D-4** | `@axe-core/playwright` en la suite E2E | 1 h |
-| **E-2** | Validación condicional de `quantity` según tipo de movimiento | 45 min |
-| **SEC-2** | `keycloak.onTokenExpired` + serialización de reintentos | 45 min |
-| **S-2** | Test de API con `grant_type=refresh_token` | 30 min |
+| **D-1** | "Productos más vendidos" agregando movimientos `OUT` — **exigido en el dashboard** | 1,5 h |
+| **D-2** | Listar productos críticos — **exigido en el dashboard** | 45 min |
+| **F-2** | Ordenamiento en la tabla de productos — **exigido en el alcance** | 1 h |
+| D-3 | `topProducts` con query en BD | 45 min |
+| M-2 | `GET /api/stock/{productId}` con `stock:view` | 30 min |
+| F-1 | ADR-002 sobre el soft delete | 30 min |
+| D-4 | `@axe-core/playwright` en E2E | 1 h |
+| E-2 | Validación condicional de `quantity` | 45 min |
+| **SEC-2** | `onTokenExpired` — **"expiración de sesiones" es obligatorio** | 45 min |
+| **S-2** | Test con `grant_type=refresh_token` — **"refresh tokens" es obligatorio** | 30 min |
+| — | **[criterio propio]** Métricas de login de Keycloak vía SPI: detectaría fuerza bruta, que un 401 no ve | 1,5 h |
 
 ---
 
-## Escenarios por tiempo disponible
+## 6. Qué hacer con el tiempo que quede
 
-**Si solo hay 8 horas:** Ola 0 completa + Ola 1 completa + OBS-3 + OBS-5 + Q-1 + Q-3.
-Recupera ~12 puntos: arregla los bugs reales, reactiva el pipeline, activa Sonar y deja las alertas funcionando.
+**8 horas:** OBS-5 + OBS-1 + Tempo/Loki/Alloy + OBS-4.
+Cierra los cinco componentes obligatorios de observabilidad que hoy están ausentes. Es el mayor déficit y el más defendible en la presentación.
 
-**Si hay 20 horas:** lo anterior + Ola 2 completa + C-1/TEST-7 + T-3 (k6) + T-6 (exploratory).
-Recupera ~22 puntos y elimina las dos capas de testing en cero.
+**20 horas:** lo anterior + Ola 2 completa + C-1/TEST-7 + TEST-1 + T-3 + Ola 6 (presentación).
+Deja Observabilidad y Testing por encima del 85 % y cubre las tres capas de testing en cero.
 
-**Si hay 40 horas:** todo salvo la Ola 6, más la Ola 5 completa.
-Recupera ~31 puntos y deja las siete áreas por encima del 80%.
+**40 horas:** todo salvo la Ola 8, más la Ola 5 completa.
+
+> **Reservar siempre las últimas 3 horas para la Ola 6.** Vale 5 % y hoy está en cero; es el único bloque donde no hacer nada cuesta la nota íntegra del área.
 
 ---
 
-## Reglas de trabajo para el resto del proyecto
+## 7. Reglas de trabajo
 
-1. **BP-1 — reviews reales desde ahora.** Seis de las diez últimas PRs se mergearon sin ninguna revisión. Con dos integrantes, cada PR debe llevar aprobación del otro. Es evaluable y sale gratis.
-2. **Participación equitativa.** Las 10 PRs recientes son de un solo autor. Repartir explícitamente las olas entre ambos integrantes y que se refleje en commits y PRs.
-3. **Nada de configuración decorativa.** Si algo no se ejecuta, o se conecta o se borra. Los `management.tracing` sin dependencias, RestAssured sin uso y Sonar sin job puntúan peor que su ausencia en una materia de aseguramiento de calidad.
-4. **Cada corrección con su evidencia.** Captura, reporte o test que la respalde, archivado en `docs/testing/reportes/`.
+1. **Contrastar contra el PDF antes de decidir alcance.** Dos decisiones de esta sesión se tomaron sobre el análisis de brechas en lugar del enunciado, y una de ellas casi cuesta 1,5 h en una integración no exigida.
+2. **Medir sobre build limpio.** Una medición de cobertura sobre un `target/` obsoleto dio 85,5 % cuando el valor real era 71,6 %. La cifra que vale es la del artefacto de CI.
+3. **Nada de configuración decorativa.** Van tres casos encontrados: el trigger a una rama muerta, el check de CI que no ejecutaba nada y el secreto de un cliente `bearerOnly`. Si algo no se ejecuta, o se conecta o se borra.
+4. **Cada corrección con su evidencia**, archivada en `docs/testing/reportes/`.
+5. **Reviews reales.** Cada PR con aprobación del otro integrante. Es evaluable y sale gratis.
+6. **Participación equitativa.** El enunciado evalúa *"commits individuales, ramas, issues y pull requests"* de ambos. Repartir las olas explícitamente.
+7. **Los bugs van a Issues.** Hay 13 issues y ninguno es un bug, pese a haberse encontrado y corregido varios documentados.
