@@ -73,8 +73,6 @@
       "description": "Spring Boot resource server — validates bearer tokens only",
       "enabled": true,
       "protocol": "openid-connect",
-      "clientAuthenticatorType": "client-secret",
-      "secret": "inv-backend-secret-changeme-dev",
       "publicClient": false,
       "bearerOnly": true,
       "standardFlowEnabled": false,

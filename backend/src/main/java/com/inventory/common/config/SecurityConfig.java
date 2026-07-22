@@ -63,6 +63,10 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers(new AntPathRequestMatcher("/v3/api-docs/**"))
                     .permitAll()
+                    // /v3/api-docs.yaml es ruta hermana, no hija: /v3/api-docs/** no la cubre.
+                    // El perfil generate-docs del pom la consume para volcar docs/api/openapi.yaml.
+                    .requestMatchers(new AntPathRequestMatcher("/v3/api-docs.yaml"))
+                    .permitAll()
                     // custom health endpoint — public for load balancers and probes
                     // AntPathRequestMatcher bypasses MvcRequestMatcher resolution in test slices
                     .requestMatchers(new AntPathRequestMatcher("/health"))
