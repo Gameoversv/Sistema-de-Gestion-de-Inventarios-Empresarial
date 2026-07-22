@@ -3,11 +3,30 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
+  # ── El propio Prometheus ───────────────────────────────────────────────────
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
 
+  # ── Aplicación: métricas de negocio, JVM y HTTP vía Micrometer ─────────────
   - job_name: 'inventory-backend'
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: ['inventory-backend:8080']
+
+  # ── Host: CPU, memoria, disco y red ───────────────────────────────────────
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # ── PostgreSQL: conexiones, transacciones, tamaño y locks ─────────────────
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  # ── Keycloak: logins, errores de autenticación y sesiones ─────────────────
+  # Requiere KC_METRICS_ENABLED=true en el contenedor.
+  - job_name: 'keycloak'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['keycloak:8080']
