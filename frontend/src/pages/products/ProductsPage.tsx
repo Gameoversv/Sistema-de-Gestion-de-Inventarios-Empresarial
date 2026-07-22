@@ -1,3 +1,4 @@
+/** Products management page with search, category filtering, pagination, and permission-gated create/edit/delete actions. */
 import { useState } from 'react'
 import { Plus, Search, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { ProductResponse } from '@/types/index'

@@ -1,3 +1,4 @@
+/** Reports page presenting inventory analytics through bar charts, pie charts, and low-stock and top-movement tables. */
 import { useQuery } from '@tanstack/react-query'
 import {
   BarChart,

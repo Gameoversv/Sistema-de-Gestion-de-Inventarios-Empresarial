@@ -1,3 +1,4 @@
+/** Audit log page that shows a paginated, searchable history of entity changes with revision badges. */
 import { useQuery } from '@tanstack/react-query'
 import api from '@/lib/api'
 import type { UnifiedAuditEntry } from '@/types/index'

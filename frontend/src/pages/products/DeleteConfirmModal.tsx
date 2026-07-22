@@ -1,3 +1,4 @@
+/** Modal dialog that asks the user to confirm before permanently deleting a product. */
 import { X, AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { ProductResponse } from '@/types/index'

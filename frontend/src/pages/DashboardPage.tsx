@@ -1,3 +1,4 @@
+/** Dashboard page displaying key inventory KPIs and bar/line charts summarising stock activity. */
 import { useQuery } from '@tanstack/react-query'
 import {
   Package,

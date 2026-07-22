@@ -1,3 +1,5 @@
+/** Shared TypeScript type definitions for API responses, request payloads, and domain models used across the frontend. */
+
 export interface ProductResponse {
   id: number
   sku: string

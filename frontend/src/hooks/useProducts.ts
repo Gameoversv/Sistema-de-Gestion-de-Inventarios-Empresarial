@@ -1,3 +1,4 @@
+/** React Query hooks for fetching, creating, updating, and deleting products and categories via the backend API. */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
 import type { ProductResponse, ProductCreateRequest, ProductUpdateRequest, Page } from '@/types/index'

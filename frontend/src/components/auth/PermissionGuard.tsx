@@ -1,3 +1,4 @@
+/** Component that renders its children only when the authenticated user holds the required permission scope. */
 import { type ReactNode } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 

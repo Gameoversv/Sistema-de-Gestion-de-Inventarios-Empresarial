@@ -1,3 +1,4 @@
+/** Utility that serializes a list of stock movements into a CSV file and triggers a browser download. */
 import type { StockMovementResponse } from '@/types'
 
 const CSV_HEADER = 'Tipo,Producto,SKU,Cantidad,Antes,Después,Usuario,Fecha,Motivo'

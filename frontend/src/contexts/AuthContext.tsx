@@ -1,3 +1,4 @@
+/** Authentication context that exposes Keycloak login state, user roles, permission scopes, and a logout action to the component tree. */
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import keycloak from '@/lib/keycloak'
 
