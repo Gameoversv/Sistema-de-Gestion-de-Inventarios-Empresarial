@@ -19,10 +19,12 @@ const baseMovement: StockMovementResponse = {
 }
 
 describe('movementsToCSV', () => {
+  // Verifica que con un array vacío la función retorna solo la fila de cabecera.
   it('returns only the header row for an empty array', () => {
     expect(movementsToCSV([])).toBe(HEADER)
   })
 
+  // Verifica que con un movimiento se retornan la cabecera y una fila de datos correctamente.
   it('returns header + 1 data row for a single movement', () => {
     const csv = movementsToCSV([baseMovement])
     const lines = csv.split('\n')
@@ -31,6 +33,7 @@ describe('movementsToCSV', () => {
     expect(lines[1]).toBe('IN,Widget A,WGT-001,50,100,150,admin,2026-06-14T10:00:00Z,Restock')
   })
 
+  // Verifica que cuando reason es null la columna de motivo se exporta como cadena vacía.
   it('outputs an empty string in the reason column when reason is null', () => {
     const movement: StockMovementResponse = { ...baseMovement, reason: null }
     const csv = movementsToCSV([movement])
@@ -38,6 +41,7 @@ describe('movementsToCSV', () => {
     expect(dataRow.endsWith(',')).toBe(true)
   })
 
+  // Verifica que un nombre de producto con coma se encierra entre comillas en el CSV.
   it('quotes a product name that contains a comma', () => {
     const movement: StockMovementResponse = { ...baseMovement, productName: 'Bolt, Hex' }
     const csv = movementsToCSV([movement])

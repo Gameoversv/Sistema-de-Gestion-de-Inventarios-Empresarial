@@ -1,3 +1,4 @@
+/** Singleton Keycloak JS client instance configured from environment variables for SSO authentication. */
 import Keycloak from 'keycloak-js'
 
 const keycloak = new Keycloak({

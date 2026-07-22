@@ -1,3 +1,4 @@
+/** Pre-configured Axios instance that automatically attaches the Keycloak bearer token to every outgoing request. */
 import axios from 'axios'
 import keycloak from './keycloak'
 

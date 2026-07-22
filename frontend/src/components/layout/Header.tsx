@@ -1,3 +1,4 @@
+/** Top-of-page header bar that displays the current page title and the authenticated user's name. */
 import { useAuth } from '@/contexts/AuthContext'
 
 interface Props {

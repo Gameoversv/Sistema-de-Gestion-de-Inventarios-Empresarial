@@ -38,6 +38,11 @@ import org.springframework.web.bind.annotation.*;
     responseCode = "403",
     description = "Scope insuficiente",
     content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+/**
+ * Controlador REST para la gestión de productos del inventario ({@code /products}). Soporta
+ * paginación, búsqueda por nombre/SKU, filtros por categoría y estado activo, CRUD completo
+ * (incluyendo PATCH parcial) y soft delete. Requiere autenticación JWT de Keycloak.
+ */
 public class ProductController {
 
   private final ProductService productService;

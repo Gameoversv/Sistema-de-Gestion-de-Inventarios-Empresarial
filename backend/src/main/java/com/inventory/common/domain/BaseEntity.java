@@ -8,6 +8,11 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+/**
+ * Clase base abstracta para todas las entidades JPA del sistema. Provee id autogenerado con
+ * estrategia IDENTITY, y los campos {@code createdAt} y {@code updatedAt} poblados automáticamente
+ * por el auditing de Spring Data JPA.
+ */
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 @Getter

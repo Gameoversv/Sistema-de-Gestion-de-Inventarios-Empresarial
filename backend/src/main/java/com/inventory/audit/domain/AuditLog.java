@@ -6,6 +6,11 @@ import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+/**
+ * Registro de auditoría manual que captura qué acción (CREATE, UPDATE, DELETE) realizó un usuario
+ * sobre una entidad específica. Se persiste de forma asíncrona mediante {@link
+ * com.inventory.audit.service.AuditService}.
+ */
 @Entity
 @Table(name = "audit_logs")
 @EntityListeners(AuditingEntityListener.class)

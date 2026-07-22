@@ -3,6 +3,10 @@ package com.inventory.report.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 
+/**
+ * DTO que representa un producto en el ranking de mayores inventarios. Incluye id, SKU, nombre,
+ * unidades en stock, precio unitario, valor total en inventario (precio × stock) y categoría.
+ */
 @Schema(description = "Producto en el ranking por valor o cantidad de stock")
 public record TopProductDto(
     @Schema(description = "ID del producto", example = "1") Long id,

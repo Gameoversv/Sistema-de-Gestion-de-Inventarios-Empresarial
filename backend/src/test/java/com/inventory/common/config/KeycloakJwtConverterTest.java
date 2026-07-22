@@ -16,6 +16,7 @@ class KeycloakJwtConverterTest {
   private final Converter<Jwt, AbstractAuthenticationToken> converter =
       new SecurityConfig().keycloakJwtConverter();
 
+  // Verifica que los roles de realm_access se convierten a autoridades con prefijo ROLE_.
   @Test
   void realmRoles_mappedWithRolePrefix() {
     Jwt jwt = buildJwtWithRoles(Map.of("roles", List.of("inventory-admin", "viewer")));
@@ -28,6 +29,7 @@ class KeycloakJwtConverterTest {
         .containsExactlyInAnyOrder("ROLE_inventory-admin", "ROLE_viewer");
   }
 
+  // Verifica que un JWT sin claim realm_access produce una lista de autoridades vacía.
   @Test
   void missingRealmAccess_returnsEmptyAuthorities() {
     Jwt jwt =
@@ -44,6 +46,7 @@ class KeycloakJwtConverterTest {
     assertThat(token.getAuthorities()).isEmpty();
   }
 
+  // Verifica que realm_access con lista de roles vacía produce una lista de autoridades vacía.
   @Test
   void emptyRolesList_returnsEmptyAuthorities() {
     Jwt jwt = buildJwtWithRoles(Map.of("roles", List.of()));
@@ -54,6 +57,7 @@ class KeycloakJwtConverterTest {
     assertThat(token.getAuthorities()).isEmpty();
   }
 
+  // Verifica que los scopes del JWT se convierten a autoridades con prefijo SCOPE_.
   @Test
   void scopes_mappedWithScopePrefix() {
     Jwt jwt =
@@ -73,6 +77,7 @@ class KeycloakJwtConverterTest {
         .containsExactlyInAnyOrder("SCOPE_openid", "SCOPE_profile", "SCOPE_email");
   }
 
+  // Verifica que roles y scopes presentes en el JWT se combinan en las autoridades resultantes.
   @Test
   void rolesAndScopes_bothMapped() {
     Jwt jwt =
@@ -93,6 +98,7 @@ class KeycloakJwtConverterTest {
         .containsExactlyInAnyOrder("ROLE_manager", "SCOPE_openid", "SCOPE_profile");
   }
 
+  // Verifica que un scope en blanco no genera ninguna autoridad SCOPE_ en el token.
   @Test
   void blankScope_returnsNoScopeAuthorities() {
     Jwt jwt =

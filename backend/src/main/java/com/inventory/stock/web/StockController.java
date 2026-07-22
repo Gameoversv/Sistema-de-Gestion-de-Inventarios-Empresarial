@@ -41,6 +41,12 @@ import org.springframework.web.bind.annotation.*;
     responseCode = "403",
     description = "Scope insuficiente",
     content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+/**
+ * Controlador REST para el control de inventario ({@code /api/stock}). Permite registrar
+ * movimientos (IN/OUT/ADJUSTMENT), listar movimientos con filtros opcionales y consultar alertas de
+ * stock bajo. El registro requiere scope {@code stock:manage}; la lectura acepta también {@code
+ * stock:view}.
+ */
 public class StockController {
 
   private final StockService stockService;

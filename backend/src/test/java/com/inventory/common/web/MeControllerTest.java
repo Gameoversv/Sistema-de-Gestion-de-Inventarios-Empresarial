@@ -23,11 +23,13 @@ class MeControllerTest {
 
   @MockBean JwtDecoder jwtDecoder;
 
+  // Verifica que una petición anónima a /me retorna 401 por falta de autenticación.
   @Test
   void anonymous_returns401() throws Exception {
     mockMvc.perform(get("/me")).andExpect(status().isUnauthorized());
   }
 
+  // Verifica que un JWT válido permite acceder a /me y retorna el subject del token.
   @Test
   void withJwt_returnsSubject() throws Exception {
     mockMvc
@@ -36,6 +38,7 @@ class MeControllerTest {
         .andExpect(jsonPath("$.subject").value("user-abc"));
   }
 
+  // Verifica que un rol de realm aparece en el array roles y que scopes queda vacío.
   @Test
   void withRealmRole_roleAppearsInRolesArray() throws Exception {
     mockMvc
@@ -50,6 +53,7 @@ class MeControllerTest {
         .andExpect(jsonPath("$.scopes").isEmpty());
   }
 
+  // Verifica que los scopes del JWT aparecen en el array scopes y que roles queda vacío.
   @Test
   void withScope_scopeAppearsInScopesArray() throws Exception {
     mockMvc
@@ -67,6 +71,7 @@ class MeControllerTest {
         .andExpect(jsonPath("$.scopes[1]").value("profile"));
   }
 
+  // Verifica que los claims email y preferred_username se incluyen correctamente en la respuesta.
   @Test
   void withEmailClaim_emailIncludedInResponse() throws Exception {
     mockMvc

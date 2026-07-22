@@ -1,3 +1,4 @@
+/** Shell layout that wraps every page with the sidebar navigation and the contextual page header. */
 import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'

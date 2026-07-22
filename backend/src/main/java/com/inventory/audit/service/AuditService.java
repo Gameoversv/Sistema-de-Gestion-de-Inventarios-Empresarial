@@ -9,6 +9,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Servicio que persiste entradas de auditoría manual de forma asíncrona y en una transacción
+ * independiente ({@code REQUIRES_NEW}), garantizando que el log se grabe incluso si la transacción
+ * principal falla.
+ */
 @Service
 @RequiredArgsConstructor
 public class AuditService {

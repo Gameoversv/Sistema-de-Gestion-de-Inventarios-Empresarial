@@ -3,6 +3,10 @@ package com.inventory.report.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 
+/**
+ * DTO que representa el resumen de stock de una categoría: nombre, número de productos, unidades
+ * totales en stock y valor monetario total (precio × unidades).
+ */
 @Schema(description = "Stock agrupado por categoría")
 public record CategoryStockDto(
     @Schema(description = "Nombre de la categoría", example = "Electrónica") String categoryName,

@@ -4,6 +4,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+/**
+ * DTO que agrega en una sola respuesta todas las métricas clave del inventario para el dashboard:
+ * contadores de productos, categorías, movimientos, valor total, alertas de stock bajo y crítico, y
+ * timestamp del último movimiento registrado.
+ */
 @Schema(description = "Métricas generales del inventario para el dashboard principal")
 public record DashboardMetricsResponse(
     @Schema(description = "Total de productos registrados", example = "120") int totalProducts,

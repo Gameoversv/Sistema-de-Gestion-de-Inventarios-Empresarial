@@ -15,6 +15,11 @@ import org.hibernate.envers.query.AuditEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Servicio que consulta el historial de revisiones de movimientos de stock usando Hibernate Envers.
+ * Permite filtrar por producto, usuario y rango de fechas, devolviendo las revisiones ordenadas de
+ * más reciente a más antigua.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

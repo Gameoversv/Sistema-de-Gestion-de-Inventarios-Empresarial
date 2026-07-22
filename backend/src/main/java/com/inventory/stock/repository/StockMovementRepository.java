@@ -11,6 +11,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 
+/**
+ * Repositorio JPA para {@link com.inventory.stock.domain.StockMovement}. Combina JpaRepository con
+ * JpaSpecificationExecutor para filtrado dinámico. Incluye consultas por producto, tipo, rango de
+ * fechas, el movimiento más reciente y carga eagerly los N más recientes con JOIN FETCH del
+ * producto.
+ */
 public interface StockMovementRepository
     extends JpaRepository<StockMovement, Long>, JpaSpecificationExecutor<StockMovement> {
 

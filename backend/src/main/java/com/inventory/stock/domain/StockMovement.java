@@ -7,6 +7,12 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 import org.hibernate.envers.Audited;
 
+/**
+ * Entidad JPA que registra cada movimiento de inventario sobre un producto. Soporta tres tipos:
+ * entrada (IN), salida (OUT) y ajuste (ADJUSTMENT). Almacena el stock antes y después del
+ * movimiento, el usuario que lo realizó y una referencia documental opcional. Auditada por
+ * Hibernate Envers.
+ */
 @Entity
 @Table(name = "stock_movements")
 @Audited

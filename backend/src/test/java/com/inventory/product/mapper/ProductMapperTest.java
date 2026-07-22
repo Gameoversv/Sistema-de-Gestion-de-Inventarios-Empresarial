@@ -25,6 +25,7 @@ class ProductMapperTest {
 
   // ── toEntity ──────────────────────────────────────────────────────────────
 
+  // Verifica que todos los campos del request de creación se mapean correctamente a la entidad.
   @Test
   @DisplayName("toEntity - maps all fields from create request")
   void toEntity_validRequest_mapsFields() {
@@ -44,6 +45,7 @@ class ProductMapperTest {
     assertThat(result.getCategory()).isNull();
   }
 
+  // Verifica que un request nulo retorna una entidad nula sin lanzar excepción.
   @Test
   @DisplayName("toEntity - returns null when request is null")
   void toEntity_nullRequest_returnsNull() {
@@ -52,12 +54,14 @@ class ProductMapperTest {
 
   // ── toResponse ────────────────────────────────────────────────────────────
 
+  // Verifica que un producto nulo retorna un DTO de respuesta nulo sin lanzar excepción.
   @Test
   @DisplayName("toResponse - returns null when product is null")
   void toResponse_nullProduct_returnsNull() {
     assertThat(mapper.toResponse(null)).isNull();
   }
 
+  // Verifica que un producto sin categoría retorna los campos de categoría como nulos.
   @Test
   @DisplayName("toResponse - maps product without category")
   void toResponse_productWithoutCategory_nullCategoryFields() {
@@ -72,6 +76,7 @@ class ProductMapperTest {
     assertThat(result.categoryName()).isNull();
   }
 
+  // Verifica que un producto con categoría mapea correctamente el ID y nombre de la categoría.
   @Test
   @DisplayName("toResponse - maps product with category")
   void toResponse_productWithCategory_mapsCategoryFields() {
@@ -87,6 +92,7 @@ class ProductMapperTest {
     assertThat(result.categoryName()).isEqualTo("Electronics");
   }
 
+  // Verifica que todos los campos escalares del producto se mapean correctamente al DTO.
   @Test
   @DisplayName("toResponse - maps all scalar fields correctly")
   void toResponse_fullProduct_mapsAllFields() {
@@ -116,6 +122,7 @@ class ProductMapperTest {
 
   // ── updateEntity ──────────────────────────────────────────────────────────
 
+  // Verifica que un request nulo no modifica ningún campo de la entidad existente.
   @Test
   @DisplayName("updateEntity - does nothing when request is null")
   void updateEntity_nullRequest_noChange() {
@@ -126,6 +133,7 @@ class ProductMapperTest {
     assertThat(product.getSku()).isEqualTo("ORIGINAL");
   }
 
+  // Verifica que todos los campos mutables se sobrescriben con los valores del request de update.
   @Test
   @DisplayName("updateEntity - overwrites all mutable fields")
   void updateEntity_validRequest_updatesFields() {
@@ -148,6 +156,7 @@ class ProductMapperTest {
 
   // ── patchEntity ───────────────────────────────────────────────────────────
 
+  // Verifica que un request de patch nulo no modifica ningún campo de la entidad existente.
   @Test
   @DisplayName("patchEntity - does nothing when request is null")
   void patchEntity_nullRequest_noChange() {
@@ -158,6 +167,7 @@ class ProductMapperTest {
     assertThat(product.getSku()).isEqualTo("ORIGINAL");
   }
 
+  // Verifica que campos nulos en el patch preservan los valores actuales de la entidad.
   @Test
   @DisplayName("patchEntity - does not overwrite fields when patch fields are null")
   void patchEntity_allNullFields_preservesExistingValues() {
@@ -179,6 +189,7 @@ class ProductMapperTest {
     assertThat(product.getActive()).isTrue();
   }
 
+  // Verifica que solo los campos no nulos del patch se actualizan en la entidad.
   @Test
   @DisplayName("patchEntity - updates only provided non-null fields")
   void patchEntity_partialFields_updatesOnlyProvidedFields() {
@@ -198,6 +209,7 @@ class ProductMapperTest {
     assertThat(product.getStock()).isEqualTo(10); // not changed
   }
 
+  // Verifica que cuando todos los campos del patch son no nulos, todos se actualizan.
   @Test
   @DisplayName("patchEntity - updates all fields when all non-null")
   void patchEntity_allFieldsProvided_updatesAll() {

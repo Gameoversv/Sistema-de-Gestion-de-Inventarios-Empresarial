@@ -63,6 +63,7 @@ class ProductServiceImplExtendedTest {
 
   // ── create – branch coverage ───────────────────────────────────────────────
 
+  // Verifica que minimumStock nulo en el request se establece como 0 por defecto.
   @Test
   @DisplayName("create - null minimumStock defaults to 0")
   void create_nullMinimumStock_defaultsToZero() {
@@ -87,6 +88,7 @@ class ProductServiceImplExtendedTest {
     assertThat(result.minimumStock()).isEqualTo(0);
   }
 
+  // Verifica que active nulo en el request se establece como true por defecto.
   @Test
   @DisplayName("create - null active defaults to true")
   void create_nullActive_defaultsToTrue() {
@@ -110,6 +112,7 @@ class ProductServiceImplExtendedTest {
     assertThat(result.active()).isTrue();
   }
 
+  // Verifica que se asigna la categoría correctamente cuando categoryId es no nulo.
   @Test
   @DisplayName("create - sets category when categoryId is provided")
   void create_withCategoryId_setsCategory() {
@@ -139,6 +142,7 @@ class ProductServiceImplExtendedTest {
     assertThat(result.categoryName()).isEqualTo("Electronics");
   }
 
+  // Verifica que un categoryId no encontrado lanza ResourceNotFoundException al crear.
   @Test
   @DisplayName("create - throws ResourceNotFoundException when categoryId not found")
   void create_unknownCategoryId_throwsNotFound() {
@@ -155,6 +159,7 @@ class ProductServiceImplExtendedTest {
 
   // ── findAll – branch coverage ──────────────────────────────────────────────
 
+  // Verifica que findAll sin filtros retorna todos los productos de la página.
   @Test
   @DisplayName("findAll - no filters returns all products")
   void findAll_noFilters_returnsAll() {
@@ -166,6 +171,7 @@ class ProductServiceImplExtendedTest {
     assertThat(result.getContent()).hasSize(1);
   }
 
+  // Verifica que un string de búsqueda en blanco se trata como ausencia de filtro.
   @Test
   @DisplayName("findAll - blank search string is ignored")
   void findAll_blankSearch_treatedAsNoFilter() {
@@ -177,6 +183,7 @@ class ProductServiceImplExtendedTest {
     assertThat(result.getContent()).hasSize(1);
   }
 
+  // Verifica que un filtro de búsqueda de texto delega correctamente a la specification.
   @Test
   @DisplayName("findAll - with search filter delegates to specification")
   void findAll_withSearch_appliesSpec() {
@@ -189,6 +196,7 @@ class ProductServiceImplExtendedTest {
     assertThat(result.getContent()).hasSize(1);
   }
 
+  // Verifica que el filtro por categoryId delega correctamente a la specification.
   @Test
   @DisplayName("findAll - with categoryId filter delegates to specification")
   void findAll_withCategoryId_appliesSpec() {
@@ -200,6 +208,7 @@ class ProductServiceImplExtendedTest {
     assertThat(result.getContent()).hasSize(1);
   }
 
+  // Verifica que el filtro por estado activo delega correctamente a la specification.
   @Test
   @DisplayName("findAll - with active filter delegates to specification")
   void findAll_withActive_appliesSpec() {
@@ -211,6 +220,7 @@ class ProductServiceImplExtendedTest {
     assertThat(result.getContent()).hasSize(1);
   }
 
+  // Verifica que los tres filtros combinados se aplican todos sin errores.
   @Test
   @DisplayName("findAll - with all three filters applies all")
   void findAll_allFilters_appliesAllSpecs() {
@@ -225,6 +235,7 @@ class ProductServiceImplExtendedTest {
 
   // ── update – branch coverage ───────────────────────────────────────────────
 
+  // Verifica que categoryId nulo en update establece la categoría del producto en null.
   @Test
   @DisplayName("update - sets category to null when categoryId is null")
   void update_nullCategoryId_setsNullCategory() {
@@ -241,6 +252,7 @@ class ProductServiceImplExtendedTest {
     assertThat(existingProduct.getCategory()).isNull();
   }
 
+  // Verifica que un categoryId no nulo en update resuelve y asigna la categoría correcta.
   @Test
   @DisplayName("update - resolves category when categoryId is provided")
   void update_withCategoryId_resolvesCategory() {
@@ -261,6 +273,7 @@ class ProductServiceImplExtendedTest {
     assertThat(existingProduct.getCategory()).isEqualTo(cat);
   }
 
+  // Verifica que no se verifica conflicto de SKU cuando el SKU no cambia en update.
   @Test
   @DisplayName("update - does not check SKU conflict when SKU unchanged")
   void update_sameSku_noConflictCheck() {
@@ -276,6 +289,7 @@ class ProductServiceImplExtendedTest {
     verify(productRepository, never()).existsBySku(any());
   }
 
+  // Verifica que cambiar el SKU a uno ya en uso lanza ConflictException sin persistir.
   @Test
   @DisplayName("update - throws ConflictException when new SKU already taken")
   void update_newSkuConflict_throwsConflict() {
@@ -295,6 +309,7 @@ class ProductServiceImplExtendedTest {
 
   // ── patch – branch coverage ────────────────────────────────────────────────
 
+  // Verifica que patch lanza ResourceNotFoundException cuando el producto no existe.
   @Test
   @DisplayName("patch - throws ResourceNotFoundException when product not found")
   void patch_missingProduct_throwsNotFound() {
@@ -308,6 +323,7 @@ class ProductServiceImplExtendedTest {
         .hasMessageContaining("99");
   }
 
+  // Verifica que patch con SKU nulo omite la verificación de conflicto de SKU.
   @Test
   @DisplayName("patch - null sku in request skips conflict check")
   void patch_nullSku_skipsConflictCheck() {
@@ -322,6 +338,7 @@ class ProductServiceImplExtendedTest {
     verify(productRepository, never()).existsBySku(any());
   }
 
+  // Verifica que patch con el mismo SKU omite la verificación de conflicto de SKU.
   @Test
   @DisplayName("patch - same sku as existing skips conflict check")
   void patch_sameSku_skipsConflictCheck() {
@@ -336,6 +353,7 @@ class ProductServiceImplExtendedTest {
     verify(productRepository, never()).existsBySku(any());
   }
 
+  // Verifica que patch con un SKU nuevo no tomado actualiza correctamente el producto.
   @Test
   @DisplayName("patch - new sku that is not taken succeeds")
   void patch_newSkuNotTaken_succeeds() {
@@ -350,6 +368,7 @@ class ProductServiceImplExtendedTest {
     assertThat(result).isNotNull();
   }
 
+  // Verifica que patch lanza ConflictException cuando el nuevo SKU ya está en uso.
   @Test
   @DisplayName("patch - throws ConflictException when new sku is already taken")
   void patch_newSkuConflict_throwsConflict() {
@@ -366,6 +385,7 @@ class ProductServiceImplExtendedTest {
     verify(productRepository, never()).save(any());
   }
 
+  // Verifica que patch resuelve y asigna la categoría cuando categoryId es no nulo.
   @Test
   @DisplayName("patch - resolves category when categoryId is non-null")
   void patch_withCategoryId_resolvesCategory() {
@@ -384,6 +404,7 @@ class ProductServiceImplExtendedTest {
     assertThat(existingProduct.getCategory()).isEqualTo(cat);
   }
 
+  // Verifica que patch con categoryId nulo no modifica la categoría existente del producto.
   @Test
   @DisplayName("patch - does not change category when categoryId is null")
   void patch_nullCategoryId_keepsExistingCategory() {
@@ -404,6 +425,7 @@ class ProductServiceImplExtendedTest {
 
   // ── delete ────────────────────────────────────────────────────────────────
 
+  // Verifica que delete realiza soft delete poniendo active en false y persistiendo el cambio.
   @Test
   @DisplayName("delete - soft-deletes by setting active=false")
   void delete_existingProduct_setsActiveFalse() {
@@ -416,6 +438,7 @@ class ProductServiceImplExtendedTest {
     verify(productRepository).save(existingProduct);
   }
 
+  // Verifica que delete lanza ResourceNotFoundException cuando el producto no existe.
   @Test
   @DisplayName("delete - throws ResourceNotFoundException when not found")
   void delete_missingProduct_throwsNotFound() {
@@ -430,6 +453,7 @@ class ProductServiceImplExtendedTest {
 
   // ── findBySku ─────────────────────────────────────────────────────────────
 
+  // Verifica que findBySku retorna la respuesta correcta cuando el SKU existe.
   @Test
   @DisplayName("findBySku - returns response when sku exists")
   void findBySku_existingSku_returnsResponse() {
@@ -440,6 +464,7 @@ class ProductServiceImplExtendedTest {
     assertThat(result.sku()).isEqualTo("SKU-001");
   }
 
+  // Verifica que findBySku lanza ResourceNotFoundException cuando el SKU no existe.
   @Test
   @DisplayName("findBySku - throws ResourceNotFoundException when sku not found")
   void findBySku_missingSku_throwsNotFound() {

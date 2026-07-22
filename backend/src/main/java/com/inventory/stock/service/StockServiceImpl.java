@@ -26,6 +26,12 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Implementación del servicio de stock. Registra movimientos con bloqueo pesimista
+ * (PESSIMISTIC_WRITE) sobre el producto para evitar condiciones de carrera, actualiza el stock en
+ * base al tipo de operación y publica un evento si el stock cruza el umbral mínimo. Extrae el
+ * username del token JWT del usuario autenticado.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)

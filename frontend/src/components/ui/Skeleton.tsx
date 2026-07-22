@@ -1,3 +1,4 @@
+/** Animated loading skeleton components used as placeholders while data is being fetched. */
 export function Skeleton({ className = '' }: { className?: string }) {
   return <div className={`animate-pulse rounded bg-gray-200 ${className}`} />
 }

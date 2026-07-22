@@ -46,6 +46,7 @@ class CategoryServiceTest {
 
   // ── create ────────────────────────────────────────────────────────────────
 
+  // Verifica que se crea y retorna una categoría cuando el nombre es único en el repositorio.
   @Test
   @DisplayName("create - creates category when name is unique")
   void create_uniqueName_returnsCategoryResponse() {
@@ -60,6 +61,7 @@ class CategoryServiceTest {
     verify(categoryRepository).save(any(Category.class));
   }
 
+  // Verifica que un nombre duplicado lanza ConflictException sin persistir nada.
   @Test
   @DisplayName("create - throws ConflictException when name already exists")
   void create_duplicateName_throwsConflict() {
@@ -72,6 +74,7 @@ class CategoryServiceTest {
     verify(categoryRepository, never()).save(any());
   }
 
+  // Verifica que se puede crear una categoría con descripción nula (campo opcional).
   @Test
   @DisplayName("create - creates category with null description")
   void create_withNullDescription_savesWithoutDescription() {
@@ -90,6 +93,7 @@ class CategoryServiceTest {
 
   // ── findById ──────────────────────────────────────────────────────────────
 
+  // Verifica que findById retorna el DTO de la categoría cuando el ID existe.
   @Test
   @DisplayName("findById - returns category when exists")
   void findById_existingId_returnsCategoryResponse() {
@@ -101,6 +105,7 @@ class CategoryServiceTest {
     assertThat(result.name()).isEqualTo("Electronics");
   }
 
+  // Verifica que findById lanza ResourceNotFoundException cuando la categoría no existe.
   @Test
   @DisplayName("findById - throws ResourceNotFoundException when not found")
   void findById_missingId_throwsNotFound() {
@@ -113,6 +118,7 @@ class CategoryServiceTest {
 
   // ── findAll ───────────────────────────────────────────────────────────────
 
+  // Verifica que findAll retorna la lista completa de todas las categorías existentes.
   @Test
   @DisplayName("findAll - returns list of all categories")
   void findAll_returnsAllCategories() {
@@ -128,6 +134,7 @@ class CategoryServiceTest {
     assertThat(result.get(1).name()).isEqualTo("Furniture");
   }
 
+  // Verifica que findAll retorna lista vacía cuando no hay categorías en el repositorio.
   @Test
   @DisplayName("findAll - returns empty list when no categories")
   void findAll_noCategories_returnsEmptyList() {
@@ -140,6 +147,7 @@ class CategoryServiceTest {
 
   // ── update ────────────────────────────────────────────────────────────────
 
+  // Verifica que se puede actualizar la descripción de una categoría sin cambiar su nombre.
   @Test
   @DisplayName("update - updates category when name does not change")
   void update_sameName_updatesDescription() {
@@ -153,6 +161,7 @@ class CategoryServiceTest {
     verify(categoryRepository).save(category);
   }
 
+  // Verifica que se puede actualizar a un nombre nuevo cuando este no está en uso.
   @Test
   @DisplayName("update - updates category when new name is unique")
   void update_newUniqueName_updatesSuccessfully() {
@@ -167,6 +176,7 @@ class CategoryServiceTest {
     verify(categoryRepository).save(category);
   }
 
+  // Verifica que actualizar a un nombre ya en uso lanza ConflictException sin persistir.
   @Test
   @DisplayName("update - throws ConflictException when new name already taken")
   void update_newNameConflict_throwsConflict() {
@@ -180,6 +190,7 @@ class CategoryServiceTest {
     verify(categoryRepository, never()).save(any());
   }
 
+  // Verifica que actualizar una categoría inexistente lanza ResourceNotFoundException.
   @Test
   @DisplayName("update - throws ResourceNotFoundException when category not found")
   void update_missingCategory_throwsNotFound() {
@@ -193,6 +204,7 @@ class CategoryServiceTest {
 
   // ── delete ────────────────────────────────────────────────────────────────
 
+  // Verifica que una categoría existente se elimina invocando deleteById en el repositorio.
   @Test
   @DisplayName("delete - deletes category when it exists")
   void delete_existingCategory_deletesSuccessfully() {
@@ -203,6 +215,7 @@ class CategoryServiceTest {
     verify(categoryRepository).deleteById(1L);
   }
 
+  // Verifica que eliminar una categoría inexistente lanza ResourceNotFoundException sin borrar.
   @Test
   @DisplayName("delete - throws ResourceNotFoundException when category does not exist")
   void delete_missingCategory_throwsNotFound() {

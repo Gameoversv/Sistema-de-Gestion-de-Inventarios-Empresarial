@@ -1,3 +1,4 @@
+/** Modal form for creating a new product or editing an existing one, with Zod schema validation. */
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'

@@ -7,6 +7,11 @@ import com.inventory.report.dto.RecentMovementsResponse;
 import com.inventory.report.dto.StockSummaryResponse;
 import com.inventory.report.dto.TopProductsResponse;
 
+/**
+ * Contrato del servicio de reportes. Define las consultas analíticas disponibles: resumen de stock,
+ * alertas de stock bajo, stock crítico, ranking de productos, métricas del dashboard y listado de
+ * movimientos recientes.
+ */
 public interface ReportService {
 
   StockSummaryResponse stockSummary();

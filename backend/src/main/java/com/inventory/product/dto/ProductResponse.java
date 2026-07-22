@@ -4,6 +4,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+/**
+ * DTO de salida con los datos completos de un producto, incluyendo id, SKU, nombre, precio, niveles
+ * de stock, estado activo, categoría y marcas de tiempo de auditoría.
+ */
 @Schema(description = "Datos del producto")
 public record ProductResponse(
     @Schema(description = "ID del producto", example = "1") Long id,

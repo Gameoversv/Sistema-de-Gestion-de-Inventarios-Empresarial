@@ -8,6 +8,11 @@ import org.hibernate.envers.RevisionEntity;
 import org.hibernate.envers.RevisionNumber;
 import org.hibernate.envers.RevisionTimestamp;
 
+/**
+ * Entidad de revisión de Hibernate Envers que extiende la tabla {@code revinfo} con el nombre de
+ * usuario que originó cada revisión. Es poblada automáticamente por {@link
+ * com.inventory.audit.listener.EnversRevisionListener}.
+ */
 @Entity
 @RevisionEntity(EnversRevisionListener.class)
 @Table(name = "revinfo")

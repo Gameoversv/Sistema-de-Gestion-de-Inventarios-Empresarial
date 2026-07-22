@@ -2,7 +2,7 @@ name: Staging — Deploy & Test
 
 on:
   push:
-    branches: [develop]
+    branches: [main, develop]
   workflow_dispatch:
 
 jobs:

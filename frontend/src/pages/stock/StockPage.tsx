@@ -1,3 +1,4 @@
+/** Stock movements page for recording inventory entries/exits and browsing the paginated movement history with CSV export. */
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'

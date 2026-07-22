@@ -11,7 +11,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.inventory.audit.dto.AuditRevisionResponse;
+import com.inventory.audit.service.ProductAuditService;
 import com.inventory.audit.service.StockAuditService;
+import com.inventory.audit.service.UnifiedAuditService;
 import com.inventory.common.config.SecurityConfig;
 import com.inventory.stock.domain.StockMovement.MovementType;
 import java.time.Instant;
@@ -34,14 +36,18 @@ class AuditControllerTest {
 
   @MockBean JwtDecoder jwtDecoder;
   @MockBean StockAuditService stockAuditService;
+  @MockBean ProductAuditService productAuditService;
+  @MockBean UnifiedAuditService unifiedAuditService;
 
   // ── GET /api/audit/stock-movements ───────────────────────────────────────
 
+  // Verifica que una petición anónima al endpoint de auditoría retorna 401.
   @Test
   void movementHistory_anonymous_returns401() throws Exception {
     mockMvc.perform(get("/api/audit/stock-movements")).andExpect(status().isUnauthorized());
   }
 
+  // Verifica que el scope stock:manage no otorga acceso al historial de auditoría (retorna 403).
   @Test
   void movementHistory_withStockManageScope_returns403() throws Exception {
     mockMvc
@@ -54,6 +60,7 @@ class AuditControllerTest {
         .andExpect(status().isForbidden());
   }
 
+  // Verifica que el scope stock:view no otorga acceso al historial de auditoría (retorna 403).
   @Test
   void movementHistory_withStockViewScope_returns403() throws Exception {
     mockMvc
@@ -66,6 +73,7 @@ class AuditControllerTest {
         .andExpect(status().isForbidden());
   }
 
+  // Verifica que con scope audit:view se obtiene 200 y una lista vacía cuando no hay revisiones.
   @Test
   void movementHistory_withAuditViewScope_returns200EmptyList() throws Exception {
     when(stockAuditService.findMovementHistory(isNull(), isNull(), isNull(), isNull()))
@@ -83,6 +91,7 @@ class AuditControllerTest {
         .andExpect(jsonPath("$").isEmpty());
   }
 
+  // Verifica que el endpoint retorna la lista de revisiones con todos los campos correctamente.
   @Test
   void movementHistory_withAuditScope_returnsRevisionList() throws Exception {
     var now = Instant.now();
@@ -121,6 +130,7 @@ class AuditControllerTest {
         .andExpect(jsonPath("$[0].revisedBy").value("auditor"));
   }
 
+  // Verifica que el parámetro productId se propaga correctamente al servicio de auditoría.
   @Test
   void movementHistory_withProductIdFilter_passesFilterToService() throws Exception {
     when(stockAuditService.findMovementHistory(eq(99L), isNull(), isNull(), isNull()))
@@ -139,6 +149,7 @@ class AuditControllerTest {
     verify(stockAuditService).findMovementHistory(eq(99L), isNull(), isNull(), isNull());
   }
 
+  // Verifica que el parámetro username se propaga correctamente al servicio de auditoría.
   @Test
   void movementHistory_withUsernameFilter_passesFilterToService() throws Exception {
     when(stockAuditService.findMovementHistory(isNull(), eq("jdoe"), isNull(), isNull()))
@@ -157,6 +168,7 @@ class AuditControllerTest {
     verify(stockAuditService).findMovementHistory(isNull(), eq("jdoe"), isNull(), isNull());
   }
 
+  // Verifica que los parámetros from y to se propagan correctamente al servicio de auditoría.
   @Test
   void movementHistory_withDateRangeFilter_passesFilterToService() throws Exception {
     Instant from = Instant.parse("2026-01-01T00:00:00Z");

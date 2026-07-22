@@ -10,6 +10,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Endpoint autenticado que devuelve la información del usuario actual extraída del JWT: subject,
+ * roles, scopes, email, username preferido y fecha de expiración del token. Útil para depuración de
+ * permisos y para que el frontend identifique al usuario.
+ */
 @RestController
 @RequestMapping("/me")
 public class MeController {

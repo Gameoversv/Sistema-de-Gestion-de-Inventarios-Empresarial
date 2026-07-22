@@ -61,6 +61,7 @@ class StockAuditServiceTest {
 
   // ── findMovementHistory ────────────────────────────────────────────────────
 
+  // Verifica que sin filtros el historial de movimientos retorna una lista vacía.
   @Test
   void findMovementHistory_noFilters_returnsEmptyList() {
     try (MockedStatic<AuditReaderFactory> factory = mockStatic(AuditReaderFactory.class)) {
@@ -73,6 +74,7 @@ class StockAuditServiceTest {
     }
   }
 
+  // Verifica que al pasar productId se agrega el filtro de producto a la consulta Envers.
   @Test
   @SuppressWarnings("rawtypes")
   void findMovementHistory_withProductId_addsProductFilter() {
@@ -85,6 +87,7 @@ class StockAuditServiceTest {
     }
   }
 
+  // Verifica que al pasar username se agrega el filtro de usuario a la consulta Envers.
   @Test
   @SuppressWarnings("rawtypes")
   void findMovementHistory_withUsername_addsUsernameFilter() {
@@ -97,6 +100,7 @@ class StockAuditServiceTest {
     }
   }
 
+  // Verifica que un username en blanco omite el filtro de usuario para no filtrar erróneamente.
   @Test
   @SuppressWarnings("rawtypes")
   void findMovementHistory_withBlankUsername_skipsUsernameFilter() {
@@ -109,6 +113,7 @@ class StockAuditServiceTest {
     }
   }
 
+  // Verifica que al pasar 'from' se agrega la restricción de fecha inicial a la consulta.
   @Test
   @SuppressWarnings("rawtypes")
   void findMovementHistory_withFromTimestamp_addsFromFilter() {
@@ -122,6 +127,7 @@ class StockAuditServiceTest {
     }
   }
 
+  // Verifica que al pasar 'to' se agrega la restricción de fecha final a la consulta.
   @Test
   @SuppressWarnings("rawtypes")
   void findMovementHistory_withToTimestamp_addsToFilter() {
@@ -135,6 +141,7 @@ class StockAuditServiceTest {
     }
   }
 
+  // Verifica que los resultados de Envers se mapean correctamente al DTO de respuesta.
   @Test
   void findMovementHistory_withMatchingResults_mapsToResponse() {
     try (MockedStatic<AuditReaderFactory> factory = mockStatic(AuditReaderFactory.class)) {
@@ -159,6 +166,7 @@ class StockAuditServiceTest {
     }
   }
 
+  // Verifica que un movimiento sin producto retorna sku, productId y productName nulos.
   @Test
   void findMovementHistory_withNullProduct_returnsNullSkuAndProductId() {
     try (MockedStatic<AuditReaderFactory> factory = mockStatic(AuditReaderFactory.class)) {
@@ -185,6 +193,7 @@ class StockAuditServiceTest {
     }
   }
 
+  // Verifica que una LazyInitializationException al cargar el producto se maneja sin lanzar error.
   @Test
   void findMovementHistory_withLazyInitializationException_handlesGracefully() {
     try (MockedStatic<AuditReaderFactory> factory = mockStatic(AuditReaderFactory.class)) {
@@ -213,6 +222,7 @@ class StockAuditServiceTest {
     }
   }
 
+  // Verifica que múltiples filas de resultados se mapean todas a la lista de respuesta.
   @Test
   void findMovementHistory_multipleResults_mapsAll() {
     try (MockedStatic<AuditReaderFactory> factory = mockStatic(AuditReaderFactory.class)) {
@@ -237,6 +247,7 @@ class StockAuditServiceTest {
     }
   }
 
+  // Verifica que todos los filtros combinados aplican sus respectivas restricciones a la consulta.
   @Test
   void findMovementHistory_withAllFilters_appliesAllCriteria() {
     try (MockedStatic<AuditReaderFactory> factory = mockStatic(AuditReaderFactory.class)) {

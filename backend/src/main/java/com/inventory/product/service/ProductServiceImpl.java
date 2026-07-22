@@ -19,6 +19,11 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Implementación del servicio de productos. Gestiona CRUD con validación de SKU único, filtrado
+ * dinámico mediante {@link com.inventory.product.repository.ProductSpecification}, conversión de
+ * entidades con MapStruct y soft delete (activo=false en lugar de borrado físico).
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)

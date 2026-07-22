@@ -63,6 +63,7 @@ class StockMovementSpecTest {
 
   // ── no filters ────────────────────────────────────────────────────────────
 
+  // Verifica que sin ningún filtro no se accede a ningún campo ni se agrega predicado.
   @Test
   @DisplayName("filtered - all null params produces empty predicate list")
   void filtered_allNullParams_noPredicatesAdded() {
@@ -78,6 +79,7 @@ class StockMovementSpecTest {
 
   // ── productId filter ──────────────────────────────────────────────────────
 
+  // Verifica que con productId la especificación navega al path product.id para igualdad.
   @Test
   @DisplayName("filtered - productId navigates into product.id")
   void filtered_withProductId_navigatesToProductId() {
@@ -88,6 +90,7 @@ class StockMovementSpecTest {
     verify(root).get("product");
   }
 
+  // Verifica que con productId null no se accede al path "product".
   @Test
   @DisplayName("filtered - null productId skips product navigation")
   void filtered_nullProductId_skipsProductNavigation() {
@@ -101,6 +104,7 @@ class StockMovementSpecTest {
 
   // ── type filter ───────────────────────────────────────────────────────────
 
+  // Verifica que con type la especificación navega al campo "type" del movimiento.
   @Test
   @DisplayName("filtered - type navigates to type field")
   void filtered_withType_navigatesToTypeField() {
@@ -112,6 +116,7 @@ class StockMovementSpecTest {
     verify(root).get("type");
   }
 
+  // Verifica que con type null no se accede al campo "type".
   @Test
   @DisplayName("filtered - null type skips type navigation")
   void filtered_nullType_skipsTypeNavigation() {
@@ -124,6 +129,7 @@ class StockMovementSpecTest {
 
   // ── from filter ───────────────────────────────────────────────────────────
 
+  // Verifica que con from se construye un predicado greaterThanOrEqualTo sobre createdAt.
   @Test
   @DisplayName("filtered - from builds greaterThanOrEqualTo predicate")
   void filtered_withFrom_buildsFromPredicate() {
@@ -135,6 +141,7 @@ class StockMovementSpecTest {
     verify(cb).greaterThanOrEqualTo(any(), (Comparable) any());
   }
 
+  // Verifica que con from null no se invoca greaterThanOrEqualTo en el CriteriaBuilder.
   @Test
   @DisplayName("filtered - null from skips greaterThanOrEqualTo")
   void filtered_nullFrom_skipsFromPredicate() {
@@ -148,6 +155,7 @@ class StockMovementSpecTest {
 
   // ── to filter ─────────────────────────────────────────────────────────────
 
+  // Verifica que con to se construye un predicado lessThanOrEqualTo sobre createdAt.
   @Test
   @DisplayName("filtered - to builds lessThanOrEqualTo predicate")
   void filtered_withTo_buildsToPredicate() {
@@ -159,6 +167,7 @@ class StockMovementSpecTest {
     verify(cb).lessThanOrEqualTo(any(), (Comparable) any());
   }
 
+  // Verifica que con to null no se invoca lessThanOrEqualTo en el CriteriaBuilder.
   @Test
   @DisplayName("filtered - null to skips lessThanOrEqualTo")
   void filtered_nullTo_skipsToPredicate() {
@@ -172,6 +181,8 @@ class StockMovementSpecTest {
 
   // ── all filters combined ──────────────────────────────────────────────────
 
+  // Verifica que con todos los filtros activos se navega cada campo y se crean todos los
+  // predicados.
   @Test
   @DisplayName("filtered - all params navigates all fields")
   void filtered_allParams_navigatesAllFields() {

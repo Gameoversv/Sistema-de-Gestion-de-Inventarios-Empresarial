@@ -46,11 +46,13 @@ class StockControllerTest {
 
   // ── POST /api/stock/movements ─────────────────────────────────────────────
 
+  // Verifica que registrar un movimiento sin autenticación retorna 401.
   @Test
   void registerMovement_anonymous_returns401() throws Exception {
     mockMvc.perform(post("/api/stock/movements")).andExpect(status().isUnauthorized());
   }
 
+  // Verifica que con scope insuficiente (stock:view) no se puede registrar un movimiento (403).
   @Test
   void registerMovement_insufficientScope_returns403() throws Exception {
     var request = new StockMovementRequest(1L, MovementType.IN, 10, null, null);
@@ -67,6 +69,7 @@ class StockControllerTest {
         .andExpect(status().isForbidden());
   }
 
+  // Verifica que con scope stock:manage y datos válidos se registra el movimiento con 201.
   @Test
   void registerMovement_validRequest_returns201WithBody() throws Exception {
     var request = new StockMovementRequest(1L, MovementType.IN, 10, "purchase", "REF-001");
@@ -106,6 +109,7 @@ class StockControllerTest {
         .andExpect(jsonPath("$.performedBy").value("manager"));
   }
 
+  // Verifica que registrar un movimiento con productId null retorna 400 por validación.
   @Test
   void registerMovement_nullProductId_returns400() throws Exception {
     var invalidRequest = new StockMovementRequest(null, MovementType.IN, 10, null, null);
@@ -122,6 +126,7 @@ class StockControllerTest {
         .andExpect(status().isBadRequest());
   }
 
+  // Verifica que registrar un movimiento con cantidad negativa retorna 400 por validación.
   @Test
   void registerMovement_negativeQuantity_returns400() throws Exception {
     var invalidRequest = new StockMovementRequest(1L, MovementType.OUT, -5, null, null);
@@ -140,11 +145,13 @@ class StockControllerTest {
 
   // ── GET /api/stock/movements ──────────────────────────────────────────────
 
+  // Verifica que listar movimientos sin autenticación retorna 401.
   @Test
   void listMovements_anonymous_returns401() throws Exception {
     mockMvc.perform(get("/api/stock/movements")).andExpect(status().isUnauthorized());
   }
 
+  // Verifica que con scope stock:view se obtiene 200 y la lista paginada de movimientos.
   @Test
   void listMovements_withStockView_returns200() throws Exception {
     when(stockService.getMovements(isNull(), isNull(), isNull(), isNull(), any(Pageable.class)))
@@ -161,6 +168,7 @@ class StockControllerTest {
         .andExpect(jsonPath("$.content").isArray());
   }
 
+  // Verifica que con scope stock:manage también se puede listar movimientos (retorna 200).
   @Test
   void listMovements_withStockManage_returns200() throws Exception {
     when(stockService.getMovements(isNull(), isNull(), isNull(), isNull(), any(Pageable.class)))
@@ -176,6 +184,7 @@ class StockControllerTest {
         .andExpect(status().isOk());
   }
 
+  // Verifica que los parámetros productId y type se propagan correctamente al servicio de stock.
   @Test
   void listMovements_withTypeFilter_passesFilterToService() throws Exception {
     when(stockService.getMovements(eq(1L), eq(MovementType.IN), isNull(), isNull(), any()))
@@ -197,11 +206,13 @@ class StockControllerTest {
 
   // ── GET /api/stock/alerts ─────────────────────────────────────────────────
 
+  // Verifica que consultar alertas de bajo stock sin autenticación retorna 401.
   @Test
   void alerts_anonymous_returns401() throws Exception {
     mockMvc.perform(get("/api/stock/alerts")).andExpect(status().isUnauthorized());
   }
 
+  // Verifica que con scope stock:view se obtiene 200 con la lista de productos con bajo stock.
   @Test
   void alerts_withStockView_returns200WithList() throws Exception {
     var product =
@@ -232,6 +243,7 @@ class StockControllerTest {
         .andExpect(jsonPath("$[0].stock").value(2));
   }
 
+  // Verifica que un scope insuficiente (audit:view) retorna 403 al consultar alertas de stock.
   @Test
   void alerts_withAuditScope_returns403() throws Exception {
     mockMvc

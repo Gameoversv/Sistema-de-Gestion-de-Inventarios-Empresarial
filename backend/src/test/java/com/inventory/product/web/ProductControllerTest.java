@@ -67,11 +67,13 @@ class ProductControllerTest {
 
   // ── GET /products ─────────────────────────────────────────────────────────
 
+  // Verifica que listar productos sin autenticación retorna 401.
   @Test
   void list_anonymous_returns401() throws Exception {
     mockMvc.perform(get("/products")).andExpect(status().isUnauthorized());
   }
 
+  // Verifica que con scope product:view se obtiene 200 con la lista paginada de productos.
   @Test
   void list_withProductViewScope_returns200WithContent() throws Exception {
     when(productService.findAll(isNull(), isNull(), isNull(), any(Pageable.class)))
@@ -89,6 +91,7 @@ class ProductControllerTest {
         .andExpect(jsonPath("$.content[0].stock").value(10));
   }
 
+  // Verifica que con scope product:manage también se obtiene 200 al listar productos.
   @Test
   void list_withProductManageScope_returns200() throws Exception {
     when(productService.findAll(isNull(), isNull(), isNull(), any(Pageable.class)))
@@ -104,6 +107,7 @@ class ProductControllerTest {
         .andExpect(status().isOk());
   }
 
+  // Verifica que un scope insuficiente (audit:view) retorna 403 al listar productos.
   @Test
   void list_withInsufficientScope_returns403() throws Exception {
     mockMvc
@@ -116,6 +120,7 @@ class ProductControllerTest {
         .andExpect(status().isForbidden());
   }
 
+  // Verifica que el parámetro search se propaga correctamente al servicio.
   @Test
   void list_withSearchFilter_passesFilterToService() throws Exception {
     when(productService.findAll(eq("laptop"), isNull(), isNull(), any()))
@@ -134,6 +139,7 @@ class ProductControllerTest {
     verify(productService).findAll(eq("laptop"), isNull(), isNull(), any());
   }
 
+  // Verifica que los parámetros categoryId y active se propagan correctamente al servicio.
   @Test
   void list_withCategoryAndActiveFilters_passesFiltersToService() throws Exception {
     when(productService.findAll(isNull(), eq(5L), eq(true), any()))
@@ -155,6 +161,7 @@ class ProductControllerTest {
 
   // ── GET /products/{id} ────────────────────────────────────────────────────
 
+  // Verifica que obtener un producto existente por ID retorna 200 con los datos correctos.
   @Test
   void getById_existingProduct_returns200() throws Exception {
     when(productService.findById(1L)).thenReturn(sampleProduct());
@@ -172,6 +179,7 @@ class ProductControllerTest {
         .andExpect(jsonPath("$.name").value("Laptop"));
   }
 
+  // Verifica que buscar un producto inexistente por ID retorna 404.
   @Test
   void getById_missingProduct_returns404() throws Exception {
     when(productService.findById(99L))
@@ -187,6 +195,7 @@ class ProductControllerTest {
         .andExpect(status().isNotFound());
   }
 
+  // Verifica que buscar un producto por ID sin autenticación retorna 401.
   @Test
   void getById_anonymous_returns401() throws Exception {
     mockMvc.perform(get("/products/1")).andExpect(status().isUnauthorized());
@@ -194,11 +203,13 @@ class ProductControllerTest {
 
   // ── POST /products ────────────────────────────────────────────────────────
 
+  // Verifica que crear un producto sin autenticación retorna 401.
   @Test
   void create_anonymous_returns401() throws Exception {
     mockMvc.perform(post("/products")).andExpect(status().isUnauthorized());
   }
 
+  // Verifica que con solo scope product:view no se puede crear un producto (retorna 403).
   @Test
   void create_viewScopeOnly_returns403() throws Exception {
     var request =
@@ -217,6 +228,7 @@ class ProductControllerTest {
         .andExpect(status().isForbidden());
   }
 
+  // Verifica que con scope product:manage y datos válidos se crea el producto con 201.
   @Test
   void create_validRequest_returns201() throws Exception {
     var request =
@@ -237,6 +249,7 @@ class ProductControllerTest {
         .andExpect(jsonPath("$.sku").value("SKU-001"));
   }
 
+  // Verifica que crear un producto sin campos requeridos retorna 400.
   @Test
   void create_missingRequiredFields_returns400() throws Exception {
     mockMvc
@@ -251,6 +264,7 @@ class ProductControllerTest {
         .andExpect(status().isBadRequest());
   }
 
+  // Verifica que crear un producto con SKU duplicado retorna 409.
   @Test
   void create_duplicateSku_returns409() throws Exception {
     var request =
@@ -273,6 +287,7 @@ class ProductControllerTest {
 
   // ── PUT /products/{id} ────────────────────────────────────────────────────
 
+  // Verifica que actualizar un producto con datos válidos retorna 200.
   @Test
   void update_validRequest_returns200() throws Exception {
     var request =
@@ -293,6 +308,7 @@ class ProductControllerTest {
         .andExpect(jsonPath("$.sku").value("SKU-001"));
   }
 
+  // Verifica que actualizar un producto inexistente retorna 404.
   @Test
   void update_notFound_returns404() throws Exception {
     var request =
@@ -313,6 +329,7 @@ class ProductControllerTest {
         .andExpect(status().isNotFound());
   }
 
+  // Verifica que actualizar un producto con body inválido retorna 400.
   @Test
   void update_invalidRequest_returns400() throws Exception {
     mockMvc
@@ -329,6 +346,7 @@ class ProductControllerTest {
 
   // ── PATCH /products/{id} ──────────────────────────────────────────────────
 
+  // Verifica que patch de un producto con datos válidos retorna 200.
   @Test
   void patch_validRequest_returns200() throws Exception {
     var request =
@@ -348,6 +366,7 @@ class ProductControllerTest {
         .andExpect(jsonPath("$.sku").value("SKU-001"));
   }
 
+  // Verifica que patch de un producto inexistente retorna 404.
   @Test
   void patch_notFound_returns404() throws Exception {
     var request = new ProductPatchRequest(null, "Name", null, null, null, null, null, null);
@@ -366,6 +385,7 @@ class ProductControllerTest {
         .andExpect(status().isNotFound());
   }
 
+  // Verifica que patch sin autenticación retorna 401.
   @Test
   void patch_anonymous_returns401() throws Exception {
     mockMvc.perform(patch("/products/1")).andExpect(status().isUnauthorized());
@@ -373,6 +393,7 @@ class ProductControllerTest {
 
   // ── DELETE /products/{id} ─────────────────────────────────────────────────
 
+  // Verifica que eliminar un producto existente retorna 204 y delega al servicio.
   @Test
   void delete_existingProduct_returns204() throws Exception {
     mockMvc
@@ -387,11 +408,13 @@ class ProductControllerTest {
     verify(productService).delete(1L);
   }
 
+  // Verifica que eliminar un producto sin autenticación retorna 401.
   @Test
   void delete_anonymous_returns401() throws Exception {
     mockMvc.perform(delete("/products/1")).andExpect(status().isUnauthorized());
   }
 
+  // Verifica que con solo scope product:view no se puede eliminar un producto (retorna 403).
   @Test
   void delete_viewScopeOnly_returns403() throws Exception {
     mockMvc
@@ -404,6 +427,7 @@ class ProductControllerTest {
         .andExpect(status().isForbidden());
   }
 
+  // Verifica que eliminar un producto inexistente retorna 404.
   @Test
   void delete_notFound_returns404() throws Exception {
     doThrow(new ResourceNotFoundException("Product not found: 99"))

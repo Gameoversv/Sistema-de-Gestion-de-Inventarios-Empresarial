@@ -81,6 +81,7 @@ class StockServiceTest {
     return new JwtAuthenticationToken(jwt);
   }
 
+  // Verifica que un movimiento IN incrementa el stock del producto en la cantidad recibida.
   @Test
   @DisplayName("IN — increases stock by quantity")
   void registerMovement_in_increasesStock() {
@@ -97,6 +98,8 @@ class StockServiceTest {
     assertThat(captor.getValue().getQuantityAfter()).isEqualTo(25);
   }
 
+  // Verifica que el campo performedBy del movimiento se extrae del claim preferred_username del
+  // JWT.
   @Test
   @DisplayName("IN — sets performedBy from JWT preferred_username")
   void registerMovement_in_setsPerformedBy() {
@@ -111,6 +114,7 @@ class StockServiceTest {
     assertThat(captor.getValue().getPerformedBy()).isEqualTo("alice");
   }
 
+  // Verifica que un movimiento OUT disminuye el stock del producto en la cantidad indicada.
   @Test
   @DisplayName("OUT — decreases stock by quantity")
   void registerMovement_out_decreasesStock() {
@@ -127,6 +131,7 @@ class StockServiceTest {
     assertThat(captor.getValue().getQuantityAfter()).isEqualTo(12);
   }
 
+  // Verifica que un movimiento OUT con cantidad mayor al stock lanza BusinessException sin guardar.
   @Test
   @DisplayName("OUT — throws BusinessException when stock insufficient")
   void registerMovement_out_insufficientStock_throws() {
@@ -143,6 +148,7 @@ class StockServiceTest {
     verify(movementRepository, never()).save(any());
   }
 
+  // Verifica que un movimiento OUT por exactamente el stock disponible deja el producto en cero.
   @Test
   @DisplayName("OUT — exact stock (not zero) succeeds")
   void registerMovement_out_exactStock_succeeds() {
@@ -157,6 +163,7 @@ class StockServiceTest {
     assertThat(product.getStock()).isEqualTo(0);
   }
 
+  // Verifica que ADJUSTMENT establece el stock en la cantidad absoluta indicada, no relativa.
   @Test
   @DisplayName("ADJUSTMENT — sets stock to absolute value")
   void registerMovement_adjust_setsAbsoluteStock() {
@@ -174,6 +181,7 @@ class StockServiceTest {
     assertThat(captor.getValue().getQuantityAfter()).isEqualTo(30);
   }
 
+  // Verifica que el movimiento ADJUSTMENT guarda la cantidad objetivo en el campo quantity.
   @Test
   @DisplayName("ADJUSTMENT — stores target quantity on movement")
   void registerMovement_adjust_storesTargetQuantity() {
@@ -189,6 +197,7 @@ class StockServiceTest {
     assertThat(captor.getValue().getQuantity()).isEqualTo(30);
   }
 
+  // Verifica que cuando el stock cae por debajo del mínimo se publica StockThresholdCrossedEvent.
   @Test
   @DisplayName("publishes StockThresholdCrossedEvent when stock crosses minimum")
   void registerMovement_belowMinimum_publishesEvent() {
@@ -208,6 +217,7 @@ class StockServiceTest {
     assertThat(eventCaptor.getValue().minimumStock()).isEqualTo(8);
   }
 
+  // Verifica que no se publica ningún evento cuando el stock se mantiene por encima del mínimo.
   @Test
   @DisplayName("does NOT publish event when stock stays above minimum")
   void registerMovement_aboveMinimum_noEvent() {
@@ -223,6 +233,7 @@ class StockServiceTest {
     verify(eventPublisher, never()).publishEvent(any());
   }
 
+  // Verifica que cuando el producto no existe se lanza ResourceNotFoundException con el ID.
   @Test
   @DisplayName("throws ResourceNotFoundException when product missing")
   void registerMovement_productNotFound_throws() {

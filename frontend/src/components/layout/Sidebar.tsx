@@ -1,3 +1,4 @@
+/** Side navigation bar listing application sections, with each link conditionally shown based on the user's permission scopes. */
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard,

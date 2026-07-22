@@ -5,6 +5,10 @@ import com.inventory.product.dto.CategoryResponse;
 import com.inventory.product.dto.CategoryUpdateRequest;
 import java.util.List;
 
+/**
+ * Contrato del servicio de categorías. Define las operaciones CRUD disponibles: crear, consultar
+ * por ID, listar todas, actualizar y eliminar una categoría.
+ */
 public interface CategoryService {
 
   CategoryResponse create(CategoryCreateRequest request);

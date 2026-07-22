@@ -1,3 +1,4 @@
+/** Reusable inline badge component that renders a color-coded label for status or category values. */
 type Variant = 'green' | 'red' | 'yellow' | 'blue' | 'gray'
 
 const VARIANTS: Record<Variant, string> = {
