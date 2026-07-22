@@ -6,7 +6,7 @@ test.describe('Autenticacion', () => {
     await page.waitForURL(/localhost:8180/, { timeout: 10000 })
 
     await page.fill('#username', 'inv_admin')
-    await page.fill('#password', 'admin123')
+    await page.fill('#password', 'Admin123')
     await page.click('#kc-login')
 
     await page.waitForURL(/localhost:3000/, { timeout: 15000 })
@@ -33,7 +33,7 @@ test.describe('Autenticacion', () => {
     await page.goto('/')
     await page.waitForURL(/localhost:8180/, { timeout: 10000 })
     await page.fill('#username', 'inv_admin')
-    await page.fill('#password', 'admin123')
+    await page.fill('#password', 'Admin123')
     await page.click('#kc-login')
     await page.waitForURL(/localhost:3000/, { timeout: 15000 })
     await page.waitForLoadState('networkidle')

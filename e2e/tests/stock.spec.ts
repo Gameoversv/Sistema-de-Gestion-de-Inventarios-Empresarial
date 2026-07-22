@@ -3,7 +3,7 @@ import { loginAs } from '../fixtures/auth'
 
 test.describe('Stock y Movimientos', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, 'inv_admin', 'admin123')
+    await loginAs(page, 'inv_admin', 'Admin123')
   })
 
   test('historial de movimientos se carga', async ({ page }) => {

@@ -6,7 +6,7 @@ import { loginAs } from '../fixtures/auth'
 
 test.describe('Productos', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAs(page, 'inv_admin', 'admin123')
+    await loginAs(page, 'inv_admin', 'Admin123')
     // loginAs lands on '/' (dashboard). Navigate via React Router (sidebar).
     await page.click('a[href="/products"]')
     await page.waitForLoadState('networkidle')
