@@ -1,0 +1,96 @@
+# Las cinco alertas obligatorias del enunciado:
+# Alto consumo CPU, Error rate elevado, Latencia alta, Servicios caídos
+# y Fallos de autenticación.
+#
+# Cada regla incluye un runbook en la anotación correspondiente, que es lo que
+# el operador necesita cuando la alerta suena a las 3 de la mañana.
+
+groups:
+  - name: infraestructura
+    interval: 30s
+    rules:
+      - alert: AltoConsumoCPU
+        # node-exporter no expone "uso"; se deriva del tiempo ocioso.
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          componente: infraestructura
+        annotations:
+          resumen: "CPU por encima del 80% en {{ $labels.instance }}"
+          descripcion: "Uso sostenido del {{ $value | printf \"%.1f\" }}% durante 5 minutos."
+          runbook: >-
+            Identificar el contenedor culpable con `docker stats`. Si es el backend,
+            revisar el panel de latencia: suele acompañar a una consulta sin índice
+            o a un pico de tráfico. Si es PostgreSQL, revisar `pg_stat_activity`.
+
+      - alert: ServicioCaido
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          componente: infraestructura
+        annotations:
+          resumen: "El objetivo {{ $labels.job }} no responde"
+          descripcion: "Prometheus lleva 1 minuto sin poder scrapear {{ $labels.instance }}."
+          runbook: >-
+            Comprobar el estado con `docker compose ps` y los logs con
+            `docker compose logs {{ $labels.job }}`. Si es el backend, verificar
+            antes que PostgreSQL y Keycloak estén healthy: arranca en cascada.
+
+  - name: aplicacion
+    interval: 30s
+    rules:
+      - alert: ErrorRateElevado
+        # Proporción de 5xx sobre el total. Sin tráfico la división es NaN y no dispara.
+        expr: >-
+          sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m]))
+          /
+          sum(rate(http_server_requests_seconds_count[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          componente: aplicacion
+        annotations:
+          resumen: "Más del 5% de las peticiones devuelven 5xx"
+          descripcion: "Tasa de error del {{ $value | humanizePercentage }} durante 5 minutos."
+          runbook: >-
+            Filtrar por endpoint en el dashboard de Aplicación para localizar la ruta
+            afectada. Contrastar con los logs por `traceId`. Causas habituales:
+            pool de conexiones agotado o Keycloak inaccesible para validar el JWT.
+
+      - alert: LatenciaAlta
+        expr: >-
+          histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket[5m]))) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          componente: aplicacion
+        annotations:
+          resumen: "El p95 de latencia supera los 500 ms"
+          descripcion: "p95 en {{ $value | printf \"%.3f\" }}s durante 5 minutos."
+          runbook: >-
+            Revisar el panel de latencia por endpoint. Comparar con el pool de
+            conexiones (`hikaricp_connections_pending`): si hay espera, el cuello
+            de botella es la base de datos, no la aplicación.
+
+  - name: seguridad
+    interval: 30s
+    rules:
+      - alert: FallosDeAutenticacion
+        # Un 401 es un token ausente, inválido o expirado: fallo de autenticación.
+        # Los 403 (token válido, permiso insuficiente) se vigilan en el dashboard
+        # de Seguridad, porque son fallos de autorización y no de autenticación.
+        expr: sum(rate(http_server_requests_seconds_count{status="401"}[5m])) > 0.2
+        for: 2m
+        labels:
+          severity: warning
+          componente: seguridad
+        annotations:
+          resumen: "Tasa alta de peticiones rechazadas por autenticación"
+          descripcion: "{{ $value | printf \"%.2f\" }} rechazos por segundo durante 2 minutos."
+          runbook: >-
+            Distinguir entre incidente y avería. Si los 401 vienen de muchas IP,
+            revisar el bloqueo por fuerza bruta de Keycloak, que el realm tiene
+            activo. Si vienen de una sola y coinciden con un despliegue, suele ser
+            un token expirado que el frontend no está renovando (ver SEC-2).

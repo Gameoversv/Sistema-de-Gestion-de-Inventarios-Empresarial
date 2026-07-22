@@ -87,6 +87,8 @@ services:
       KC_HOSTNAME_STRICT_HTTPS: "false"
       KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
+      # Expone /metrics para que Prometheus vigile logins, errores y sesiones
+      KC_METRICS_ENABLED: "true"
     ports:
       - "${KEYCLOAK_PORT:-8180}:8080"
     volumes:
@@ -181,6 +183,36 @@ services:
       backend:
         condition: service_healthy
 
+  # ── Node Exporter (métricas del host: CPU, memoria, disco, red) ─────────────
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: inventory-node-exporter
+    restart: unless-stopped
+    # Se montan /proc y /sys en lugar de la raíz con rslave: la propagación
+    # de montajes compartidos no está disponible en Docker Desktop.
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+    networks:
+      - inventory-net
+
+  # ── Postgres Exporter (conexiones, transacciones, tamaño, locks) ────────────
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: inventory-postgres-exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?sslmode=disable"
+    networks:
+      - inventory-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   # ── Prometheus ──────────────────────────────────────────────────────────────
   prometheus:
     image: prom/prometheus:latest
@@ -190,11 +222,25 @@ services:
       - "${PROMETHEUS_PORT:-9090}:9090"
     volumes:
       - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/prometheus/rules:/etc/prometheus/rules:ro
       - prometheus_data:/prometheus
     networks:
       - inventory-net
     depends_on:
       - backend
+
+  # ── Alertmanager (enrutado y agrupación de las 5 alertas) ───────────────────
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: inventory-alertmanager
+    restart: unless-stopped
+    ports:
+      - "${ALERTMANAGER_PORT:-9093}:9093"
+    volumes:
+      - ./observability/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    networks:
+      - inventory-net
 
   # ── Grafana ─────────────────────────────────────────────────────────────────
   grafana:
@@ -222,6 +268,8 @@ volumes:
   redis_data:
     driver: local
   prometheus_data:
+    driver: local
+  alertmanager_data:
     driver: local
   grafana_data:
     driver: local
