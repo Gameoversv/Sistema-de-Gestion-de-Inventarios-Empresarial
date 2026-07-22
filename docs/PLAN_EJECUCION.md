@@ -17,7 +17,7 @@ El enunciado define **ocho** áreas. La versión anterior omitía la última.
 | Funcionalidad | 15% | ~85% | ~85% | ~98% |
 | Testing | 20% | ~60% | ~78% | ~90% |
 | Seguridad | 10% | ~70% | ~85% | ~90% |
-| Observabilidad | 15% | ~30% | ~40% | ~85% |
+| Observabilidad | 15% | ~30% | ~65% | ~85% |
 | CI/CD | 15% | ~60% | ~85% | ~90% |
 | Calidad de código | 10% | ~35% | ~45% | ~85% |
 | Documentación | 10% | ~25% | ~40% | ~90% |
@@ -39,12 +39,12 @@ El enunciado los lista de forma explícita. Sirve como checklist de cierre.
 | Entregable | Estado |
 |---|---|
 | Código fuente completo | listo |
-| Docker Compose funcional | listo — 11 servicios |
+| Docker Compose funcional | listo — **13 servicios** |
 | Jenkins pipeline | parcial — faltan 3 de las 10 etapas |
 | GitHub Actions pipeline | parcial — faltan security scan y quality gate |
-| Dashboards Grafana | parcial — 1 de 4 |
+| Dashboards Grafana | parcial — 1 de 4; datasources de Prometheus y Tempo provisionados |
 | Reportes de pruebas | parcial — surefire, failsafe y ZAP; faltan k6 y Newman |
-| Evidencias QA | parcial — 2 informes en `docs/testing/reportes/` |
+| Evidencias QA | parcial — 3 informes en `docs/testing/reportes/` |
 | Documentación completa | parcial |
 | **Presentación final funcional** | **no iniciada** |
 
@@ -125,18 +125,20 @@ El enunciado es literal: *"Integration Testing — Obligatorio utilizar: Testcon
 | Componente | Estado |
 |---|---|
 | Metrics — Prometheus | **cumple** — 5 targets tras OBS-3 |
-| Traces — Tempo | **ausente** |
+| Traces — Tempo | **cumple** — trazas consultables, servicio `inventory-api` |
 | Logs — Loki | **ausente** |
-| Collector — Alloy | **ausente** |
+| Collector — Alloy | **cumple** — recibe OTLP y reenvía a Tempo |
 | Dashboards — Grafana | parcial — 1 de 4 |
-| Alerting — Alertmanager | **ausente** |
-| Instrumentación — OpenTelemetry | **ausente** |
+| Alerting — Alertmanager | **cumple** — 5 alertas, verificadas disparando |
+| Instrumentación — OpenTelemetry | **cumple** — bridge OTel + exportador OTLP |
+
+**5 de los 7 componentes obligatorios implementados.** Falta Loki y separar los dashboards.
 
 | Métricas exigidas | CPU, Memoria, JVM, Latencia, Throughput, Error rate, DB pool | cumple (CPU y memoria de host desde OBS-3) |
 |---|---|---|
 | **Logs** | traceId, spanId, correlationId, nivel, usuario, endpoint | **1 de 6** (OBS-4) |
-| **Trazas** | request, database, external calls, errores distribuidos | **0 de 4** (OBS-1) |
-| **Alertas** | CPU, error rate, latencia, servicios caídos, fallos de autenticación | **0 de 5** — las 5 ya son escribibles |
+| **Trazas** | request, database, external calls, errores distribuidos | **3 de 4** — falta verificar errores distribuidos |
+| **Alertas** | CPU, error rate, latencia, servicios caídos, fallos de autenticación | **5 de 5** — dos verificadas disparando |
 
 ### 4.5 CI/CD (15%)
 
@@ -187,11 +189,11 @@ Cinco de los siete componentes obligatorios están ausentes. Es el bloque con m�
 | # | Acción | Esfuerzo | Estado |
 |---|---|---|---|
 | OBS-3 | node-exporter, postgres-exporter, `KC_METRICS_ENABLED` | 1,5 h | **hecho** — 5/5 targets up |
-| **OBS-5** | `rules/alerts.yml` con las 5 alertas + Alertmanager en compose | 2 h | siguiente |
-| **OBS-1** | `micrometer-tracing-bridge-otel` + exportador OTLP | 2 h | |
-| **—** | Tempo, Loki y Alloy en compose con sus configs | 2,5 h | |
-| **OBS-4** | Filtro MDC: `correlationId`, usuario, endpoint + logback con `traceId`/`spanId` | 1,5 h | |
-| **OBS-6** | Datasources `tempo.yml` y `loki.yml` con correlación traces↔logs | 30 min | |
+| OBS-5 | `rules/alerts.yml` con las 5 alertas + Alertmanager | 2 h | **hecho** — verificadas disparando |
+| OBS-1 | Bridge OTel + exportador OTLP + **instrumentación JDBC** | 2 h | **hecho** — 12 spans por petición |
+| — | Tempo y Alloy en compose | 2,5 h | **hecho** — falta Loki |
+| **OBS-4** | Filtro MDC: `correlationId`, usuario, endpoint + logback con `traceId`/`spanId` | 1,5 h | **siguiente**, junto a Loki |
+| OBS-6 | Datasources `tempo.yml` y `loki.yml` con correlación traces↔logs | 30 min | parcial — Tempo hecho |
 | **OBS-2 + E-3** | `Counter` de alertas de stock y de movimientos por tipo | 1,5 h | |
 | **—** | Separar en 4 dashboards: Infraestructura, Aplicación, Negocio, Seguridad | 3 h | |
 
@@ -290,8 +292,8 @@ Al terminar: **capturar evidencia con datos reales** para la presentación.
 
 ## 6. Qué hacer con el tiempo que quede
 
-**8 horas:** OBS-5 + OBS-1 + Tempo/Loki/Alloy + OBS-4.
-Cierra los cinco componentes obligatorios de observabilidad que hoy están ausentes. Es el mayor déficit y el más defendible en la presentación.
+**8 horas:** Loki + OBS-4 + OBS-2/E-3 + los 4 dashboards.
+Cierra Observabilidad por completo, que es el mayor déficit y el bloque más defendible en la presentación.
 
 **20 horas:** lo anterior + Ola 2 completa + C-1/TEST-7 + TEST-1 + T-3 + Ola 6 (presentación).
 Deja Observabilidad y Testing por encima del 85 % y cubre las tres capas de testing en cero.
