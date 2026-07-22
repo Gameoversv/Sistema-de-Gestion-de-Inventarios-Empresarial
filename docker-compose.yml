@@ -75,6 +75,12 @@ services:
     image: quay.io/keycloak/keycloak:24.0
     container_name: inventory-keycloak
     restart: unless-stopped
+    # PID 1 es el proceso Java de Keycloak, que no reapea procesos huérfanos.
+    # Cada sonda de salud colgada dejaba un bash zombi; con interval de 15 s se
+    # acumularon hasta dejar el contenedor irrecuperable —Docker no podía ni
+    # pararlo: "PID is zombie and can not be killed"—. El init los recoge.
+    # Es defensa en profundidad: el healthcheck de abajo ya no debería colgarse.
+    init: true
     command: start-dev --import-realm
     environment:
       KC_DB: postgres
@@ -98,8 +104,17 @@ services:
     depends_on:
       keycloak-db:
         condition: service_healthy
+    # La imagen de Keycloak no trae curl, wget ni nc, así que la sonda se hace
+    # con /dev/tcp de bash. Tres detalles que importan:
+    #   · 127.0.0.1 y no localhost: /etc/hosts resuelve localhost también a ::1,
+    #     bash intenta IPv6 primero y Keycloak solo escucha en IPv4, de modo que
+    #     `exec 3<>` se queda colgado sin timeout propio y la sonda expiraba.
+    #   · el `timeout` envuelve el comando entero, no solo la lectura: así ningún
+    #     bloqueo en la apertura del socket puede volver a escaparse.
+    #   · `grep <&3` en lugar de `cat | grep`: grep corta en cuanto encuentra UP
+    #     y no espera al cierre de la conexión.
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && printf 'GET /health/ready HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && timeout 5 cat <&3 | grep -q UP"]
+      test: ["CMD-SHELL", "timeout 5 bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 && printf \"GET /health/ready HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n\" >&3 && grep -q UP <&3'"]
       interval: 15s
       timeout: 10s
       retries: 15
