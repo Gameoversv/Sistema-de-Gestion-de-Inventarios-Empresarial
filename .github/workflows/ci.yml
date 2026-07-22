@@ -2,9 +2,9 @@ name: CI — Unit Tests
 
 on:
   pull_request:
-    branches: [develop, main]
+    branches: [main]
   push:
-    branches: [develop, main]
+    branches: [main]
 
 jobs:
   unit-tests:
@@ -48,14 +48,19 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Run integration tests
+      # `verify` es la unica invocacion que compila los tests, ejecuta failsafe
+      # y aplica el umbral de cobertura. Llamar a los goals de failsafe sueltos
+      # no compila nada y termina en "No tests to run".
+      - name: Run integration tests and coverage gate
         working-directory: backend
-        run: ./mvnw failsafe:integration-test failsafe:verify -B -Dspotless.check.skip=true
+        run: ./mvnw verify -B -Dspotless.check.skip=true
 
       - name: Upload integration test reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: integration-test-reports
-          path: backend/target/failsafe-reports/
+          path: |
+            backend/target/failsafe-reports/
+            backend/target/site/jacoco/
           retention-days: 7
