@@ -218,6 +218,11 @@ services:
     image: prom/prometheus:latest
     container_name: inventory-prometheus
     restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      # Tempo escribe aquí las métricas RED derivadas de las trazas.
+      - '--web.enable-remote-write-receiver'
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     volumes:
@@ -228,6 +233,40 @@ services:
       - inventory-net
     depends_on:
       - backend
+
+  # ── Tempo (almacenamiento y consulta de trazas distribuidas) ────────────────
+  tempo:
+    image: grafana/tempo:2.6.1
+    container_name: inventory-tempo
+    restart: unless-stopped
+    command: ["-config.file=/etc/tempo/tempo.yml"]
+    ports:
+      - "${TEMPO_PORT:-3200}:3200"
+    volumes:
+      - ./observability/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo_data:/var/tempo
+    networks:
+      - inventory-net
+
+  # ── Alloy (collector: recibe OTLP del backend y lo reparte) ─────────────────
+  alloy:
+    image: grafana/alloy:v1.5.1
+    container_name: inventory-alloy
+    restart: unless-stopped
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    ports:
+      - "${ALLOY_PORT:-12345}:12345"
+    volumes:
+      - ./observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - alloy_data:/var/lib/alloy/data
+    networks:
+      - inventory-net
+    depends_on:
+      - tempo
 
   # ── Alertmanager (enrutado y agrupación de las 5 alertas) ───────────────────
   alertmanager:
@@ -270,6 +309,10 @@ volumes:
   prometheus_data:
     driver: local
   alertmanager_data:
+    driver: local
+  tempo_data:
+    driver: local
+  alloy_data:
     driver: local
   grafana_data:
     driver: local

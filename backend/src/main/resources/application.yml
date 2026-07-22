@@ -109,6 +109,10 @@ management:
   tracing:
     sampling:
       probability: 1.0
+  # Destino de los spans. Alloy los recibe por OTLP/HTTP y los reenvía a Tempo.
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://alloy:4318/v1/traces}
   info:
     env:
       enabled: true
