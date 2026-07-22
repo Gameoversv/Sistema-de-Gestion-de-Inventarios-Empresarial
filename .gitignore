@@ -96,3 +96,9 @@ coverage/
 # Documentos internos / privados
 # ================================
 INFORME_TECNICO.md
+
+# ================================
+# Documentos del curso (binarios)
+# ================================
+Proyecto_Final_V3.pdf
+docs/*.docx
