@@ -265,7 +265,7 @@
           </execution>
         </executions>
         <configuration>
-          <argLine>-XX:+EnableDynamicAgentLoading</argLine>
+          <argLine>@{argLine} -XX:+EnableDynamicAgentLoading</argLine>
           <includes>
             <include>**/*IT.java</include>
           </includes>
@@ -314,8 +314,7 @@
               </rules>
               <excludes>
                 <exclude>com/inventory/InventoryApplication.class</exclude>
-                <exclude>com/inventory/config/**</exclude>
-                <exclude>com/inventory/exception/**</exclude>
+                <exclude>com/inventory/common/config/**</exclude>
                 <exclude>com/inventory/**/*Dto.class</exclude>
                 <exclude>com/inventory/**/*Request.class</exclude>
                 <exclude>com/inventory/**/*Response.class</exclude>

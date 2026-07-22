@@ -6,11 +6,14 @@ Gracias por contribuir al proyecto. Por favor lee estas guías antes de abrir un
 
 ## Flujo de Trabajo
 
-1. Crea una rama desde `develop` siguiendo la convención de nombres
+1. Crea una rama desde `main` siguiendo la convención de nombres
 2. Implementa los cambios con commits que sigan Conventional Commits
 3. Asegúrate de que todos los tests pasen localmente
-4. Abre un Pull Request hacia `develop`
+4. Abre un Pull Request hacia `main`
 5. Espera revisión y aprobación (mínimo 1 reviewer)
+
+> `main` es la única rama de integración. Las ramas `develop` y `develop-rebuilt`
+> quedaron abandonadas y no deben usarse como base ni como destino de PRs.
 
 ## Convención de Nombres de Ramas
 
@@ -66,7 +69,7 @@ chore: actualizar dependencias de Spring Boot a 3.2.5
 
 ## Pull Requests
 
-- El PR debe apuntar a `develop`, no a `main`
+- El PR debe apuntar a `main`
 - El título debe seguir Conventional Commits
 - Completa el template de PR con descripción, tipo de cambio y checklist
 - Al menos 1 aprobación requerida antes de merge
@@ -96,7 +99,7 @@ docker compose up -d
 - **Cobertura mínima:** 80% por módulo
 - **Estilo Java:** Google Java Style Guide + Checkstyle
 - **Estilo TypeScript/React:** ESLint + Prettier config del proyecto
-- **No commits directos a `main` ni `develop`**
+- **No commits directos a `main`** — todo cambio entra por PR revisado
 
 ## Preguntas
 

@@ -51,18 +51,13 @@ pipeline {
         stage('Integration Tests') {
             steps {
                 dir('backend') {
-                    sh '''
-                        ./mvnw test -B \
-                            -Dtest=SecurityIntegrationTest \
-                            -DfailIfNoTests=false \
-                            -Dspotless.check.skip=true
-                    '''
+                    sh './mvnw verify -B -Dspotless.check.skip=true'
                 }
             }
             post {
                 always {
                     junit allowEmptyResults: true,
-                          testResults: 'backend/target/surefire-reports/**/*.xml'
+                          testResults: 'backend/target/surefire-reports/**/*.xml,backend/target/failsafe-reports/**/*.xml'
                 }
             }
         }
