@@ -23,6 +23,7 @@
     <java.version>21</java.version>
     <jjwt.version>0.12.6</jjwt.version>
     <testcontainers.version>1.20.6</testcontainers.version>
+    <datasource-micrometer.version>1.0.6</datasource-micrometer.version>
     <jacoco.version>0.8.12</jacoco.version>
     <sonar.version>4.0.0.4121</sonar.version>
     <spotless.version>2.43.0</spotless.version>
@@ -80,6 +81,27 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-registry-prometheus</artifactId>
+    </dependency>
+
+    <!-- Puente de Micrometer Tracing hacia OpenTelemetry: instrumenta HTTP y JDBC
+         y propaga traceId/spanId al MDC para correlacionar logs con trazas. -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-tracing-bridge-otel</artifactId>
+    </dependency>
+
+    <!-- Exportador OTLP: envía los spans al collector (Alloy). -->
+    <dependency>
+      <groupId>io.opentelemetry</groupId>
+      <artifactId>opentelemetry-exporter-otlp</artifactId>
+    </dependency>
+
+    <!-- Instrumentación JDBC: el puente de Micrometer traza HTTP y seguridad,
+         pero no las consultas. El enunciado exige "Database tracing". -->
+    <dependency>
+      <groupId>net.ttddyy.observation</groupId>
+      <artifactId>datasource-micrometer-spring-boot</artifactId>
+      <version>${datasource-micrometer.version}</version>
     </dependency>
 
     <!-- ── Security ──────────────────────────────────────── -->
