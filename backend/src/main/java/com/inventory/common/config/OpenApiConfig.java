@@ -37,7 +37,7 @@ public class OpenApiConfig {
                     "Sistema de Gestión de Inventarios Empresarial — PUCMM. "
                         + "API REST para gestión de productos, stock, reportes y auditoría.")
                 .contact(
-                    new Contact().name("PUCMM Inventory Team").email("snipervargas37@gmail.com"))
+                    new Contact().name("PUCMM Inventory Team").email("wgvr0001@ce.pucmm.edu.do"))
                 .license(new License().name("MIT").url("https://opensource.org/licenses/MIT")))
         .addSecurityItem(new SecurityRequirement().addList("keycloak"))
         .components(
