@@ -193,10 +193,16 @@ services:
     command:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      # Sin rootfs solo se ven los tmpfs del contenedor y no hay métricas de disco
+      # reales: el panel de espacio libre del dashboard de Infraestructura queda
+      # vacío. Con /host/root montado se ve el sistema de archivos que de verdad
+      # importa, el que aloja los volúmenes de Docker.
+      - '--path.rootfs=/host/root'
+      - '--collector.filesystem.mount-points-exclude=^/host/root/(sys|proc|dev|etc)($$|/)'
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
+      - /:/host/root:ro
     networks:
       - inventory-net
 

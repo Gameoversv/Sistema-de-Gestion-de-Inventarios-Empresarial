@@ -1,0 +1,225 @@
+{
+  "__inputs": [],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "9.0.0" },
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" },
+    { "type": "datasource", "id": "loki", "name": "Loki", "version": "1.0.0" }
+  ],
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "uid": "inventory-seguridad",
+  "title": "4 · Seguridad",
+  "description": "Rechazos de autenticación y de autorización. La distinción importa: un 401 es un token ausente, inválido o expirado; un 403 es un token válido al que le falta el scope, y por tanto un intento de acceder a algo que no le corresponde. Keycloak 24 no expone métricas de eventos de login —solo métricas de Quarkus—, así que la fuente de verdad de los fallos de autenticación son los 401 del backend.",
+  "tags": ["inventory", "seguridad"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "Rechazos",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Umbral en 0,2 rechazos por segundo, el mismo de la alerta FallosDeAutenticacion.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 0.05 },
+            { "color": "red", "value": 0.2 }
+          ]},
+          "unit": "reqps"
+        }
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 1 },
+      "id": 1,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "textMode": "auto", "graphMode": "area" },
+      "title": "Fallos de autenticación (401)",
+      "type": "stat",
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "expr": "sum(rate(http_server_requests_seconds_count{status=\"401\"}[5m]))",
+        "legendFormat": "401/s",
+        "refId": "A"
+      }]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Token válido pero sin el scope necesario. Un repunte aquí, con 401 planos, es un usuario legítimo tocando donde no debe.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 0.05 }
+          ]},
+          "unit": "reqps"
+        }
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 1 },
+      "id": 2,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "textMode": "auto", "graphMode": "area" },
+      "title": "Fallos de autorización (403)",
+      "type": "stat",
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "expr": "sum(rate(http_server_requests_seconds_count{status=\"403\"}[5m]))",
+        "legendFormat": "403/s",
+        "refId": "A"
+      }]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Rechazos acumulados en el rango seleccionado.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 1 },
+      "id": 3,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "textMode": "value_and_name", "orientation": "horizontal" },
+      "title": "Rechazos en el rango",
+      "type": "stat",
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "expr": "sum by (status) (increase(http_server_requests_seconds_count{status=~\"401|403\"}[$__range]))",
+        "legendFormat": "{{status}}",
+        "refId": "A"
+      }]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Disponibilidad del proveedor de identidad. Si Keycloak cae, el backend no puede validar ningún token y todo pasa a 401.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "CAÍDO", "color": "red", "index": 0 } } },
+            { "type": "value", "options": { "1": { "text": "UP", "color": "green", "index": 1 } } }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null },
+            { "color": "green", "value": 1 }
+          ]}
+        }
+      },
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 1 },
+      "id": 4,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "textMode": "auto" },
+      "title": "Keycloak",
+      "type": "stat",
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "expr": "up{job=\"keycloak\"}",
+        "legendFormat": "keycloak",
+        "refId": "A"
+      }]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Evolución de 401 y 403. Distinguir el patrón importa: muchos 401 desde muchos orígenes es un ataque; muchos desde uno solo, justo tras un despliegue, suele ser un token expirado que el frontend no renueva.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 20, "lineWidth": 2 },
+          "unit": "reqps"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "id": 5,
+      "options": { "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true, "calcs": ["max"] }, "tooltip": { "mode": "multi" } },
+      "title": "401 y 403 en el tiempo",
+      "type": "timeseries",
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "expr": "sum by (status) (rate(http_server_requests_seconds_count{status=~\"401|403\"}[5m]))",
+        "legendFormat": "{{status}}",
+        "refId": "A"
+      }]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Qué endpoints concentran los rechazos. Señala qué permiso está mal asignado, o qué recurso se está intentando forzar.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "continuous-YlRd" },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "id": 6,
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true
+      },
+      "title": "Endpoints con más rechazos (top 10)",
+      "type": "bargauge",
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "expr": "topk(10, sum by (uri, status) (increase(http_server_requests_seconds_count{status=~\"401|403\"}[$__range])))",
+        "legendFormat": "{{status}} {{uri}}",
+        "refId": "A"
+      }]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "id": 101,
+      "title": "Alertas activas y evidencia",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "description": "Alertas que Prometheus tiene en pending o firing ahora mismo, con su componente y severidad.",
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "custom": { "align": "auto" }, "unit": "short" }
+      },
+      "gridPos": { "h": 8, "w": 10, "x": 0, "y": 15 },
+      "id": 7,
+      "options": { "showHeader": true },
+      "title": "Alertas activas",
+      "type": "table",
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "expr": "ALERTS",
+        "format": "table",
+        "instant": true,
+        "refId": "A"
+      }]
+    },
+    {
+      "datasource": { "type": "loki", "uid": "loki" },
+      "description": "Eventos de seguridad de Keycloak. Keycloak 24 no expone métricas de login —KC_METRICS_ENABLED solo aporta métricas de Quarkus— pero sí emite cada intento fallido como evento en el log, con tipo, usuario, IP de origen y motivo (invalid_user_credentials, user_temporarily_disabled…). Alloy los recoge y Loki los indexa, así que la fuerza bruta contra el formulario de Keycloak, que un 401 del backend no detecta, sí es visible aquí.",
+      "gridPos": { "h": 8, "w": 14, "x": 10, "y": 15 },
+      "id": 8,
+      "options": {
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true,
+        "enableLogDetails": true,
+        "dedupStrategy": "none"
+      },
+      "title": "Keycloak — eventos de login y errores",
+      "type": "logs",
+      "targets": [{
+        "datasource": { "type": "loki", "uid": "loki" },
+        "expr": "{service=\"keycloak\"} |~ \"org.keycloak.events|ERROR\"",
+        "refId": "A"
+      }]
+    }
+  ],
+  "schemaVersion": 39,
+  "version": 1
+}
