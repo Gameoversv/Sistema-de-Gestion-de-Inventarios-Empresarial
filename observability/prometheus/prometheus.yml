@@ -2,6 +2,15 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+# Las cinco alertas obligatorias del enunciado.
+rule_files:
+  - '/etc/prometheus/rules/*.yml'
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
 scrape_configs:
   # ── El propio Prometheus ───────────────────────────────────────────────────
   - job_name: 'prometheus'

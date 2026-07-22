@@ -223,11 +223,25 @@ services:
       - "${PROMETHEUS_PORT:-9090}:9090"
     volumes:
       - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/prometheus/rules:/etc/prometheus/rules:ro
       - prometheus_data:/prometheus
     networks:
       - inventory-net
     depends_on:
       - backend
+
+  # ── Alertmanager (enrutado y agrupación de las 5 alertas) ───────────────────
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: inventory-alertmanager
+    restart: unless-stopped
+    ports:
+      - "${ALERTMANAGER_PORT:-9093}:9093"
+    volumes:
+      - ./observability/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    networks:
+      - inventory-net
 
   # ── Grafana ─────────────────────────────────────────────────────────────────
   grafana:
@@ -255,6 +269,8 @@ volumes:
   redis_data:
     driver: local
   prometheus_data:
+    driver: local
+  alertmanager_data:
     driver: local
   grafana_data:
     driver: local

@@ -1,0 +1,36 @@
+global:
+  resolve_timeout: 5m
+
+# Agrupa por alerta y componente para no recibir una notificación por instancia.
+route:
+  group_by: ['alertname', 'componente']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: 'default'
+
+  routes:
+    # Lo crítico no espera al agrupamiento y se repite más a menudo.
+    - matchers:
+        - severity = "critical"
+      receiver: 'critico'
+      group_wait: 10s
+      repeat_interval: 1h
+
+# Silencia la latencia alta si el mismo componente ya tiene un servicio caído:
+# la latencia es consecuencia, no causa.
+inhibit_rules:
+  - source_matchers:
+      - alertname = "ServicioCaido"
+    target_matchers:
+      - alertname = "LatenciaAlta"
+    equal: ['componente']
+
+# El destino de entrega depende del entorno (correo del equipo, webhook de Slack)
+# y se inyecta por variable de entorno en staging y producción. En desarrollo los
+# receptores no entregan a ninguna parte: la evidencia se toma de la interfaz de
+# Alertmanager en http://localhost:9093 y de http://localhost:9090/alerts.
+receivers:
+  - name: 'default'
+
+  - name: 'critico'
