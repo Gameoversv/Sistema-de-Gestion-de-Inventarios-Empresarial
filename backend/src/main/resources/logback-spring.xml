@@ -16,12 +16,14 @@
     </root>
   </springProfile>
 
-  <!-- ── Staging / Prod: structured JSON (one object per line) ─────────── -->
+  <!-- ── Staging / Prod / Demo: structured JSON (one object per line) ──── -->
   <!-- Los seis campos exigidos: traceId y spanId los propaga Micrometer
        Tracing al MDC; correlationId, user y endpoint los pone
        CorrelationIdFilter / AuthenticatedUserMdcFilter; level lo emite el
-       propio encoder. `includeMdcData` los saca como campos de primer nivel. -->
-  <springProfile name="staging | prod">
+       propio encoder. `includeMdcData` los saca como campos de primer nivel.
+       `demo` entra aquí y no en el bloque de texto plano: sin JSON, el panel de
+       logs de la presentación no puede filtrar por usuario ni por endpoint. -->
+  <springProfile name="staging | prod | demo">
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
       <encoder class="net.logstash.logback.encoder.LogstashEncoder">
         <fieldNames>
@@ -44,7 +46,7 @@
   </springProfile>
 
   <!-- ── Fallback (no profile active) ─────────────────────────────────── -->
-  <springProfile name="!(dev | test | staging | prod)">
+  <springProfile name="!(dev | test | staging | prod | demo)">
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
       <encoder>
         <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} : %msg%n</pattern>

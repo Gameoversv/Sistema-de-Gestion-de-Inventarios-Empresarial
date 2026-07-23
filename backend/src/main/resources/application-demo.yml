@@ -1,0 +1,50 @@
+# Profile: demo
+# Presentación final en local. Es `staging` con dos cambios, y existe por una
+# razón concreta: la demo necesita a la vez los logs estructurados de staging
+# —sin ellos el panel de Loki no puede filtrar por usuario ni por endpoint— y
+# un frontend en http://localhost:3000, que staging bloquea por CORS.
+#
+# Meter localhost en `staging` no era opción: ese perfil espeja producción y un
+# origen local ahí es un agujero que se arrastraría al despliegue real. Caer a
+# `dev` tampoco: emite texto plano y los dashboards de Negocio y Seguridad se
+# quedan sin los seis campos MDC.
+#
+# Diferencias frente a staging:
+#   - CORS permite el frontend local.
+#   - Muestreo de trazas al 100 %: en una demo de pocos minutos, perder la mitad
+#     de las trazas deja paneles de Tempo a medias.
+spring:
+  flyway:
+    baseline-on-migrate: false
+
+  jpa:
+    show-sql: false
+
+  datasource:
+    hikari:
+      maximum-pool-size: 15
+      minimum-idle: 3
+
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+
+management:
+  endpoint:
+    health:
+      show-details: when_authorized
+  tracing:
+    sampling:
+      probability: 1.0
+
+app:
+  cors:
+    allowed-origins: http://localhost:3000
+
+logging:
+  level:
+    root: INFO
+    com.inventory: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: WARN

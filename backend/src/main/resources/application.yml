@@ -125,7 +125,7 @@ info:
     description: Sistema de Gestión de Inventarios Empresarial
 
 # ── CORS ────────────────────────────────────────────────────────────────────────
-# Override allowed-origins per profile (dev/staging/prod)
+# Override allowed-origins per profile (dev/demo/staging/prod)
 app:
   cors:
     allowed-origins: http://localhost:3000

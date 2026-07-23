@@ -2,7 +2,7 @@
 
 **Fuente de verdad:** `Proyecto_Final_V3.pdf` (revisado íntegro el 2026-07-22)
 **Base de hallazgos:** [ANALISIS_BRECHAS.md](ANALISIS_BRECHAS.md)
-**Actualizado:** 2026-07-23, tras cerrar la Ola 2, seis de las nueve tareas de la Ola 4 (Q-1 a Q-4, ENV-1, TEST-10), P-2 de la Ola 6 y D-1…D-4 de la Ola 5.
+**Actualizado:** 2026-07-23, tras cerrar la Ola 2, seis de las nueve tareas de la Ola 4 (Q-1 a Q-4, ENV-1, TEST-10), P-2 de la Ola 6, D-1…D-4 de la Ola 5 y P-2a de la Ola 7.
 
 > **Aviso de método.** La versión anterior de este plan tomaba como requisito el desglose del análisis de brechas, que en algunos puntos era interpretación propia y no texto del enunciado. Cada requisito de este documento está contrastado con el PDF. Cuando algo es criterio nuestro y no del enunciado, se marca como **[criterio propio]**.
 
@@ -206,9 +206,9 @@ Era el mayor déficit del proyecto: cinco de los siete componentes obligatorios 
 | **OBS-2 + E-3** | `Counter` de alertas de stock y de movimientos por tipo | 1,5 h | **hecho** — 4 series + alerta de negocio, [informe](testing/reportes/OBS-2-E-3-metricas-de-negocio.md) |
 | **—** | Separar en 4 dashboards: Infraestructura, Aplicación, Negocio, Seguridad | 3 h | **hecho** — 4 de 4, 37 consultas sin paneles vacíos, [informe](testing/reportes/OBS-dashboards.md) |
 
-> **Decisión tomada:** el stack de la demo se levanta con `SPRING_PROFILES_ACTIVE=staging`. Es el único perfil, junto con `prod`, que emite JSON estructurado, y sin él el panel de logs no puede filtrar por usuario ni por endpoint. Verificado con los seis campos MDC en Loki ([informe P-2](testing/reportes/P-2-capturas-de-evidencia.md)).
+> **Decisión tomada:** el stack de la demo se levanta con `SPRING_PROFILES_ACTIVE=demo`. La demo necesita a la vez JSON estructurado —sin él el panel de logs no puede filtrar por usuario ni por endpoint— y un frontend en `localhost:3000`, y ningún perfil existente daba las dos cosas: `staging` y `prod` emiten JSON pero apuntan el CORS a dominios que no existen en local, y `dev` abre el CORS pero emite texto plano.
 >
-> **Contrapartida sin resolver:** `application-staging.yml` fija `app.cors.allowed-origins` a `https://staging.inventory.example.com`, así que el frontend de `localhost:3000` queda bloqueado por CORS. Para P-2 bastó un override en `.env`, pero **P-1 y P-3 necesitan la interfaz**. Hay que decidir entre añadir el origen local a `staging`, crear un perfil `demo`, o asumir `dev` y perder el filtrado de logs. Ver [Ola 7](#ola-7--deuda-abierta-por-los-hallazgos).
+> **Resuelto en P-2a.** Se descartó añadir `localhost` a `staging`, que declara espejar producción y sí se usa en el workflow de despliegue. El perfil `demo` es copia de `staging` con CORS local y muestreo de trazas al 100 %, y `CorsProfilesTest` impide que alguien vuelva a "arreglarlo" metiendo localhost en `staging` o `prod` ([informe](testing/reportes/P-2a-perfil-demo.md)). P-3 deja de estar bloqueado.
 
 El área queda cerrada: el pendiente que arrastraba (P-2) está hecho.
 
@@ -271,7 +271,7 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 |---|---|---|---|
 | **P-1** | Guion de demo: alta de producto → movimiento de stock → alerta → auditoría → dashboard | 1 h | pendiente |
 | **P-2** | Capturas de los 4 dashboards con datos reales y de una alerta disparada | 1 h | **hecho** — 6 capturas, 34 paneles sin ninguno vacío, alerta verificada hasta Alertmanager, [informe](testing/reportes/P-2-capturas-de-evidencia.md) |
-| **P-3** | Ensayo con el stack levantado desde cero (`down -v && up`) | 1 h | pendiente — **bloqueado** por el CORS de `staging` |
+| **P-3** | Ensayo con el stack levantado desde cero (`down -v && up`) | 1 h | pendiente — **desbloqueado** por P-2a; queda el riesgo de P-2b (`keycloak-init` no es idempotente) en un `up` repetido |
 
 > **Dos avisos de P-2 que afectan al guion de P-1.** Los paneles de Negocio usan `increase()`: si en la demo se encadenan todos los movimientos seguidos saldrán en cero, porque Prometheus no puede medir el incremento del primer punto de una serie. Hay que espaciarlos o levantar el stack con antelación. Y la ventana temporal de los dashboards no debe abarcar un reinicio del backend con otro perfil, o cada panel duplica sus series.
 
@@ -283,7 +283,7 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 | **G-8** | `scopeMappings` en Keycloak: corrección de raíz de G-6 y prerrequisito de G-2 | 1 h |
 | **S-4b** | Quitar `JWT_SECRET` y `JWT_EXPIRATION_MS` de `staging.yml` | 10 min |
 | **ADR-001** | Por qué el mapa rol→scopes vive en Java | 30 min |
-| **P-2a** | CORS de `staging` apunta a `staging.inventory.example.com`: bloquea el frontend local y deja P-3 sin interfaz | 20 min |
+| ~~**P-2a**~~ | ~~CORS de `staging` bloquea el frontend local y deja P-3 sin interfaz~~ — **hecho**: perfil `demo` propio, con CORS local y muestreo al 100 %. Se descartó añadir localhost a `staging`, que espeja producción. Verificado en vivo y fijado con `CorsProfilesTest` [informe](testing/reportes/P-2a-perfil-demo.md) | — |
 | **P-2b** | `keycloak-init` no es idempotente: al reejecutarse sobre un realm existente lanza `duplicate key … uk_cli_scope` y ensucia el panel de eventos | 30 min |
 | **TEST-10b** | El realm emite tokens de 300 s y el escaneo activo de ZAP puede durar más. Al caducar, el resto de la API se recorre sin autenticar y el escaneo aprueba precisamente por no encontrar nada. Ya hay un paso que lo detecta y falla; falta la corrección de raíz: un cliente de Keycloak dedicado al escaneo con `accessTokenLifespan` mayor | 45 min |
 
