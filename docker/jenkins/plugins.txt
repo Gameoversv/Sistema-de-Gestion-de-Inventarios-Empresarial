@@ -1,0 +1,36 @@
+# Plugins que necesita el Jenkinsfile de este repositorio.
+#
+# Sin version fijada: jenkins-plugin-cli resuelve la ultima compatible con la
+# imagen base, que es lts-jdk21. Fijarlas obligaria a revisarlas cada vez que
+# suba la LTS, y para un pipeline de este tamano no compensa.
+
+# ── Pipeline declarativo ──────────────────────────────────────────────────────
+workflow-aggregator
+pipeline-stage-view
+
+# ── Checkout del repositorio ──────────────────────────────────────────────────
+git
+
+# ── Autorizacion: estrategia globalMatrix de casc.yaml ────────────────────────
+# El core ya no registra `loggedInAuthenticationCanDoAnything` para JCasC, asi que
+# la matriz de permisos viene de este plugin.
+matrix-auth
+
+# ── Credenciales: withCredentials() del Jenkinsfile ───────────────────────────
+credentials
+credentials-binding
+plain-credentials
+
+# ── Configuration as Code: todo lo de casc.yaml ───────────────────────────────
+configuration-as-code
+# job-dsl lo necesita el bloque `jobs:` de casc.yaml para crear el pipeline
+job-dsl
+
+# ── Informes que publican las etapas ──────────────────────────────────────────
+junit
+
+# ── Limpieza del workspace: cleanWs() en el post del pipeline ─────────────────
+ws-cleanup
+
+# ── Quality Gate de SonarQube/SonarCloud (etapa nueva de C-4) ─────────────────
+sonar

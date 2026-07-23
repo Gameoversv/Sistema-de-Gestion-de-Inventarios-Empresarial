@@ -1,0 +1,94 @@
+# Configuration as Code de Jenkins.
+#
+# Todo lo que el Jenkinsfile da por supuesto se declara aqui: el tool jdk-21, las
+# credenciales que consume withCredentials() y el propio job. Antes nada de esto
+# existia —la instalacion estaba vacia— y por eso el pipeline nunca se ejecuto.
+#
+# Ningun secreto va escrito en este archivo: todos entran por variable de entorno.
+# El fichero es publico; los valores no.
+
+jenkins:
+  systemMessage: "Inventario — pipeline declarativo. Configurado por JCasC desde docker/jenkins/casc.yaml"
+  numExecutors: 2
+  mode: NORMAL
+
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_ADMIN_ID}"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+
+  # Solo el administrador tiene permisos; el anonimo no lee nada. Se usa globalMatrix
+  # (plugin matrix-auth) porque el core dejo de registrar
+  # `loggedInAuthenticationCanDoAnything` como configurador de JCasC.
+  authorizationStrategy:
+    globalMatrix:
+      entries:
+        - user:
+            name: "${JENKINS_ADMIN_ID}"
+            permissions:
+              - "Overall/Administer"
+
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          # El Jenkinsfile copia este fichero a .env antes de levantar el stack.
+          # Se inyecta en base64 porque JCasC espera bytes, no texto.
+          - file:
+              scope: GLOBAL
+              id: "inventory-env-file"
+              description: "Fichero .env para docker compose en las etapas de despliegue"
+              fileName: ".env"
+              secretBytes: "${JENKINS_ENV_FILE_B64}"
+
+          - string:
+              scope: GLOBAL
+              id: "kc-admin-password"
+              description: "Contrasena de inv_admin en Keycloak, para los smoke tests de API"
+              secret: "${JENKINS_KC_ADMIN_PASSWORD}"
+
+          - string:
+              scope: GLOBAL
+              id: "kc-viewer-password"
+              description: "Contrasena de inv_viewer, para comprobar que un viewer no puede escribir"
+              secret: "${JENKINS_KC_VIEWER_PASSWORD}"
+
+          - string:
+              scope: GLOBAL
+              id: "sonar-token"
+              description: "Token de SonarCloud para la etapa de Quality Gate"
+              secret: "${JENKINS_SONAR_TOKEN}"
+
+tool:
+  jdk:
+    installations:
+      # El Jenkinsfile declara `tools { jdk 'jdk-21' }`. La imagen base ya trae el
+      # JDK 21, asi que el tool apunta a el en vez de descargarlo otra vez.
+      - name: "jdk-21"
+        home: "/opt/java/openjdk"
+
+unclassified:
+  location:
+    url: "http://localhost:8090/"
+
+jobs:
+  - script: |
+      pipelineJob('inventario-pipeline') {
+        description('Pipeline declarativo del Sistema de Gestion de Inventarios. Definicion en el Jenkinsfile del repositorio.')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial.git')
+                }
+                branch('*/main')
+              }
+            }
+            scriptPath('Jenkinsfile')
+            lightweight(true)
+          }
+        }
+      }

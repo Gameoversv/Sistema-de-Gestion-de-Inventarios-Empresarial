@@ -1,8 +1,33 @@
+# Jenkins configurado desde el repositorio, no a mano.
+#
+# La version anterior usaba la imagen oficial con el asistente de instalacion
+# activado, asi que toda la configuracion quedaba dentro del volumen jenkins_home:
+# invisible en el repositorio y perdida al recrear el contenedor. El resultado fue
+# que el Jenkinsfile referenciaba un tool `jdk-21` y tres credenciales que no
+# existian, y ninguna de sus etapas llego a ejecutarse nunca.
+#
+# Arranque:
+#
+#   export JENKINS_ADMIN_ID=admin
+#   export JENKINS_ADMIN_PASSWORD=...            # elegida por ti
+#   export JENKINS_KC_ADMIN_PASSWORD=...         # = KC_USER_ADMIN_PASSWORD del .env
+#   export JENKINS_KC_VIEWER_PASSWORD=...        # = KC_USER_VIEWER_PASSWORD del .env
+#   export JENKINS_SONAR_TOKEN=...               # el mismo valor que SONAR_TOKEN en GitHub
+#   export JENKINS_ENV_FILE_B64=$(base64 -w0 .env)
+#   docker compose -f docker/docker-compose.jenkins.yml up -d --build
+#
+# Ningun valor se guarda en el repositorio: casc.yaml solo nombra las variables.
+
 services:
   jenkins:
-    image: jenkins/jenkins:lts-jdk21
+    build:
+      context: ./jenkins
+      dockerfile: Dockerfile
+    image: inventory-jenkins:casc
     container_name: inventory-jenkins
     restart: unless-stopped
+    # Necesario para que las etapas de Docker Build y Deploy hablen con el demonio
+    # del host a traves del socket montado abajo.
     privileged: true
     user: root
     ports:
@@ -11,8 +36,18 @@ services:
     volumes:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./jenkins/casc.yaml:/var/jenkins_conf/casc.yaml:ro
     environment:
-      - JAVA_OPTS=-Djenkins.install.runSetupWizard=true
+      CASC_JENKINS_CONFIG: /var/jenkins_conf/casc.yaml
+      JAVA_OPTS: -Djenkins.install.runSetupWizard=false
+      # Las dos primeras sin valor por defecto a proposito: si faltan, compose se
+      # niega a arrancar en vez de crear un Jenkins con admin vacio.
+      JENKINS_ADMIN_ID: ${JENKINS_ADMIN_ID:?falta JENKINS_ADMIN_ID}
+      JENKINS_ADMIN_PASSWORD: ${JENKINS_ADMIN_PASSWORD:?falta JENKINS_ADMIN_PASSWORD}
+      JENKINS_KC_ADMIN_PASSWORD: ${JENKINS_KC_ADMIN_PASSWORD:-}
+      JENKINS_KC_VIEWER_PASSWORD: ${JENKINS_KC_VIEWER_PASSWORD:-}
+      JENKINS_SONAR_TOKEN: ${JENKINS_SONAR_TOKEN:-}
+      JENKINS_ENV_FILE_B64: ${JENKINS_ENV_FILE_B64:-}
 
 volumes:
   jenkins_home:
