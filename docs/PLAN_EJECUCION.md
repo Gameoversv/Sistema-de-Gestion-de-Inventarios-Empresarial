@@ -19,7 +19,7 @@ El enunciado define **ocho** áreas. La versión anterior omitía la última.
 | Seguridad | 10% | ~70% | ~85% | ~90% |
 | Observabilidad | 15% | ~30% | ~90% | ~90% |
 | CI/CD | 15% | ~60% | ~85% | ~90% |
-| Calidad de código | 10% | ~35% | ~45% | ~85% |
+| Calidad de código | 10% | ~35% | ~60% | ~85% |
 | Documentación | 10% | ~25% | ~40% | ~90% |
 | **Presentación final** | **5%** | **0%** | **0%** | **~90%** |
 
@@ -27,8 +27,10 @@ Salvo la cobertura, medida sobre el artefacto de CI, los porcentajes son estimac
 
 | Cobertura (artefacto JaCoCo en Actions) | Inicial | Actual | Umbral |
 |---|---|---|---|
-| BRANCH | 71,6 % | **83,2 %** | 80 % |
-| LINE | 84,9 % | **91,3 %** | 80 % |
+| BRANCH | 71,6 % | **84,2 %** | 80 % |
+| LINE | 84,9 % | **92,2 %** | 80 % |
+
+Medido sobre el artefacto de CI de `main` (`798e6b6`). El frontend se mide aparte y está en **5,4 %** de líneas: hasta ahora el informe daba 100 %, pero solo cubría las 14 sentencias que los tests importaban. Con `all: true` en vitest el número es el real.
 
 ---
 
@@ -220,17 +222,21 @@ Queda un único pendiente del área, que pertenece a la Ola 6: **capturar las ca
 
 ### Ola 4 — Calidad y CI/CD (≈7 h)
 
-| # | Acción | Esfuerzo |
-|---|---|---|
-| **Q-1** | SonarCloud con las 5 métricas exigidas + badge | 1,5 h |
-| **Q-3** | Job de frontend en CI: lint + coverage | 45 min |
-| **Q-2** | Retirar `-Dspotless.check.skip=true` de los 8 puntos | 45 min |
-| **Q-4** | Publicar cobertura como artefacto + badge | 30 min |
-| **C-4** | Jenkins: añadir E2E, security scan y quality gate | 2 h |
-| **CI-2** | Tag `v1.0.0` y primera ejecución de `production.yml` | 15 min |
-| **—** | Smoke test post-release | 45 min |
-| **TEST-10** | ZAP autenticado o `zap-full-scan` con umbral | 2 h |
-| **ENV-1** | IT con URL de BD por configuración externa | 1 h |
+| # | Acción | Esfuerzo | Estado |
+|---|---|---|---|
+| **Q-2** | Retirar `-Dspotless.check.skip=true` de los 8 puntos | 45 min | **hecho** — spotless corre en `validate`, así que ahora se comprueba en cada `compile`, `test`, `verify` y `package` |
+| **Q-3** | Job de frontend en CI: lint + coverage | 45 min | **hecho** — el frontend no tenía ningún job; ahora corre lint y tests con cobertura real |
+| **Q-4** | Publicar cobertura como artefacto + badge | 30 min | **hecho** — artefacto `coverage-report`, resumen en cada run y badges verificados en CI |
+| **Q-1** | SonarCloud con las 5 métricas exigidas + badge | 1,5 h | **bloqueado** — requiere cuenta, organización y `SONAR_TOKEN` |
+| **C-4** | Jenkins: añadir E2E, security scan y quality gate | 2 h | pendiente — `inventory-jenkins` lleva semanas parado |
+| **CI-2** | Tag `v1.0.0` y primera ejecución de `production.yml` | 15 min | pendiente — crea un GitHub Release, decisión explícita |
+| **—** | Smoke test post-release | 45 min | pendiente — depende de CI-2 |
+| **TEST-10** | ZAP autenticado o `zap-full-scan` con umbral | 2 h | pendiente |
+| **ENV-1** | IT con URL de BD por configuración externa | 1 h | pendiente |
+
+> **El badge de cobertura del README era falso.** Decía `coverage-placeholder-brightgreen`: verde fijo, sin medir nada. Ahora hay tres badges con los valores reales y [`scripts/verificar-badges-cobertura.sh`](../scripts/verificar-badges-cobertura.sh) falla en CI si se desfasan. No se generan SVG desde el runner a propósito: `main` exige PR con revisión, así que un push automático quedaría bloqueado por la propia protección de rama.
+
+> **Testcontainers no arranca en este equipo.** `./mvnw verify` local termina en `Could not find a valid Docker environment` en los 3 IT, con Docker Desktop levantado y también forzando `DOCKER_HOST=npipe:////./pipe/docker_engine`. En CI pasan sin problema. Afecta a quien intente medir cobertura en local; relacionado con **ENV-1**.
 
 ### Ola 5 — Documentación (≈11 h)
 

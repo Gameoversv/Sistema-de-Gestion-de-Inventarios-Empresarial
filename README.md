@@ -1,7 +1,9 @@
 # Sistema de Gestión de Inventarios Empresarial
 
 ![CI](https://img.shields.io/github/actions/workflow/status/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/ci.yml?label=CI&style=flat-square)
-![Coverage](https://img.shields.io/badge/coverage-placeholder-brightgreen?style=flat-square)
+![Backend coverage](https://img.shields.io/badge/backend%20coverage-92.2%25%20lineas-brightgreen?style=flat-square)
+![Backend branches](https://img.shields.io/badge/backend%20branches-84.2%25-brightgreen?style=flat-square)
+![Frontend coverage](https://img.shields.io/badge/frontend%20coverage-5.4%25-critical?style=flat-square)
 ![License](https://img.shields.io/github/license/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial?style=flat-square)
 ![Issues](https://img.shields.io/github/issues/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial?style=flat-square)
 ![Last Commit](https://img.shields.io/github/last-commit/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial?style=flat-square)

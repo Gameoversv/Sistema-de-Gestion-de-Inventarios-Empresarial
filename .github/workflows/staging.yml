@@ -186,8 +186,7 @@ jobs:
             -Dspring.datasource.url=jdbc:postgresql://localhost:5432/inventory_db \
             "-Dspring.datasource.username=inventory_user" \
             "-Dspring.datasource.password=${{ secrets.STAGING_DB_PASSWORD }}" \
-            -Dspring.jpa.hibernate.ddl-auto=validate \
-            -Dspotless.check.skip=true
+            -Dspring.jpa.hibernate.ddl-auto=validate
 
       # ── Security scan ─────────────────────────────────────────────────────
       - name: OWASP ZAP baseline security scan
