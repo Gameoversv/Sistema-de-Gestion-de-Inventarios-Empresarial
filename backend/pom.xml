@@ -306,6 +306,11 @@
           <includes>
             <include>**/*IT.java</include>
           </includes>
+          <excludes>
+            <!-- Necesita una base ya desplegada a la que apuntar, que en este job no
+                 existe. Corre solo con -P live-db-it, desde staging.yml. -->
+            <exclude>**/LiveDatabase*IT.java</exclude>
+          </excludes>
           <systemPropertyVariables>
             <spring.profiles.active>test</spring.profiles.active>
           </systemPropertyVariables>
@@ -441,6 +446,65 @@
               <outputFileName>openapi.yaml</outputFileName>
               <outputDir>${project.basedir}/../docs/api</outputDir>
             </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!--
+      Profile: live-db-it
+      Ejecuta SOLO los IT que se conectan a una base ya desplegada, tomando la
+      configuracion del entorno. Los IT normales quedan fuera porque levantan su
+      propio Postgres con Testcontainers, que es justo lo que aqui no se quiere.
+      Uso: mvn verify -P live-db-it   (con SPRING_DATASOURCE_URL y LIVE_DB_IT=true)
+    -->
+    <profile>
+      <id>live-db-it</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <!-- Los unitarios ya corrieron en el job de CI; aqui solo interesa
+                   el contacto con la base desplegada. -->
+              <skipTests>true</skipTests>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <argLine>@{argLine} -XX:+EnableDynamicAgentLoading</argLine>
+              <includes>
+                <include>**/LiveDatabase*IT.java</include>
+              </includes>
+              <!-- La config base excluye esta clase y Maven fusiona configuraciones,
+                   asi que hay que anular la exclusion o el perfil no ejecutaria nada. -->
+              <excludes combine.self="override">
+                <exclude>**/NingunaClaseCoincideConEsto.java</exclude>
+              </excludes>
+              <!-- Si el patron deja de casar, el paso debe fallar en vez de pasar
+                   en verde sin ejecutar nada. Un paso que no prueba nada y aprueba
+                   es peor que un paso ausente. -->
+              <failIfNoTests>true</failIfNoTests>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <executions>
+              <!-- El umbral de cobertura se mide en el job de CI, con la bateria
+                   completa. Aqui solo corre un IT contra la base desplegada, asi
+                   que el check daria siempre por debajo del 80 % y tumbaria el
+                   despliegue por un motivo que no tiene que ver con el. Se anula
+                   la ejecucion con phase=none; prepare-agent sigue activo porque
+                   failsafe usa @{argLine}. -->
+              <execution>
+                <id>check</id>
+                <phase>none</phase>
+              </execution>
+            </executions>
           </plugin>
         </plugins>
       </build>

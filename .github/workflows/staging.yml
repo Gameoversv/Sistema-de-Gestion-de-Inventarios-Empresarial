@@ -177,16 +177,26 @@ jobs:
           echo "✅ All API integration tests passed"
 
       # ── Integration tests (Spring context vs live Postgres) ──────────────
+      #
+      # Este paso invocaba StockServiceConcurrencyIT pasandole la URL de abajo y el
+      # secreto de la contrasena, pero esa clase declara @Container PostgreSQLContainer
+      # y @DynamicPropertySource. Las propiedades dinamicas tienen la precedencia mas
+      # alta de Spring, por encima de los -D, asi que el test levantaba su propio
+      # Postgres efimero y nunca tocaba la base desplegada: en el run 29973867778 se
+      # lee "Container postgres:16-alpine started". El nombre del paso y el secreto
+      # que consumia eran falsos.
+      #
+      # Ahora corre LiveDatabaseIT, que no usa Testcontainers y toma la configuracion
+      # del entorno. El perfil live-db-it deja fuera al resto de IT —que si levantan
+      # su propio contenedor— y falla si el filtro no casa con ninguna clase.
       - name: Run IT tests against live DB
         working-directory: backend
-        run: |
-          ./mvnw test -B \
-            -Dtest=StockServiceConcurrencyIT \
-            -DfailIfNoTests=false \
-            -Dspring.datasource.url=jdbc:postgresql://localhost:5432/inventory_db \
-            "-Dspring.datasource.username=inventory_user" \
-            "-Dspring.datasource.password=${{ secrets.STAGING_DB_PASSWORD }}" \
-            -Dspring.jpa.hibernate.ddl-auto=validate
+        env:
+          LIVE_DB_IT: 'true'
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/inventory_db
+          SPRING_DATASOURCE_USERNAME: inventory_user
+          SPRING_DATASOURCE_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+        run: ./mvnw verify -B -P live-db-it
 
       # ── Security scan ─────────────────────────────────────────────────────
       - name: OWASP ZAP baseline security scan

@@ -114,7 +114,7 @@ El enunciado es literal: *"Integration Testing — Obligatorio utilizar: Testcon
 | Capa | Exigencia | Estado |
 |---|---|---|
 | 1. Unit | Servicios, validaciones, lógica | cumple — 284 tests |
-| 2. Integration | Testcontainers: **BD real, Keycloak**, integraciones | parcial — BD sí, **Keycloak no** (TEST-1) |
+| 2. Integration | Testcontainers: **BD real, Keycloak**, integraciones | parcial — BD sí (y desde ENV-1, también contra la base desplegada), **Keycloak no** (TEST-1) |
 | 3. API / Contract | Endpoints, contratos OpenAPI, status codes, payloads | parcial — Postman sin CI (TEST-3), RestAssured sin uso (TEST-2) |
 | 4. E2E | Snapshots, flujos, navegación, **roles**, seguridad, **responsive** | **no se ejecuta en CI** (C-1, TEST-7/8/9) |
 | 5. Security | ZAP, JWT, permisos, CORS, Dependency Check/Snyk, autenticación | parcial — ZAP baseline sí; faltan T-5, TEST-11 |
@@ -232,7 +232,7 @@ Queda un único pendiente del área, que pertenece a la Ola 6: **capturar las ca
 | **CI-2** | Tag `v1.0.0` y primera ejecución de `production.yml` | 15 min | pendiente — crea un GitHub Release, decisión explícita |
 | **—** | Smoke test post-release | 45 min | pendiente — depende de CI-2 |
 | **TEST-10** | ZAP autenticado o `zap-full-scan` con umbral | 2 h | pendiente |
-| **ENV-1** | IT con URL de BD por configuración externa | 1 h | pendiente |
+| **ENV-1** | IT con URL de BD por configuración externa | 1 h | **hecho** — `LiveDatabaseIT` + perfil `live-db-it`; verificado que falla cuando no hay base, en vez de saltarse |
 
 > **El badge de cobertura del README era falso.** Decía `coverage-placeholder-brightgreen`: verde fijo, sin medir nada. Ahora hay tres badges con los valores reales y [`scripts/verificar-badges-cobertura.sh`](../scripts/verificar-badges-cobertura.sh) falla en CI si se desfasan. No se generan SVG desde el runner a propósito: `main` exige PR con revisión, así que un push automático quedaría bloqueado por la propia protección de rama.
 

@@ -463,7 +463,13 @@ Compose completo, `application-dev.yml`, `.env.example`, CORS permisivo para loc
 Invoca `StockServiceConcurrencyIT` pasándole `-Dspring.datasource.url=jdbc:postgresql://localhost:5432/inventory_db` y el secreto de contraseña real. Pero la clase declara `@Container PostgreSQLContainer` y un `@DynamicPropertySource` que registra `spring.datasource.url` desde ese contenedor. **`@DynamicPropertySource` tiene la precedencia más alta** en la resolución de propiedades de Spring, por encima de los `-D` de línea de comandos: el test levanta su propio Postgres efímero y jamás se conecta a la base de staging. El nombre del paso, su propósito declarado y el secreto que consume son falsos.
 Al ser el único paso que aportaría "integration tests contra el sistema desplegado", ese sub-requisito queda sin cubrir mientras aparenta lo contrario.
 **Acción:** escribir un IT que reciba la URL de la base por configuración externa (sin `@DynamicPropertySource`), o reemplazar el paso por pruebas de API que ya operan contra el sistema vivo.
-**Verificar además:** el paso usa `./mvnw test` y surefire excluye `**/*IT.java`; con `-DfailIfNoTests=false`, si la exclusión prevalece el paso pasa en verde ejecutando **cero tests**. Revisar la salida del último run de staging lo confirma.
+~~**Verificar además:** el paso usa `./mvnw test` y surefire excluye `**/*IT.java`; con `-DfailIfNoTests=false`, si la exclusión prevalece el paso pasa en verde ejecutando **cero tests**.~~
+
+**Comprobado y descartado (2026-07-23).** El run 29973867778 registra `Tests run: 2` para `StockServiceConcurrencyIT`: `-Dtest=` tiene prioridad sobre los `<excludes>` de surefire, así que el test sí se ejecutaba. La sospecha de "cero tests" era infundada.
+
+Lo que sí confirma ese mismo run es la parte principal del hallazgo: `Creating container for image: postgres:16-alpine` seguido de `Container postgres:16-alpine started`. El test levantaba su Postgres efímero mientras consumía el secreto de la base de staging.
+
+**Resuelto** por [`LiveDatabaseIT`](../backend/src/test/java/com/inventory/common/LiveDatabaseIT.java) y el perfil `live-db-it`.
 
 **ENV-2 · La etapa "Integration Tests" de Jenkins tampoco es de integración.**
 Ejecuta `-Dtest=SecurityIntegrationTest`, un `@WebMvcTest` con `@MockBean JwtDecoder`: slice test con mocks, sin base de datos ni contenedores. Jenkins nunca ejecuta los ITs reales de Testcontainers.
