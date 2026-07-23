@@ -2,7 +2,7 @@
 
 **Fuente de verdad:** `Proyecto_Final_V3.pdf` (revisado íntegro el 2026-07-22)
 **Base de hallazgos:** [ANALISIS_BRECHAS.md](ANALISIS_BRECHAS.md)
-**Actualizado:** 2026-07-22, tras cerrar la Ola 2 completa (Loki, OBS-4, OBS-6, OBS-2/E-3 y los 4 dashboards).
+**Actualizado:** 2026-07-23, tras cerrar la Ola 2, seis de las nueve tareas de la Ola 4 (Q-1 a Q-4, ENV-1, TEST-10), P-2 de la Ola 6 y D-1…D-4 de la Ola 5.
 
 > **Aviso de método.** La versión anterior de este plan tomaba como requisito el desglose del análisis de brechas, que en algunos puntos era interpretación propia y no texto del enunciado. Cada requisito de este documento está contrastado con el PDF. Cuando algo es criterio nuestro y no del enunciado, se marca como **[criterio propio]**.
 
@@ -41,11 +41,11 @@ El enunciado los lista de forma explícita. Sirve como checklist de cierre.
 | Entregable | Estado |
 |---|---|
 | Código fuente completo | listo |
-| Docker Compose funcional | listo — **14 servicios** |
-| Jenkins pipeline | parcial — faltan 3 de las 10 etapas |
-| GitHub Actions pipeline | parcial — faltan security scan y quality gate |
+| Docker Compose funcional | listo — **15 servicios** |
+| Jenkins pipeline | parcial — **11 etapas escritas** y Jenkins configurado como código, pero de `Integration Tests` en adelante nunca se ha ejecutado: hace falta un agente Linux (C-4) |
+| GitHub Actions pipeline | **listo** — security scan (ZAP autenticado) y quality gate (SonarCloud) añadidos en la Ola 4 |
 | Dashboards Grafana | listo — **4 de 4**; datasources de Prometheus, Tempo y Loki provisionados |
-| Reportes de pruebas | parcial — surefire, failsafe y ZAP; faltan k6 y Newman |
+| Reportes de pruebas | parcial — surefire, failsafe, JaCoCo, cobertura de frontend e informe de ZAP como artefactos; faltan k6 y Newman |
 | Evidencias QA | parcial — 7 informes en `docs/testing/reportes/` y 6 capturas en `docs/testing/capturas/` |
 | Documentación completa | parcial |
 | **Presentación final funcional** | **en curso** — P-2 hecho; faltan guion (P-1) y ensayo (P-3) |
@@ -64,7 +64,7 @@ Verificado en vivo ([informe](testing/reportes/G-6-escalada-de-scopes.md)): Keyc
 
 ### 3.2 La cobertura ya pasa el umbral
 
-83,2 % de ramas tras cubrir `UnifiedAuditService`. Desaparece el trabajo de cobertura previsto en la Ola 4.
+84,2 % de ramas y 92,2 % de líneas tras cubrir `UnifiedAuditService`. Desaparece el trabajo de cobertura previsto en la Ola 4. Desde Q-1, SonarCloud la mide en cada ejecución de CI, así que ya no hay que ir a buscar el artefacto.
 
 ### 3.3 Había un check de CI que no ejecutaba nada
 
@@ -117,7 +117,7 @@ El enunciado es literal: *"Integration Testing — Obligatorio utilizar: Testcon
 | 2. Integration | Testcontainers: **BD real, Keycloak**, integraciones | parcial — BD sí (y desde ENV-1, también contra la base desplegada), **Keycloak no** (TEST-1) |
 | 3. API / Contract | Endpoints, contratos OpenAPI, status codes, payloads | parcial — Postman sin CI (TEST-3), RestAssured sin uso (TEST-2) |
 | 4. E2E | Snapshots, flujos, navegación, **roles**, seguridad, **responsive** | **no se ejecuta en CI** (C-1, TEST-7/8/9) |
-| 5. Security | ZAP, JWT, permisos, CORS, Dependency Check/Snyk, autenticación | parcial — ZAP baseline sí; faltan T-5, TEST-11 |
+| 5. Security | ZAP, JWT, permisos, CORS, Dependency Check/Snyk, autenticación | parcial — **ZAP autenticado** sembrado con el OpenAPI y con umbral (TEST-10); faltan T-5 y TEST-11 |
 | 6. Performance | Stress, load, usuarios concurrentes, tiempo de respuesta, throughput | **cero** (T-3) |
 | 7. Data | Migraciones, integridad, **duplicados**, constraints, seeds | parcial (DATA-1/2, E-1) |
 | 8. Exploratory | Charters, bugs encontrados, escenarios | parcial — 2 informes, faltan charters (T-6) |
@@ -149,22 +149,28 @@ El enunciado exige **10 etapas** de pipeline: Checkout, Build, Unit tests, Integ
 
 | Etapa | GitHub Actions | Jenkins |
 |---|---|---|
-| Checkout | sí | sí |
-| Build | sí | sí |
-| Unit tests | sí | sí |
-| Integration tests | sí | sí |
-| API tests | staging.yml | sí (smoke) |
-| E2E tests | **no** | **no** |
-| Security scan | staging.yml (ZAP) | **no** |
-| Quality gates | JaCoCo; falta Sonar | **no** |
-| Docker build | sí | sí |
-| Deployment | staging.yml | sí |
+| Checkout | sí | sí — ejecutado |
+| Build | sí | sí — ejecutado |
+| Unit tests | sí | sí — ejecutado, 284 en verde |
+| Integration tests | sí | escrita, **sin ejecutar** |
+| API tests | staging.yml | escrita (smoke), sin ejecutar |
+| E2E tests | **no** (C-1) | escrita, sin ejecutar |
+| Security scan | staging.yml — ZAP autenticado sobre el OpenAPI | escrita, sin ejecutar |
+| Quality gates | JaCoCo + SonarCloud | escrita, sin ejecutar |
+| Docker build | sí | escrita, sin ejecutar |
+| Deployment | staging.yml | escrita, sin ejecutar |
 
-Jenkins tiene 8 etapas; faltan E2E, security scan y quality gate (**C-4**).
+**GitHub Actions cubre 9 de las 10 etapas**; solo falta E2E (C-1).
+
+Jenkins pasa de 8 a **11 etapas** y de una instalación vacía a configuración como código en `docker/jenkins/`. Pero solo las cuatro primeras se han llegado a ejecutar: la de integración no arranca sobre Docker Desktop en Windows y bloquea todo lo que va detrás (**C-4**, ver el aviso de Testcontainers más abajo).
 
 ### 4.6 Calidad de código (10%)
 
-Exige SonarQube o SonarCloud midiendo Coverage, Bugs, Vulnerabilities, Code smells y Duplicación. **Nunca se ha ejecutado** (Q-1). Spotless está configurado y desactivado en todos los pipelines (Q-2).
+Exige SonarQube o SonarCloud midiendo Coverage, Bugs, Vulnerabilities, Code smells y Duplicación. **Cubierto en la Ola 4** (Q-1): SonarCloud analiza en cada ejecución de CI y el README publica las cinco métricas más el quality gate.
+
+Primer análisis de `main`: cobertura 88,1 %, 0 bugs, 0 vulnerabilidades, 0 % de duplicación y **16 code smells**, que son deuda preexistente que nadie había medido porque Sonar nunca se había ejecutado. Resolverlos es lo único que queda del área.
+
+Spotless estaba declarado en el POM y desactivado con `-Dspotless.check.skip=true` en los ocho sitios donde se invoca Maven. Retirado el flag (Q-2): al correr en fase `validate`, ahora se comprueba en cada `compile`, `test`, `verify` y `package`.
 
 ### 4.7 Repositorio y buenas prácticas
 
@@ -172,11 +178,11 @@ Exige SonarQube o SonarCloud midiendo Coverage, Bugs, Vulnerabilities, Code smel
 |---|---|
 | Repositorio público | cumple |
 | README profesional | cumple — rutas reales, matriz rol→scopes y el `scope` obligatorio del token |
-| **Issues** | 13 issues, todos épicas de fase; **ningún bug** (T-6) |
+| **Issues** | 13 issues (5 abiertas, 8 cerradas), todas épicas de fase; **ningún bug** (T-6). Las épicas 9, 10 y 11 se pusieron al día en la Ola 4 |
 | Pull Requests | cumple — #30 a #40 |
-| Branch strategy | cumple — `main` protegida, 2 checks obligatorios |
+| Branch strategy | cumple — `main` protegida; corren 4 checks y 2 son obligatorios |
 | Conventional Commits | cumple — commitlint activo |
-| Code Reviews | **riesgo** — 6 de 10 PRs previas sin revisión (BP-1) |
+| Code Reviews | **riesgo** — BP-1 contaba 6 de 10 PRs sin revisión, y los mergeados el 23-07 tampoco la tuvieron. Es evaluable y `eduardolp-pz` tiene permiso de escritura, así que su aprobación cuenta |
 | Branch protection | cumple |
 | Secrets management / sin credenciales hardcodeadas | cumple tras BP-2 |
 | **Participación equitativa de ambos integrantes** | **riesgo** — evaluable según commits, ramas, issues y PRs |
@@ -288,7 +294,7 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 | **G-1** | Authorization Services: Resources, Policies, Permissions — **"Policies" está nombrado en el enunciado** | 5 h | ADR argumentando que scopes + roles cubren el modelo |
 | **G-2** | Mover rol→permisos a Keycloak (depende de G-8) | 4 h | ADR-001 |
 | **A-2 / M-1** | `UserController` sobre la Admin API — daría uso a `user:manage` | 4 h | ADR delegando a la consola |
-| **A-1** | Unificar rutas bajo `/api/v1` | 3 h | **Riesgo alto** cerca de la entrega; corregir el README como mínimo |
+| **A-1** | Unificar rutas bajo `/api/v1` | 3 h | **Riesgo alto** cerca de la entrega. El mínimo ya está hecho: el README documenta las rutas reales y declara la inconsistencia en vez de disimularla |
 
 ### Mejoras funcionales (≈5 h)
 
@@ -310,15 +316,24 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 
 ## 6. Qué hacer con el tiempo que quede
 
-**8 horas:** Loki + OBS-4 + OBS-2/E-3 + los 4 dashboards.
-Cierra Observabilidad por completo, que es el mayor déficit y el bloque más defendible en la presentación.
+Las cifras de abajo son el hueco que falta por cerrar en cada área, no su peso. Es lo que importa para decidir: Testing pesa el doble que cualquier otra, pero ya está en 78 %, así que rinde menos por hora que Documentación o Calidad.
 
-**20 horas:** lo anterior + Ola 2 completa + C-1/TEST-7 + TEST-1 + T-3 + Ola 6 (presentación).
-Deja Observabilidad y Testing por encima del 85 % y cubre las tres capas de testing en cero.
+| Bloque | Puntos en juego | Horas | Puntos/hora |
+|---|---|---|---|
+| **Ola 5 — Documentación** | 5,0 | 10 h | 0,50 |
+| **SEC-2 + S-2** (dos obligatorios del enunciado) | — | 1,25 h | muy alta |
+| Mejoras funcionales (D-1, D-2, F-2) | 1,95 | 5 h | 0,39 |
+| Ola 3 — Testing | 2,40 | 14 h | 0,17 |
 
-**40 horas:** todo salvo la Ola 8, más la Ola 5 completa.
+**4 horas:** T-6 (issues de bug, con material ya escrito) + SEC-2 + S-2 + los 16 code smells.
+Cierra dos obligatorios del enunciado, el único hueco de Calidad y la ausencia total de issues de tipo bug.
 
-> **Reservar siempre las últimas 3 horas para la Ola 6.** Vale 5 % y hoy está en cero; es el único bloque donde no hacer nada cuesta la nota íntegra del área.
+**12 horas:** lo anterior + Ola 5 completa.
+Documentación es el mayor déficit que queda y el de mejor rendimiento por hora.
+
+**25 horas:** lo anterior + C-1/TEST-7 (E2E en CI, la única etapa que falta en Actions) + TEST-1 (Testcontainers con Keycloak, obligatorio) + las mejoras funcionales exigidas en el alcance.
+
+> **Reservar las últimas 3 horas para la Ola 6.** P-2 está hecho, pero el guion (P-1) y el ensayo (P-3) no, y P-3 está bloqueado por el CORS de `staging` (P-2a, 20 min).
 
 ---
 
