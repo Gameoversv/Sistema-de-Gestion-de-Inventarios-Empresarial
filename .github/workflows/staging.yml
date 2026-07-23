@@ -199,12 +199,102 @@ jobs:
         run: ./mvnw verify -B -P live-db-it
 
       # ── Security scan ─────────────────────────────────────────────────────
-      - name: OWASP ZAP baseline security scan
-        uses: zaproxy/action-baseline@v0.14.0
+      # El escaneo anterior era `action-baseline` contra http://localhost:8080 sin
+      # autenticar y con `-I`, que le impide fallar. Como todo endpoint de negocio
+      # exige JWT, ZAP solo veia 401 y araneaba la raiz: un escaneo que no podia
+      # encontrar nada ni suspender.
+      #
+      # Ahora:
+      #   · zap-api-scan con el OpenAPI como semilla, para que recorra los endpoints
+      #     reales en vez de descubrirlos arananado. Medido en local: 29 URLs.
+      #   · autenticado, inyectando el Authorization en cada peticion con el replacer
+      #     de ZAP, de modo que el escaneo activo llega detras del login.
+      #   · sin `-I`, asi que un WARN nuevo tumba el despliegue. Hoy el estado es
+      #     118 reglas PASS y 0 WARN, asi que cualquier aviso es una regresion real.
+      #
+      # Se usa `docker run` en lugar de la action para ejecutar exactamente el mismo
+      # comando que se valido en local contra el stack.
+      - name: Obtain JWT for the authenticated scan
+        run: |
+          TOKEN=$(curl -sf \
+            "http://localhost:8180/realms/inventory/protocol/openid-connect/token" \
+            -d "client_id=inventory-frontend" \
+            -d "username=inv_admin" \
+            -d "password=${{ secrets.STAGING_KC_USER_ADMIN_PASSWORD }}" \
+            -d "grant_type=password" \
+            -d "scope=openid product:view product:manage stock:view stock:manage report:view audit:view user:manage" \
+            | jq -r '.access_token')
+          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+            echo "ERROR: sin JWT no hay escaneo autenticado; se prefiere fallar a escanear a ciegas"
+            exit 1
+          fi
+          # Sin la mascara, el token acabaria en el log del step siguiente.
+          echo "::add-mask::$TOKEN"
+          echo "ZAP_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
+          # El realm emite tokens de 300 s (accessTokenLifespan) y el escaneo activo
+          # puede durar mas. Si caduca a mitad, ZAP sigue escaneando pero recibiendo
+          # 401 en todo, no encuentra nada y el paso termina verde: un escaneo que no
+          # prueba nada y aprueba. Se guarda el exp para comprobarlo al terminar.
+          EXP=$(echo "$TOKEN" | cut -d. -f2 | tr '_-' '/+' \
+                | base64 -d 2>/dev/null | jq -r '.exp')
+          echo "ZAP_TOKEN_EXP=$EXP" >> "$GITHUB_ENV"
+          echo "Token valido hasta $(date -u -d "@$EXP" '+%H:%M:%S') UTC"
+
+      - name: OWASP ZAP authenticated API scan
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/zap-out" && chmod 777 "$GITHUB_WORKSPACE/zap-out"
+
+          # El replacer de ZAP anade la cabecera Authorization a toda peticion del
+          # escaneo. Se arma en una variable en lugar de partir la cadena con
+          # contrabarras: ahi cualquier espacio de indentacion acaba dentro del valor.
+          REPLACER="replacer.full_list(0)"
+          ZAP_OPTS="-config $REPLACER.description=auth"
+          ZAP_OPTS="$ZAP_OPTS -config $REPLACER.enabled=true"
+          ZAP_OPTS="$ZAP_OPTS -config $REPLACER.matchtype=REQ_HEADER"
+          ZAP_OPTS="$ZAP_OPTS -config $REPLACER.matchstr=Authorization"
+          ZAP_OPTS="$ZAP_OPTS -config $REPLACER.regex=false"
+          ZAP_OPTS="$ZAP_OPTS -config $REPLACER.replacement=Bearer $ZAP_TOKEN"
+
+          docker run --rm --network host \
+            -v "$GITHUB_WORKSPACE/zap-out:/zap/wrk/:rw" \
+            zaproxy/zap-stable zap-api-scan.py \
+              -t http://localhost:8080/v3/api-docs \
+              -f openapi \
+              -r zap-report.html \
+              -J zap-report.json \
+              -z "$ZAP_OPTS"
+
+      # Un escaneo "autenticado" cuyo token caduco a mitad recorre el resto de la API
+      # recibiendo 401. No encuentra nada, y por eso mismo aprueba. Este paso obliga a
+      # que esa degradacion se vea: si el escaneo sobrevivio al token, el resultado no
+      # es fiable y se falla en vez de dar por bueno un verde vacio.
+      - name: Verificar que el escaneo no sobrevivio al token
+        if: always()
+        run: |
+          # Corre con always(), asi que puede llegar aqui sin token si el paso previo
+          # fallo. En ese caso no hay nada que comprobar y el fallo ya se reporto alli.
+          if [ -z "${ZAP_TOKEN_EXP:-}" ]; then
+            echo "Sin token que comprobar: el escaneo no llego a ejecutarse."
+            exit 0
+          fi
+          AHORA=$(date +%s)
+          if [ "$AHORA" -gt "$ZAP_TOKEN_EXP" ]; then
+            echo "El token caduco $((AHORA - ZAP_TOKEN_EXP))s antes de terminar el escaneo."
+            echo "Parte de la API se recorrio sin autenticar, asi que el resultado no vale."
+            echo "Opciones: cliente de Keycloak dedicado con accessTokenLifespan mayor,"
+            echo "o acortar el alcance del escaneo."
+            exit 1
+          fi
+          echo "OK: el escaneo termino $((ZAP_TOKEN_EXP - AHORA))s antes de que caducara el token"
+
+      - name: Upload ZAP report
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          target: 'http://localhost:8080'
-          cmd_options: '-I'
-          allow_issue_writing: false
+          name: zap-api-scan-report
+          path: zap-out/
+          retention-days: 30
 
       # ── Artifacts ────────────────────────────────────────────────────────
       - name: Upload test reports

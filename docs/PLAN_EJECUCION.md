@@ -228,10 +228,10 @@ Queda un único pendiente del área, que pertenece a la Ola 6: **capturar las ca
 | **Q-3** | Job de frontend en CI: lint + coverage | 45 min | **hecho** — el frontend no tenía ningún job; ahora corre lint y tests con cobertura real |
 | **Q-4** | Publicar cobertura como artefacto + badge | 30 min | **hecho** — artefacto `coverage-report`, resumen en cada run y badges verificados en CI |
 | **Q-1** | SonarCloud con las 5 métricas exigidas + badge | 1,5 h | **hecho** — análisis en cada run de CI; 6 badges (quality gate + las 5 métricas) servidos por SonarCloud |
-| **C-4** | Jenkins: añadir E2E, security scan y quality gate | 2 h | pendiente — `inventory-jenkins` lleva semanas parado |
+| **C-4** | Jenkins: añadir E2E, security scan y quality gate | 2 h → **3 h** | pendiente — **el alcance es mayor de lo estimado**: al levantarlo se comprobó que es una instalación limpia, sin job, sin las credenciales que el `Jenkinsfile` referencia (`inventory-env-file`, `kc-admin-password`, `kc-viewer-password`) y sin el tool `jdk-21`. El asistente de instalación ni se ha completado, así que las 8 etapas existentes tampoco se han ejecutado nunca |
 | **CI-2** | Tag `v1.0.0` y primera ejecución de `production.yml` | 15 min | pendiente — crea un GitHub Release, decisión explícita |
 | **—** | Smoke test post-release | 45 min | pendiente — depende de CI-2 |
-| **TEST-10** | ZAP autenticado o `zap-full-scan` con umbral | 2 h | pendiente |
+| **TEST-10** | ZAP autenticado o `zap-full-scan` con umbral | 2 h | **hecho** — `zap-api-scan` sembrado con el OpenAPI y autenticado; sin `-I`, así que un WARN nuevo tumba el despliegue. Validado en local: 29 URLs, 118 reglas PASS, 0 WARN |
 | **ENV-1** | IT con URL de BD por configuración externa | 1 h | **hecho** — `LiveDatabaseIT` + perfil `live-db-it`; verificado que falla cuando no hay base, en vez de saltarse |
 
 > **El badge de cobertura del README era falso.** Decía `coverage-placeholder-brightgreen`: verde fijo, sin medir nada. Ahora hay tres badges con los valores reales y [`scripts/verificar-badges-cobertura.sh`](../scripts/verificar-badges-cobertura.sh) falla en CI si se desfasan. No se generan SVG desde el runner a propósito: `main` exige PR con revisión, así que un push automático quedaría bloqueado por la propia protección de rama.
@@ -269,6 +269,7 @@ Queda un único pendiente del área, que pertenece a la Ola 6: **capturar las ca
 | **G-8** | `scopeMappings` en Keycloak: corrección de raíz de G-6 y prerrequisito de G-2 | 1 h |
 | **S-4b** | Quitar `JWT_SECRET` y `JWT_EXPIRATION_MS` de `staging.yml` | 10 min |
 | **ADR-001** | Por qué el mapa rol→scopes vive en Java | 30 min |
+| **TEST-10b** | El realm emite tokens de 300 s y el escaneo activo de ZAP puede durar más. Al caducar, el resto de la API se recorre sin autenticar y el escaneo aprueba precisamente por no encontrar nada. Ya hay un paso que lo detecta y falla; falta la corrección de raíz: un cliente de Keycloak dedicado al escaneo con `accessTokenLifespan` mayor | 45 min |
 
 ### Ola 8 — Alto coste, decidir explícitamente
 
