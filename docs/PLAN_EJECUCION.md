@@ -2,7 +2,7 @@
 
 **Fuente de verdad:** `Proyecto_Final_V3.pdf` (revisado íntegro el 2026-07-22)
 **Base de hallazgos:** [ANALISIS_BRECHAS.md](ANALISIS_BRECHAS.md)
-**Actualizado:** 2026-07-23, tras cerrar la Ola 2, seis de las nueve tareas de la Ola 4 (Q-1 a Q-4, ENV-1, TEST-10), P-2 de la Ola 6, D-1…D-4 de la Ola 5 y P-2a de la Ola 7.
+**Actualizado:** 2026-07-23, tras cerrar la Ola 2, seis de las nueve tareas de la Ola 4 (Q-1 a Q-4, ENV-1, TEST-10), P-2 de la Ola 6, D-1…D-4 y T-6 de la Ola 5, y P-2a de la Ola 7.
 
 > **Aviso de método.** La versión anterior de este plan tomaba como requisito el desglose del análisis de brechas, que en algunos puntos era interpretación propia y no texto del enunciado. Cada requisito de este documento está contrastado con el PDF. Cuando algo es criterio nuestro y no del enunciado, se marca como **[criterio propio]**.
 
@@ -15,7 +15,7 @@ El enunciado define **ocho** áreas. La versión anterior omitía la última.
 | Área | Peso | Inicial | Actual | Alcanzable |
 |---|---|---|---|---|
 | Funcionalidad | 15% | ~85% | ~85% | ~98% |
-| Testing | 20% | ~60% | ~78% | ~90% |
+| Testing | 20% | ~60% | ~81% | ~90% |
 | Seguridad | 10% | ~70% | ~85% | ~90% |
 | Observabilidad | 15% | ~30% | ~90% | ~90% |
 | CI/CD | 15% | ~60% | ~85% | ~90% |
@@ -46,7 +46,7 @@ El enunciado los lista de forma explícita. Sirve como checklist de cierre.
 | GitHub Actions pipeline | **listo** — security scan (ZAP autenticado) y quality gate (SonarCloud) añadidos en la Ola 4 |
 | Dashboards Grafana | listo — **4 de 4**; datasources de Prometheus, Tempo y Loki provisionados |
 | Reportes de pruebas | parcial — surefire, failsafe, JaCoCo, cobertura de frontend e informe de ZAP como artefactos; faltan k6 y Newman |
-| Evidencias QA | parcial — 7 informes en `docs/testing/reportes/` y 6 capturas en `docs/testing/capturas/` |
+| Evidencias QA | **cumple** — 9 informes en `docs/testing/reportes/`, 6 capturas en `docs/testing/capturas/` y 18 issues de bug y charter con reproducción |
 | Documentación completa | parcial |
 | **Presentación final funcional** | **en curso** — P-2 hecho; faltan guion (P-1) y ensayo (P-3) |
 
@@ -120,7 +120,7 @@ El enunciado es literal: *"Integration Testing — Obligatorio utilizar: Testcon
 | 5. Security | ZAP, JWT, permisos, CORS, Dependency Check/Snyk, autenticación | parcial — **ZAP autenticado** sembrado con el OpenAPI y con umbral (TEST-10); faltan T-5 y TEST-11 |
 | 6. Performance | Stress, load, usuarios concurrentes, tiempo de respuesta, throughput | **cero** (T-3) |
 | 7. Data | Migraciones, integridad, **duplicados**, constraints, seeds | parcial (DATA-1/2, E-1) |
-| 8. Exploratory | Charters, bugs encontrados, escenarios | parcial — 2 informes, faltan charters (T-6) |
+| 8. Exploratory | Charters, bugs encontrados, escenarios | **cumple** — 3 charters y 15 bugs como issues, más los informes en `docs/testing/reportes/` (T-6) |
 
 ### 4.4 Observabilidad (15%)
 
@@ -178,7 +178,7 @@ Spotless estaba declarado en el POM y desactivado con `-Dspotless.check.skip=tru
 |---|---|
 | Repositorio público | cumple |
 | README profesional | cumple — rutas reales, matriz rol→scopes y el `scope` obligatorio del token |
-| **Issues** | 13 issues (5 abiertas, 8 cerradas), todas épicas de fase; **ningún bug** (T-6). Las épicas 9, 10 y 11 se pusieron al día en la Ola 4 |
+| **Issues** | **31 issues**: 13 épicas de fase, **15 bugs** (7 abiertos) y **3 charters** de testing exploratorio, añadidos en T-6. Las épicas 9, 10 y 11 se pusieron al día en la Ola 4 |
 | Pull Requests | cumple — #30 a #40 |
 | Branch strategy | cumple — `main` protegida; corren 4 checks y 2 son obligatorios |
 | Conventional Commits | cumple — commitlint activo |
@@ -258,10 +258,10 @@ El área queda cerrada: el pendiente que arrastraba (P-2) está hecho.
 | `docs/arquitectura/` | "diagramas de arquitectura, guías de instalación y manuales de mantenimiento" | 3 h | pendiente |
 | `docs/operacion/manual-mantenimiento.md` | idem + **la trampa del volumen de Keycloak** | 2 h | pendiente |
 | `docs/testing/guia-de-pruebas.md` | "casos de prueba, resultados y cualquier defecto encontrado" | 2 h | pendiente |
-| **T-6** | Charters y bugs como **issues de GitHub** | 1 h | pendiente — hay material de sobra: los informes de QA más los hallazgos de la Ola 4 |
+| **T-6** | Charters y bugs como **issues de GitHub** | 1 h | **hecho** — 15 bugs (#43…#57) y 3 charters (#58…#60). Los 8 ya corregidos se registraron cerrados, cada uno enlazando su PR y declarando en el cuerpo que se abrieron después del arreglo. [Informe](testing/reportes/T-6-issues-de-bug.md) |
 | **D-1…D-4** | README: stack real, badge, rutas correctas | 45 min | **hecho** — declaraba `Base URL: /api/v1`, que no existe, y un `client_id` y unos usuarios que tampoco. Corregido con las rutas reales, la matriz rol→scopes y el aviso del `scope` obligatorio, sin el cual toda petición responde 403. `CONTRIBUTING` alineado con los prefijos de rama que se usan de verdad |
 
-> **T-6 tiene material listo.** Los informes de [G-6](testing/reportes/G-6-escalada-de-scopes.md) y [G-4/G-5](testing/reportes/G-4-G-5-scopes-por-rol.md) son sesiones exploratorias con reproducción. Convertirlos en issues cierra la ausencia total de issues de tipo bug, que es evaluable.
+> **T-6 dejó dos hallazgos nuevos.** Redactar las issues obligó a releer el código, no solo los informes. Salió que [`AuthContext.tsx`](../frontend/src/contexts/AuthContext.tsx) arrastra **los dos** defectos de scopes corregidos en el backend por el PR #33 —G-4 y también G-5, que el plan no había anotado— y que `JWT_SECRET` no está en `application-staging.yml` sino en el workflow `.github/workflows/staging.yml`, con un secreto de repositorio vivo que no protege nada.
 
 ### Ola 6 — Presentación final (5%, ≈3 h) · EN CURSO
 
@@ -325,7 +325,7 @@ Las cifras de abajo son el hueco que falta por cerrar en cada área, no su peso.
 | Mejoras funcionales (D-1, D-2, F-2) | 1,95 | 5 h | 0,39 |
 | Ola 3 — Testing | 2,40 | 14 h | 0,17 |
 
-**4 horas:** T-6 (issues de bug, con material ya escrito) + SEC-2 + S-2 + los 16 code smells.
+**4 horas:** ~~T-6~~ **hecho** + SEC-2 + S-2 + los 16 code smells.
 Cierra dos obligatorios del enunciado, el único hueco de Calidad y la ausencia total de issues de tipo bug.
 
 **12 horas:** lo anterior + Ola 5 completa.
