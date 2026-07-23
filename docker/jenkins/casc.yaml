@@ -77,6 +77,12 @@ jobs:
   - script: |
       pipelineJob('inventario-pipeline') {
         description('Pipeline declarativo del Sistema de Gestion de Inventarios. Definicion en el Jenkinsfile del repositorio.')
+        // La rama es un parametro para poder validar cambios del Jenkinsfile antes de
+        // mezclarlos a main. Sin esto, la unica forma de probar una modificacion del
+        // pipeline seria mezclarla primero y ver que pasa.
+        parameters {
+          stringParam('BRANCH', 'main', 'Rama del repositorio de la que tomar el Jenkinsfile y el codigo')
+        }
         definition {
           cpsScm {
             scm {
@@ -84,7 +90,7 @@ jobs:
                 remote {
                   url('https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial.git')
                 }
-                branch('*/main')
+                branch('*/${BRANCH}')
               }
             }
             scriptPath('Jenkinsfile')
