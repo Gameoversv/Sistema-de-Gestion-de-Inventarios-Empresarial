@@ -21,7 +21,7 @@ El enunciado define **ocho** áreas. La versión anterior omitía la última.
 | CI/CD | 15% | ~60% | ~85% | ~90% |
 | Calidad de código | 10% | ~35% | ~45% | ~85% |
 | Documentación | 10% | ~25% | ~40% | ~90% |
-| **Presentación final** | **5%** | **0%** | **0%** | **~90%** |
+| **Presentación final** | **5%** | **0%** | **~30%** | **~90%** |
 
 Salvo la cobertura, medida sobre el artefacto de CI, los porcentajes son estimaciones.
 
@@ -44,9 +44,9 @@ El enunciado los lista de forma explícita. Sirve como checklist de cierre.
 | GitHub Actions pipeline | parcial — faltan security scan y quality gate |
 | Dashboards Grafana | listo — **4 de 4**; datasources de Prometheus, Tempo y Loki provisionados |
 | Reportes de pruebas | parcial — surefire, failsafe y ZAP; faltan k6 y Newman |
-| Evidencias QA | parcial — 6 informes en `docs/testing/reportes/` |
+| Evidencias QA | parcial — 7 informes en `docs/testing/reportes/` y 6 capturas en `docs/testing/capturas/` |
 | Documentación completa | parcial |
-| **Presentación final funcional** | **no iniciada** |
+| **Presentación final funcional** | **en curso** — P-2 hecho; faltan guion (P-1) y ensayo (P-3) |
 
 ---
 
@@ -198,9 +198,11 @@ Era el mayor déficit del proyecto: cinco de los siete componentes obligatorios 
 | **OBS-2 + E-3** | `Counter` de alertas de stock y de movimientos por tipo | 1,5 h | **hecho** — 4 series + alerta de negocio, [informe](testing/reportes/OBS-2-E-3-metricas-de-negocio.md) |
 | **—** | Separar en 4 dashboards: Infraestructura, Aplicación, Negocio, Seguridad | 3 h | **hecho** — 4 de 4, 37 consultas sin paneles vacíos, [informe](testing/reportes/OBS-dashboards.md) |
 
-> **Decisión pendiente para la demo:** el JSON estructurado solo se emite en los perfiles `staging` y `prod`. Con el `dev` por defecto de `.env`, el panel de logs no puede filtrar por usuario ni por endpoint. Hay que elegir con qué perfil se levanta el stack en la Ola 6.
+> **Decisión tomada:** el stack de la demo se levanta con `SPRING_PROFILES_ACTIVE=staging`. Es el único perfil, junto con `prod`, que emite JSON estructurado, y sin él el panel de logs no puede filtrar por usuario ni por endpoint. Verificado con los seis campos MDC en Loki ([informe P-2](testing/reportes/P-2-capturas-de-evidencia.md)).
+>
+> **Contrapartida sin resolver:** `application-staging.yml` fija `app.cors.allowed-origins` a `https://staging.inventory.example.com`, así que el frontend de `localhost:3000` queda bloqueado por CORS. Para P-2 bastó un override en `.env`, pero **P-1 y P-3 necesitan la interfaz**. Hay que decidir entre añadir el origen local a `staging`, crear un perfil `demo`, o asumir `dev` y perder el filtrado de logs. Ver [Ola 7](#ola-7--deuda-abierta-por-los-hallazgos).
 
-Queda un único pendiente del área, que pertenece a la Ola 6: **capturar las capturas de los 4 dashboards con datos reales y de una alerta disparada** (P-2).
+El área queda cerrada: el pendiente que arrastraba (P-2) está hecho.
 
 ### Ola 3 — Capas de testing ausentes (≈14 h)
 
@@ -245,15 +247,17 @@ Queda un único pendiente del área, que pertenece a la Ola 6: **capturar las ca
 
 > **T-6 tiene material listo.** Los informes de [G-6](testing/reportes/G-6-escalada-de-scopes.md) y [G-4/G-5](testing/reportes/G-4-G-5-scopes-por-rol.md) son sesiones exploratorias con reproducción. Convertirlos en issues cierra la ausencia total de issues de tipo bug, que es evaluable.
 
-### Ola 6 — Presentación final (5%, ≈3 h) · NO INICIADA
+### Ola 6 — Presentación final (5%, ≈3 h) · EN CURSO
 
-Área completa sin empezar. Es un entregable explícito: *"presentación final funcional del sistema en clase"*.
+Es un entregable explícito: *"presentación final funcional del sistema en clase"*.
 
-| # | Acción | Esfuerzo |
-|---|---|---|
-| **P-1** | Guion de demo: alta de producto → movimiento de stock → alerta → auditoría → dashboard | 1 h |
-| **P-2** | Capturas de los 4 dashboards con datos reales y de una alerta disparada | 1 h |
-| **P-3** | Ensayo con el stack levantado desde cero (`down -v && up`) | 1 h |
+| # | Acción | Esfuerzo | Estado |
+|---|---|---|---|
+| **P-1** | Guion de demo: alta de producto → movimiento de stock → alerta → auditoría → dashboard | 1 h | pendiente |
+| **P-2** | Capturas de los 4 dashboards con datos reales y de una alerta disparada | 1 h | **hecho** — 6 capturas, 34 paneles sin ninguno vacío, alerta verificada hasta Alertmanager, [informe](testing/reportes/P-2-capturas-de-evidencia.md) |
+| **P-3** | Ensayo con el stack levantado desde cero (`down -v && up`) | 1 h | pendiente — **bloqueado** por el CORS de `staging` |
+
+> **Dos avisos de P-2 que afectan al guion de P-1.** Los paneles de Negocio usan `increase()`: si en la demo se encadenan todos los movimientos seguidos saldrán en cero, porque Prometheus no puede medir el incremento del primer punto de una serie. Hay que espaciarlos o levantar el stack con antelación. Y la ventana temporal de los dashboards no debe abarcar un reinicio del backend con otro perfil, o cada panel duplica sus series.
 
 ### Ola 7 — Deuda abierta por los hallazgos (≈2,5 h)
 
@@ -263,6 +267,8 @@ Queda un único pendiente del área, que pertenece a la Ola 6: **capturar las ca
 | **G-8** | `scopeMappings` en Keycloak: corrección de raíz de G-6 y prerrequisito de G-2 | 1 h |
 | **S-4b** | Quitar `JWT_SECRET` y `JWT_EXPIRATION_MS` de `staging.yml` | 10 min |
 | **ADR-001** | Por qué el mapa rol→scopes vive en Java | 30 min |
+| **P-2a** | CORS de `staging` apunta a `staging.inventory.example.com`: bloquea el frontend local y deja P-3 sin interfaz | 20 min |
+| **P-2b** | `keycloak-init` no es idempotente: al reejecutarse sobre un realm existente lanza `duplicate key … uk_cli_scope` y ensucia el panel de eventos | 30 min |
 
 ### Ola 8 — Alto coste, decidir explícitamente
 
