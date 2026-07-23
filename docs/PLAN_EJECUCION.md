@@ -2,7 +2,7 @@
 
 **Fuente de verdad:** `Proyecto_Final_V3.pdf` (revisado íntegro el 2026-07-22)
 **Base de hallazgos:** [ANALISIS_BRECHAS.md](ANALISIS_BRECHAS.md)
-**Actualizado:** 2026-07-22, tras ejecutar las Olas 0 y 1 y contrastar todo contra el enunciado.
+**Actualizado:** 2026-07-22, tras cerrar la Ola 2 completa (Loki, OBS-4, OBS-6, OBS-2/E-3 y los 4 dashboards).
 
 > **Aviso de método.** La versión anterior de este plan tomaba como requisito el desglose del análisis de brechas, que en algunos puntos era interpretación propia y no texto del enunciado. Cada requisito de este documento está contrastado con el PDF. Cuando algo es criterio nuestro y no del enunciado, se marca como **[criterio propio]**.
 
@@ -17,7 +17,7 @@ El enunciado define **ocho** áreas. La versión anterior omitía la última.
 | Funcionalidad | 15% | ~85% | ~85% | ~98% |
 | Testing | 20% | ~60% | ~78% | ~90% |
 | Seguridad | 10% | ~70% | ~85% | ~90% |
-| Observabilidad | 15% | ~30% | ~40% | ~85% |
+| Observabilidad | 15% | ~30% | ~90% | ~90% |
 | CI/CD | 15% | ~60% | ~85% | ~90% |
 | Calidad de código | 10% | ~35% | ~45% | ~85% |
 | Documentación | 10% | ~25% | ~40% | ~90% |
@@ -39,12 +39,12 @@ El enunciado los lista de forma explícita. Sirve como checklist de cierre.
 | Entregable | Estado |
 |---|---|
 | Código fuente completo | listo |
-| Docker Compose funcional | listo — 11 servicios |
+| Docker Compose funcional | listo — **14 servicios** |
 | Jenkins pipeline | parcial — faltan 3 de las 10 etapas |
 | GitHub Actions pipeline | parcial — faltan security scan y quality gate |
-| Dashboards Grafana | parcial — 1 de 4 |
+| Dashboards Grafana | listo — **4 de 4**; datasources de Prometheus, Tempo y Loki provisionados |
 | Reportes de pruebas | parcial — surefire, failsafe y ZAP; faltan k6 y Newman |
-| Evidencias QA | parcial — 2 informes en `docs/testing/reportes/` |
+| Evidencias QA | parcial — 6 informes en `docs/testing/reportes/` |
 | Documentación completa | parcial |
 | **Presentación final funcional** | **no iniciada** |
 
@@ -111,7 +111,7 @@ El enunciado es literal: *"Integration Testing — Obligatorio utilizar: Testcon
 
 | Capa | Exigencia | Estado |
 |---|---|---|
-| 1. Unit | Servicios, validaciones, lógica | cumple — 263 tests |
+| 1. Unit | Servicios, validaciones, lógica | cumple — 284 tests |
 | 2. Integration | Testcontainers: **BD real, Keycloak**, integraciones | parcial — BD sí, **Keycloak no** (TEST-1) |
 | 3. API / Contract | Endpoints, contratos OpenAPI, status codes, payloads | parcial — Postman sin CI (TEST-3), RestAssured sin uso (TEST-2) |
 | 4. E2E | Snapshots, flujos, navegación, **roles**, seguridad, **responsive** | **no se ejecuta en CI** (C-1, TEST-7/8/9) |
@@ -125,18 +125,21 @@ El enunciado es literal: *"Integration Testing — Obligatorio utilizar: Testcon
 | Componente | Estado |
 |---|---|
 | Metrics — Prometheus | **cumple** — 5 targets tras OBS-3 |
-| Traces — Tempo | **ausente** |
-| Logs — Loki | **ausente** |
-| Collector — Alloy | **ausente** |
-| Dashboards — Grafana | parcial — 1 de 4 |
-| Alerting — Alertmanager | **ausente** |
-| Instrumentación — OpenTelemetry | **ausente** |
+| Traces — Tempo | **cumple** — trazas consultables, servicio `inventory-api` |
+| Logs — Loki | **cumple** — ingiere los 14 contenedores, consultable por `{service=...}` |
+| Collector — Alloy | **cumple** — recibe OTLP y reenvía a Tempo; recoge logs y los envía a Loki |
+| Dashboards — Grafana | **cumple** — 4 de 4, verificados panel por panel |
+| Alerting — Alertmanager | **cumple** — las 5 obligatorias (dos verificadas disparando) + 1 de negocio |
+| Instrumentación — OpenTelemetry | **cumple** — bridge OTel + exportador OTLP |
+
+**Los 7 componentes obligatorios implementados y los 4 dashboards separados.** La Ola 2 queda cerrada; lo que resta del área es capturar evidencia con datos reales para la presentación.
 
 | Métricas exigidas | CPU, Memoria, JVM, Latencia, Throughput, Error rate, DB pool | cumple (CPU y memoria de host desde OBS-3) |
 |---|---|---|
-| **Logs** | traceId, spanId, correlationId, nivel, usuario, endpoint | **1 de 6** (OBS-4) |
-| **Trazas** | request, database, external calls, errores distribuidos | **0 de 4** (OBS-1) |
-| **Alertas** | CPU, error rate, latencia, servicios caídos, fallos de autenticación | **0 de 5** — las 5 ya son escribibles |
+| **Logs** | traceId, spanId, correlationId, nivel, usuario, endpoint | **6 de 6** — [informe](testing/reportes/OBS-4-logs-loki.md); solo en perfil `staging`/`prod` |
+| **Trazas** | request, database, external calls, errores distribuidos | **3 de 4** — falta verificar errores distribuidos |
+| **Alertas** | CPU, error rate, latencia, servicios caídos, fallos de autenticación | **5 de 5** — dos verificadas disparando; +1 de negocio (`ProductosBajoMinimo`) |
+| **Métricas de negocio** | [criterio propio] movimientos, unidades, alertas y productos bajo mínimo | **4 series** — [informe](testing/reportes/OBS-2-E-3-metricas-de-negocio.md) |
 
 ### 4.5 CI/CD (15%)
 
@@ -180,24 +183,24 @@ Exige SonarQube o SonarCloud midiendo Coverage, Bugs, Vulnerabilities, Code smel
 
 ## 5. Trabajo pendiente, priorizado
 
-### Ola 2 — Observabilidad (≈13 h) · MAYOR DÉFICIT
+### Ola 2 — Observabilidad (≈13 h) · **COMPLETA**
 
-Cinco de los siete componentes obligatorios están ausentes. Es el bloque con más puntos en juego.
+Era el mayor déficit del proyecto: cinco de los siete componentes obligatorios estaban ausentes. Las ocho tareas están cerradas y verificadas en vivo, cada una con su informe.
 
 | # | Acción | Esfuerzo | Estado |
 |---|---|---|---|
 | OBS-3 | node-exporter, postgres-exporter, `KC_METRICS_ENABLED` | 1,5 h | **hecho** — 5/5 targets up |
-| **OBS-5** | `rules/alerts.yml` con las 5 alertas + Alertmanager en compose | 2 h | siguiente |
-| **OBS-1** | `micrometer-tracing-bridge-otel` + exportador OTLP | 2 h | |
-| **—** | Tempo, Loki y Alloy en compose con sus configs | 2,5 h | |
-| **OBS-4** | Filtro MDC: `correlationId`, usuario, endpoint + logback con `traceId`/`spanId` | 1,5 h | |
-| **OBS-6** | Datasources `tempo.yml` y `loki.yml` con correlación traces↔logs | 30 min | |
-| **OBS-2 + E-3** | `Counter` de alertas de stock y de movimientos por tipo | 1,5 h | |
-| **—** | Separar en 4 dashboards: Infraestructura, Aplicación, Negocio, Seguridad | 3 h | |
+| OBS-5 | `rules/alerts.yml` con las 5 alertas + Alertmanager | 2 h | **hecho** — verificadas disparando |
+| OBS-1 | Bridge OTel + exportador OTLP + **instrumentación JDBC** | 2 h | **hecho** — 12 spans por petición |
+| — | Tempo, Alloy y **Loki** en compose | 2,5 h | **hecho** — Loki ingiere los 14 contenedores |
+| **OBS-4** | Filtro MDC: `correlationId`, usuario, endpoint + logback con `traceId`/`spanId` | 1,5 h | **hecho** — 6/6 campos, [informe](testing/reportes/OBS-4-logs-loki.md) |
+| OBS-6 | Datasources `tempo.yml` y `loki.yml` con correlación traces↔logs | 30 min | **hecho** — derived field logs→trazas y `tracesToLogsV2` trazas→logs |
+| **OBS-2 + E-3** | `Counter` de alertas de stock y de movimientos por tipo | 1,5 h | **hecho** — 4 series + alerta de negocio, [informe](testing/reportes/OBS-2-E-3-metricas-de-negocio.md) |
+| **—** | Separar en 4 dashboards: Infraestructura, Aplicación, Negocio, Seguridad | 3 h | **hecho** — 4 de 4, 37 consultas sin paneles vacíos, [informe](testing/reportes/OBS-dashboards.md) |
 
-Las 5 alertas ya son escribibles: CPU (`node_cpu_seconds_total`), error rate (`status=~"5.."`), latencia (`http_server_requests_seconds_bucket`), servicios caídos (`up`), fallos de autenticación (`status="401"`).
+> **Decisión pendiente para la demo:** el JSON estructurado solo se emite en los perfiles `staging` y `prod`. Con el `dev` por defecto de `.env`, el panel de logs no puede filtrar por usuario ni por endpoint. Hay que elegir con qué perfil se levanta el stack en la Ola 6.
 
-Al terminar: **capturar evidencia con datos reales** para la presentación.
+Queda un único pendiente del área, que pertenece a la Ola 6: **capturar las capturas de los 4 dashboards con datos reales y de una alerta disparada** (P-2).
 
 ### Ola 3 — Capas de testing ausentes (≈14 h)
 
@@ -284,14 +287,14 @@ Al terminar: **capturar evidencia con datos reales** para la presentación.
 | E-2 | Validación condicional de `quantity` | 45 min |
 | **SEC-2** | `onTokenExpired` — **"expiración de sesiones" es obligatorio** | 45 min |
 | **S-2** | Test con `grant_type=refresh_token` — **"refresh tokens" es obligatorio** | 30 min |
-| — | **[criterio propio]** Métricas de login de Keycloak vía SPI: detectaría fuerza bruta, que un 401 no ve | 1,5 h |
+| — | ~~**[criterio propio]** Métricas de login de Keycloak vía SPI~~ — **descartada**: Keycloak sí emite `LOGIN_ERROR` con usuario, IP y motivo al log, y Loki lo indexa. Ya visible en el dashboard de Seguridad ([informe](testing/reportes/OBS-dashboards.md)) | — |
 
 ---
 
 ## 6. Qué hacer con el tiempo que quede
 
-**8 horas:** OBS-5 + OBS-1 + Tempo/Loki/Alloy + OBS-4.
-Cierra los cinco componentes obligatorios de observabilidad que hoy están ausentes. Es el mayor déficit y el más defendible en la presentación.
+**8 horas:** Loki + OBS-4 + OBS-2/E-3 + los 4 dashboards.
+Cierra Observabilidad por completo, que es el mayor déficit y el bloque más defendible en la presentación.
 
 **20 horas:** lo anterior + Ola 2 completa + C-1/TEST-7 + TEST-1 + T-3 + Ola 6 (presentación).
 Deja Observabilidad y Testing por encima del 85 % y cubre las tres capas de testing en cero.

@@ -75,6 +75,12 @@ services:
     image: quay.io/keycloak/keycloak:24.0
     container_name: inventory-keycloak
     restart: unless-stopped
+    # PID 1 es el proceso Java de Keycloak, que no reapea procesos huérfanos.
+    # Cada sonda de salud colgada dejaba un bash zombi; con interval de 15 s se
+    # acumularon hasta dejar el contenedor irrecuperable —Docker no podía ni
+    # pararlo: "PID is zombie and can not be killed"—. El init los recoge.
+    # Es defensa en profundidad: el healthcheck de abajo ya no debería colgarse.
+    init: true
     command: start-dev --import-realm
     environment:
       KC_DB: postgres
@@ -98,8 +104,17 @@ services:
     depends_on:
       keycloak-db:
         condition: service_healthy
+    # La imagen de Keycloak no trae curl, wget ni nc, así que la sonda se hace
+    # con /dev/tcp de bash. Tres detalles que importan:
+    #   · 127.0.0.1 y no localhost: /etc/hosts resuelve localhost también a ::1,
+    #     bash intenta IPv6 primero y Keycloak solo escucha en IPv4, de modo que
+    #     `exec 3<>` se queda colgado sin timeout propio y la sonda expiraba.
+    #   · el `timeout` envuelve el comando entero, no solo la lectura: así ningún
+    #     bloqueo en la apertura del socket puede volver a escaparse.
+    #   · `grep <&3` en lugar de `cat | grep`: grep corta en cuanto encuentra UP
+    #     y no espera al cierre de la conexión.
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && printf 'GET /health/ready HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && timeout 5 cat <&3 | grep -q UP"]
+      test: ["CMD-SHELL", "timeout 5 bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 && printf \"GET /health/ready HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n\" >&3 && grep -q UP <&3'"]
       interval: 15s
       timeout: 10s
       retries: 15
@@ -193,10 +208,16 @@ services:
     command:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      # Sin rootfs solo se ven los tmpfs del contenedor y no hay métricas de disco
+      # reales: el panel de espacio libre del dashboard de Infraestructura queda
+      # vacío. Con /host/root montado se ve el sistema de archivos que de verdad
+      # importa, el que aloja los volúmenes de Docker.
+      - '--path.rootfs=/host/root'
+      - '--collector.filesystem.mount-points-exclude=^/host/root/(sys|proc|dev|etc)($$|/)'
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
+      - /:/host/root:ro
     networks:
       - inventory-net
 
@@ -218,6 +239,11 @@ services:
     image: prom/prometheus:latest
     container_name: inventory-prometheus
     restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      # Tempo escribe aquí las métricas RED derivadas de las trazas.
+      - '--web.enable-remote-write-receiver'
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     volumes:
@@ -228,6 +254,67 @@ services:
       - inventory-net
     depends_on:
       - backend
+
+  # ── Tempo (almacenamiento y consulta de trazas distribuidas) ────────────────
+  tempo:
+    image: grafana/tempo:2.6.1
+    container_name: inventory-tempo
+    restart: unless-stopped
+    command: ["-config.file=/etc/tempo/tempo.yml"]
+    ports:
+      - "${TEMPO_PORT:-3200}:3200"
+    volumes:
+      - ./observability/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo_data:/var/tempo
+    networks:
+      - inventory-net
+
+  # ── Loki (almacenamiento y consulta de logs) ────────────────────────────────
+  loki:
+    image: grafana/loki:3.3.2
+    container_name: inventory-loki
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/loki.yml"]
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+    volumes:
+      - ./observability/loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+    networks:
+      - inventory-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:3100/ready | grep -q ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ── Alloy (collector: recibe OTLP del backend y lo reparte) ─────────────────
+  alloy:
+    image: grafana/alloy:v1.5.1
+    container_name: inventory-alloy
+    restart: unless-stopped
+    # El socket de Docker pertenece a root:root con permisos 660. Alloy corre
+    # como uid 473 y sin esto no puede leer los logs de los contenedores.
+    user: root
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    ports:
+      - "${ALLOY_PORT:-12345}:12345"
+    volumes:
+      - ./observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - alloy_data:/var/lib/alloy/data
+      # Solo lectura: Alloy descubre contenedores y consume sus logs, nunca los
+      # controla.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - inventory-net
+    depends_on:
+      - tempo
+      - loki
 
   # ── Alertmanager (enrutado y agrupación de las 5 alertas) ───────────────────
   alertmanager:
@@ -270,6 +357,12 @@ volumes:
   prometheus_data:
     driver: local
   alertmanager_data:
+    driver: local
+  tempo_data:
+    driver: local
+  loki_data:
+    driver: local
+  alloy_data:
     driver: local
   grafana_data:
     driver: local

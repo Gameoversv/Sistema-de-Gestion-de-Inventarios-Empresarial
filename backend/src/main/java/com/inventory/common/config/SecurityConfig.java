@@ -1,5 +1,6 @@
 package com.inventory.common.config;
 
+import com.inventory.common.observability.AuthenticatedUserMdcFilter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -30,6 +31,7 @@ import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
@@ -88,6 +90,10 @@ public class SecurityConfig {
                     .authenticated())
         .oauth2ResourceServer(
             oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(keycloakJwtConverter())))
+        // Detrás de la validación del token: solo a partir de aquí hay usuario que registrar en
+        // el MDC. El correlationId y el endpoint los pone CorrelationIdFilter, que envuelve la
+        // cadena entera y cubre también los 401.
+        .addFilterAfter(new AuthenticatedUserMdcFilter(), BearerTokenAuthenticationFilter.class)
         .build();
   }
 

@@ -13,6 +13,7 @@ import com.inventory.stock.domain.StockMovement;
 import com.inventory.stock.domain.StockMovement.MovementType;
 import com.inventory.stock.dto.StockMovementRequest;
 import com.inventory.stock.dto.StockMovementResponse;
+import com.inventory.stock.event.StockMovementRecordedEvent;
 import com.inventory.stock.event.StockThresholdCrossedEvent;
 import com.inventory.stock.mapper.StockMovementMapper;
 import com.inventory.stock.repository.StockMovementRepository;
@@ -210,17 +211,16 @@ class StockServiceTest {
     stockService.registerMovement(
         new StockMovementRequest(1L, MovementType.OUT, 5, null, null), jwt("alice"));
 
-    ArgumentCaptor<StockThresholdCrossedEvent> eventCaptor =
-        ArgumentCaptor.forClass(StockThresholdCrossedEvent.class);
-    verify(eventPublisher).publishEvent(eventCaptor.capture());
-    assertThat(eventCaptor.getValue().currentStock()).isEqualTo(5);
-    assertThat(eventCaptor.getValue().minimumStock()).isEqualTo(8);
+    StockThresholdCrossedEvent published = capturePublished(StockThresholdCrossedEvent.class);
+    assertThat(published.currentStock()).isEqualTo(5);
+    assertThat(published.minimumStock()).isEqualTo(8);
   }
 
-  // Verifica que no se publica ningún evento cuando el stock se mantiene por encima del mínimo.
+  // Verifica que no se publica el evento de umbral cuando el stock se mantiene por encima del
+  // mínimo. El de movimiento sí se publica siempre: alimenta las métricas de negocio.
   @Test
-  @DisplayName("does NOT publish event when stock stays above minimum")
-  void registerMovement_aboveMinimum_noEvent() {
+  @DisplayName("does NOT publish StockThresholdCrossedEvent when stock stays above minimum")
+  void registerMovement_aboveMinimum_noThresholdEvent() {
     product.setStock(20);
     product.setMinimumStock(5);
     when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
@@ -230,7 +230,39 @@ class StockServiceTest {
     stockService.registerMovement(
         new StockMovementRequest(1L, MovementType.OUT, 3, null, null), jwt("alice"));
 
-    verify(eventPublisher, never()).publishEvent(any());
+    verify(eventPublisher, never()).publishEvent(any(StockThresholdCrossedEvent.class));
+  }
+
+  // Verifica que todo movimiento confirmado publica StockMovementRecordedEvent, que es lo que
+  // convierte el movimiento en métrica de negocio (inventory_stock_movements_total).
+  @Test
+  @DisplayName("publishes StockMovementRecordedEvent with type and quantity")
+  void registerMovement_always_publishesMovementEvent() {
+    product.setStock(20);
+    product.setMinimumStock(5);
+    when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
+    when(movementRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+    when(movementMapper.toResponse(any())).thenReturn(dummyResponse);
+
+    stockService.registerMovement(
+        new StockMovementRequest(1L, MovementType.OUT, 3, null, null), jwt("alice"));
+
+    StockMovementRecordedEvent published = capturePublished(StockMovementRecordedEvent.class);
+    assertThat(published.type()).isEqualTo(MovementType.OUT);
+    assertThat(published.quantity()).isEqualTo(3);
+    assertThat(published.sku()).isEqualTo("SKU-001");
+  }
+
+  // registerMovement publica dos eventos distintos; este helper aísla el que interesa a cada test.
+  private <T> T capturePublished(Class<T> eventType) {
+    ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
+    verify(eventPublisher, atLeastOnce()).publishEvent(captor.capture());
+    return captor.getAllValues().stream()
+        .filter(eventType::isInstance)
+        .map(eventType::cast)
+        .findFirst()
+        .orElseThrow(
+            () -> new AssertionError("No se publicó ningún evento de tipo " + eventType.getName()));
   }
 
   // Verifica que cuando el producto no existe se lanza ResourceNotFoundException con el ID.

@@ -10,6 +10,7 @@ import com.inventory.stock.domain.StockMovement;
 import com.inventory.stock.domain.StockMovement.MovementType;
 import com.inventory.stock.dto.StockMovementRequest;
 import com.inventory.stock.dto.StockMovementResponse;
+import com.inventory.stock.event.StockMovementRecordedEvent;
 import com.inventory.stock.event.StockThresholdCrossedEvent;
 import com.inventory.stock.mapper.StockMovementMapper;
 import com.inventory.stock.repository.StockMovementRepository;
@@ -74,6 +75,10 @@ public class StockServiceImpl implements StockService {
             .build();
 
     StockMovement saved = movementRepository.save(movement);
+
+    eventPublisher.publishEvent(
+        new StockMovementRecordedEvent(
+            product.getId(), product.getSku(), request.type(), request.quantity()));
 
     if (newStock <= product.getMinimumStock()) {
       eventPublisher.publishEvent(
