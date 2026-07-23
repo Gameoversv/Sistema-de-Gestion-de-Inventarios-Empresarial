@@ -21,9 +21,12 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      # Sin -Dspotless.check.skip: el formato se comprueba aqui, en la primera
+      # invocacion de Maven del pipeline. Un skip global convertia a spotless en
+      # configuracion decorativa, declarada en el pom pero nunca ejecutada.
       - name: Run unit tests
         working-directory: backend
-        run: ./mvnw test -B -Dspotless.check.skip=true
+        run: ./mvnw test -B
 
       - name: Upload test reports
         if: always()
@@ -33,13 +36,90 @@ jobs:
           path: backend/target/surefire-reports/
           retention-days: 7
 
+  # El frontend no tenia ningun job: ni lint ni tests corrian en CI, pese a existir
+  # los scripts y las dependencias en package.json. Es independiente del backend, asi
+  # que no cuelga de `needs` y ambos avanzan en paralelo.
+  frontend:
+    name: Frontend — Lint & Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+
+      # `npm run build` es `tsc -b && vite build`, lo mismo que ejecuta el Dockerfile
+      # del frontend. Sin este paso, un error de tipos solo aparecia al construir la
+      # imagen durante el despliegue a staging, con el CI en verde: paso justo eso con
+      # un `all: true` que Vitest 4 ignora en ejecucion pero tsc rechaza.
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+      - name: Tests with coverage
+        working-directory: frontend
+        run: npm run test:coverage
+
+      # La cobertura del frontend es baja de verdad (~5 %): `all: true` en la config
+      # de vitest hace que cuente los archivos que ningun test importa. Sin ese flag
+      # el informe daba 100 % sobre 14 sentencias. No se pone umbral todavia porque
+      # cualquier minimo razonable dejaria el job en rojo desde el primer dia; el
+      # numero queda visible en el resumen y en el badge, que es lo que obliga a
+      # mirarlo.
+      - name: Resumen de cobertura
+        if: always()
+        working-directory: frontend
+        run: |
+          {
+            echo '### Cobertura del frontend'
+            echo '```'
+            npx --no-install vitest run --coverage --reporter=dot 2>/dev/null | tail -5 || true
+            python3 -c "import json;d=json.load(open('coverage/coverage-summary.json'))['total'];[print(f\"{k:11s} {d[k]['pct']:6.2f}%  ({d[k]['covered']}/{d[k]['total']})\") for k in ('lines','statements','branches','functions')]"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comprobar que el badge del README no miente
+        working-directory: frontend
+        run: ../scripts/verificar-badges-cobertura.sh frontend
+
+      - name: Upload frontend coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          retention-days: 7
+
   integration-test:
     name: Integration Tests (Testcontainers)
     runs-on: ubuntu-latest
     needs: unit-tests
 
+    # A nivel de job para que el `if` del paso de Sonar pueda leerlo: dentro de un
+    # paso, `env` no esta disponible en su propia condicion.
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
     steps:
+      # fetch-depth: 0 lo pide SonarCloud. Con el clon superficial por defecto no
+      # puede leer el historial y asigna mal la autoria de cada linea, con lo que
+      # "codigo nuevo" —sobre lo que aplica el quality gate— sale vacio o erroneo.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Java 21
         uses: actions/setup-java@v4
@@ -48,12 +128,47 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
       # `verify` es la unica invocacion que compila los tests, ejecuta failsafe
       # y aplica el umbral de cobertura. Llamar a los goals de failsafe sueltos
       # no compila nada y termina en "No tests to run".
       - name: Run integration tests and coverage gate
         working-directory: backend
-        run: ./mvnw verify -B -Dspotless.check.skip=true
+        run: ./mvnw verify -B
+
+      # Se ejecuta despues de `verify` para que exista jacoco.xml: sin el, SonarCloud
+      # reportaria 0 % de cobertura. El paso se salta en PRs desde un fork, donde el
+      # secret no esta disponible, en lugar de fallar por un token vacio.
+      - name: SonarCloud analysis
+        if: ${{ env.SONAR_TOKEN != '' }}
+        working-directory: backend
+        run: |
+          ./mvnw -B \
+            org.sonarsource.scanner.maven:sonar-maven-plugin:5.0.0.4389:sonar \
+            -Dsonar.token="$SONAR_TOKEN"
+
+      - name: Resumen de cobertura
+        if: always()
+        run: |
+          csv=backend/target/site/jacoco/jacoco.csv
+          [ -f "$csv" ] || exit 0
+          {
+            echo '### Cobertura del backend (JaCoCo)'
+            echo '```'
+            awk -F, 'NR>1 {lm+=$8; lc+=$9; bm+=$6; bc+=$7}
+              END {printf "lineas %.1f%%  (%d/%d)\nramas  %.1f%%  (%d/%d)\n",
+                   lc*100/(lm+lc), lc, lm+lc, bc*100/(bm+bc), bc, bm+bc}' "$csv"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comprobar que el badge del README no miente
+        run: scripts/verificar-badges-cobertura.sh backend
 
       - name: Upload integration test reports
         if: always()
@@ -64,3 +179,14 @@ jobs:
             backend/target/failsafe-reports/
             backend/target/site/jacoco/
           retention-days: 7
+
+      # Artefacto separado y con retencion mas larga: el informe de cobertura es la
+      # evidencia que pide el enunciado, y mezclarlo con los reportes de failsafe lo
+      # hacia incomodo de localizar.
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: backend/target/site/jacoco/
+          retention-days: 30
