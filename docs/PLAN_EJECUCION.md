@@ -30,7 +30,7 @@ Salvo la cobertura, medida sobre el artefacto de CI, los porcentajes son estimac
 | BRANCH | 71,6 % | **84,2 %** | 80 % |
 | LINE | 84,9 % | **92,2 %** | 80 % |
 
-Medido sobre el artefacto de CI de `main` (`798e6b6`). El frontend se mide aparte y está en **5,4 %** de líneas: hasta ahora el informe daba 100 %, pero solo cubría las 14 sentencias que los tests importaban. Con `all: true` en vitest el número es el real.
+Medido sobre el artefacto de CI de `main` (`798e6b6`). El frontend se mide aparte y está en **5,4 %** de líneas: hasta ahora el informe daba 100 %, pero solo cubría las 14 sentencias que los tests importaban. Con `coverage.include` en la config de vitest el número es el real.
 
 ---
 
