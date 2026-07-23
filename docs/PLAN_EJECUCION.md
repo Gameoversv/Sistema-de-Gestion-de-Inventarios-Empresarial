@@ -171,9 +171,9 @@ Exige SonarQube o SonarCloud midiendo Coverage, Bugs, Vulnerabilities, Code smel
 | Requisito | Estado |
 |---|---|
 | Repositorio público | cumple |
-| README profesional | **D-1…D-4** — documenta rutas inexistentes |
+| README profesional | cumple — rutas reales, matriz rol→scopes y el `scope` obligatorio del token |
 | **Issues** | 13 issues, todos épicas de fase; **ningún bug** (T-6) |
-| Pull Requests | cumple — #30 a #33 |
+| Pull Requests | cumple — #30 a #40 |
 | Branch strategy | cumple — `main` protegida, 2 checks obligatorios |
 | Conventional Commits | cumple — commitlint activo |
 | Code Reviews | **riesgo** — 6 de 10 PRs previas sin revisión (BP-1) |
@@ -244,16 +244,16 @@ El área queda cerrada: el pendiente que arrastraba (P-2) está hecho.
 >
 > En los runners Linux de GitHub Actions esos mismos IT pasan en cada PR. **Consecuencia práctica:** la etapa `Integration Tests` de Jenkins —y por tanto todo lo que va detrás— solo se puede validar en un agente Linux.
 
-### Ola 5 — Documentación (≈11 h)
+### Ola 5 — Documentación (≈10 h restantes) · EN CURSO
 
-| Documento | Exigencia del PDF | Esfuerzo |
-|---|---|---|
-| `docs/requisitos/` | "documento detallado de requisitos funcionales y no funcionales" | 3 h |
-| `docs/arquitectura/` | "diagramas de arquitectura, guías de instalación y manuales de mantenimiento" | 3 h |
-| `docs/operacion/manual-mantenimiento.md` | idem + **la trampa del volumen de Keycloak** | 2 h |
-| `docs/testing/guia-de-pruebas.md` | "casos de prueba, resultados y cualquier defecto encontrado" | 2 h |
-| **T-6** | Charters y bugs como **issues de GitHub** | 1 h |
-| D-1…D-4 | README: stack real, badge, rutas correctas | 45 min |
+| Documento | Exigencia del PDF | Esfuerzo | Estado |
+|---|---|---|---|
+| `docs/requisitos/` | "documento detallado de requisitos funcionales y no funcionales" | 3 h | pendiente |
+| `docs/arquitectura/` | "diagramas de arquitectura, guías de instalación y manuales de mantenimiento" | 3 h | pendiente |
+| `docs/operacion/manual-mantenimiento.md` | idem + **la trampa del volumen de Keycloak** | 2 h | pendiente |
+| `docs/testing/guia-de-pruebas.md` | "casos de prueba, resultados y cualquier defecto encontrado" | 2 h | pendiente |
+| **T-6** | Charters y bugs como **issues de GitHub** | 1 h | pendiente — hay material de sobra: los informes de QA más los hallazgos de la Ola 4 |
+| **D-1…D-4** | README: stack real, badge, rutas correctas | 45 min | **hecho** — declaraba `Base URL: /api/v1`, que no existe, y un `client_id` y unos usuarios que tampoco. Corregido con las rutas reales, la matriz rol→scopes y el aviso del `scope` obligatorio, sin el cual toda petición responde 403. `CONTRIBUTING` alineado con los prefijos de rama que se usan de verdad |
 
 > **T-6 tiene material listo.** Los informes de [G-6](testing/reportes/G-6-escalada-de-scopes.md) y [G-4/G-5](testing/reportes/G-4-G-5-scopes-por-rol.md) son sesiones exploratorias con reproducción. Convertirlos en issues cierra la ausencia total de issues de tipo bug, que es evaluable.
 
