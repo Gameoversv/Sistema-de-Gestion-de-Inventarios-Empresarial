@@ -17,18 +17,23 @@ Gracias por contribuir al proyecto. Por favor lee estas guías antes de abrir un
 
 ## Convención de Nombres de Ramas
 
+Se usan los mismos prefijos que los tipos de Conventional Commits, para que el nombre
+de la rama y el de sus commits no digan cosas distintas.
+
 ```
-feature/<descripcion-corta>     # Nueva funcionalidad
-bugfix/<descripcion-corta>      # Corrección de bug
-hotfix/<descripcion-corta>      # Parche urgente en producción
+feat/<descripcion-corta>        # Nueva funcionalidad
+fix/<descripcion-corta>         # Corrección de bug
+docs/<descripcion-corta>        # Documentación y evidencia
+test/<descripcion-corta>        # Pruebas
+ci/<descripcion-corta>          # Pipelines
 chore/<descripcion-corta>       # Mantenimiento, config, refactor
 ```
 
-Ejemplos:
-- `feature/gestion-proveedores`
-- `bugfix/calculo-stock-incorrecto`
-- `hotfix/seguridad-token-jwt`
-- `chore/actualizar-dependencias`
+Ejemplos reales del historial:
+- `feat/obs-4-loki-logs`
+- `fix/g6-evidencia-y-openapi`
+- `test/ci-verify-blocking`
+- `chore/ola-0-quick-wins`
 
 ## Conventional Commits
 
