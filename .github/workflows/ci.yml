@@ -61,6 +61,14 @@ jobs:
         working-directory: frontend
         run: npm run lint
 
+      # `npm run build` es `tsc -b && vite build`, lo mismo que ejecuta el Dockerfile
+      # del frontend. Sin este paso, un error de tipos solo aparecia al construir la
+      # imagen durante el despliegue a staging, con el CI en verde: paso justo eso con
+      # un `all: true` que Vitest 4 ignora en ejecucion pero tsc rechaza.
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
       - name: Tests with coverage
         working-directory: frontend
         run: npm run test:coverage
