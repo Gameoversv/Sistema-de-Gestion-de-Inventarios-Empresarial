@@ -208,7 +208,7 @@ El área queda cerrada: el pendiente que arrastraba (P-2) está hecho.
 
 | # | Acción | Esfuerzo | Capa |
 |---|---|---|---|
-| **C-1 + TEST-7** | Playwright en `staging.yml` con los 4 usuarios | 3 h | 4 |
+| **C-1 + TEST-7** | Playwright en `staging.yml` con los 4 usuarios | 3 h | 4 |y
 | **TEST-9** | Responsive: 375 / 768 / 1440 px | 45 min | 4 |
 | **TEST-8** | `toHaveScreenshot()` en dashboard, productos y stock | 1 h | 4 |
 | **TEST-1** | `dasniko/testcontainers-keycloak` + IT con token real — **obligatorio** | 3 h | 2 |
@@ -259,7 +259,7 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 
 > **Dos avisos de P-2 que afectan al guion de P-1.** Los paneles de Negocio usan `increase()`: si en la demo se encadenan todos los movimientos seguidos saldrán en cero, porque Prometheus no puede medir el incremento del primer punto de una serie. Hay que espaciarlos o levantar el stack con antelación. Y la ventana temporal de los dashboards no debe abarcar un reinicio del backend con otro perfil, o cada panel duplica sus series.
 
-### Ola 7 — Deuda abierta por los hallazgos (≈2,5 h)
+### Ola 7 — Deuda abierta por los hallazgos (≈3,5 h)
 
 | # | Acción | Esfuerzo |
 |---|---|---|
