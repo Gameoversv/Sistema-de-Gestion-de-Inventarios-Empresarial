@@ -40,17 +40,23 @@ services:
     environment:
       CASC_JENKINS_CONFIG: /var/jenkins_conf/casc.yaml
       JAVA_OPTS: -Djenkins.install.runSetupWizard=false
-      # Configuracion correcta para un agente Linux, donde Testcontainers usa el
-      # socket montado sin mas.
+      # Por defecto, el socket montado: es lo que funciona en un agente Linux.
       #
-      # AVISO: sobre Docker Desktop en Windows NO basta. El socket responde, pero
-      # /info devuelve 400 con `com.docker.desktop.address=npipe://\\.\pipe\docker_cli`,
-      # y ninguna estrategia del cliente lo evita: probado con estas variables puestas
-      # (build #4) y sin ellas (build #3), con identico resultado. Es el proxy del
-      # socket de Docker Desktop, no el pipeline. La etapa Integration Tests solo se
-      # puede validar en un agente Linux; en GitHub Actions esos mismos IT pasan.
-      DOCKER_HOST: unix:///var/run/docker.sock
-      TESTCONTAINERS_DOCKER_CLIENT_STRATEGY: org.testcontainers.dockerclient.UnixSocketClientProviderStrategy
+      # AVISO: sobre Docker Desktop en Windows la etapa Integration Tests no arranca,
+      # y no se arregla desde aqui. El demonio responde 200 a /info por curl, pero
+      # docker-java recibe 400 con un Info vacio y `com.docker.desktop.address=npipe://`.
+      # Probado con cuatro configuraciones distintas, mismo resultado en todas:
+      #
+      #   build #3  socket unix, sin variables                        -> 400
+      #   build #4  socket unix + TESTCONTAINERS_DOCKER_CLIENT_STRATEGY -> 400
+      #   build #5  tcp://host.docker.internal:2375                   -> 400
+      #   build #6  tcp + DOCKER_API_VERSION=1.44                     -> 400
+      #
+      # Las dos variables quedan parametrizadas para poder apuntar a otro demonio sin
+      # tocar este archivo, no porque resuelvan lo anterior. Los mismos IT pasan en
+      # cada PR sobre los runners Linux de GitHub Actions.
+      DOCKER_HOST: ${JENKINS_DOCKER_HOST:-unix:///var/run/docker.sock}
+      DOCKER_API_VERSION: ${JENKINS_DOCKER_API_VERSION:-}
       TESTCONTAINERS_RYUK_DISABLED: "true"
       # Las dos primeras sin valor por defecto a proposito: si faltan, compose se
       # niega a arrancar en vez de crear un Jenkins con admin vacio.
