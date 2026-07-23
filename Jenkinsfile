@@ -38,7 +38,12 @@ pipeline {
         stage('Unit Tests') {
             steps {
                 dir('backend') {
-                    sh './mvnw test -B -Dtest=!StockServiceConcurrencyIT'
+                    // Sin -Dtest=. El POM ya limita surefire a **/*Test.java y excluye
+                    // **/*IT.java, y `-Dtest=` tiene prioridad sobre esos <excludes>: el
+                    // filtro `!StockServiceConcurrencyIT` arrastraba a esta etapa TODOS
+                    // los tests de integracion, incluido LiveDatabaseIT, que necesita una
+                    // base desplegada. Por eso el build #1 fallo aqui.
+                    sh './mvnw test -B'
                 }
             }
             post {
@@ -58,6 +63,23 @@ pipeline {
                 always {
                     junit allowEmptyResults: true,
                           testResults: 'backend/target/surefire-reports/**/*.xml,backend/target/failsafe-reports/**/*.xml'
+                }
+            }
+        }
+
+        // Va despues de Integration Tests a proposito: `verify` es quien genera
+        // target/site/jacoco/jacoco.xml, y sin ese informe SonarCloud reportaria 0 %
+        // de cobertura sobre un proyecto que esta por encima del 90 %.
+        stage('Quality Gate — SonarCloud') {
+            steps {
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    dir('backend') {
+                        sh '''
+                            ./mvnw -B \
+                              org.sonarsource.scanner.maven:sonar-maven-plugin:5.0.0.4389:sonar \
+                              -Dsonar.token=$SONAR_TOKEN
+                        '''
+                    }
                 }
             }
         }
@@ -183,6 +205,89 @@ pipeline {
 
                         echo "✅ All API smoke tests passed"
                     '''
+                }
+            }
+        }
+
+        // E2E y Security Scan van despues del despliegue porque necesitan el sistema
+        // en marcha, y comparten su misma condicion `when`: sin stack levantado no
+        // tienen nada contra lo que correr.
+        stage('E2E Tests — Playwright') {
+            when {
+                anyOf {
+                    branch 'main'
+                    branch 'develop'
+                }
+            }
+            steps {
+                // Se usa la imagen oficial de Playwright en lugar de instalar
+                // navegadores en el agente: trae Chromium, Firefox y WebKit con sus
+                // dependencias de sistema ya resueltas.
+                sh '''
+                    docker run --rm --network host \
+                      -v "$WORKSPACE:/work" -w /work/e2e \
+                      -e PLAYWRIGHT_JUNIT_OUTPUT_NAME=results.xml \
+                      mcr.microsoft.com/playwright:v1.49.0-jammy \
+                      sh -c "npm ci && npx playwright test --reporter=line,junit"
+                '''
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'e2e/results.xml'
+                    archiveArtifacts artifacts: 'e2e/playwright-report/**', allowEmptyArchive: true
+                }
+            }
+        }
+
+        stage('Security Scan — ZAP') {
+            when {
+                anyOf {
+                    branch 'main'
+                    branch 'develop'
+                }
+            }
+            steps {
+                withCredentials([string(credentialsId: 'kc-admin-password', variable: 'ADMIN_PASS')]) {
+                    sh '''
+                        set -e
+                        # Escaneo autenticado y sembrado con el OpenAPI, igual que en
+                        # staging.yml: sin token ZAP solo recibiria 401 y no encontraria
+                        # nada, que es como pasar sin haber probado.
+                        TOKEN=$(curl -sf \
+                            "http://localhost:8180/realms/inventory/protocol/openid-connect/token" \
+                            -d "client_id=inventory-frontend" \
+                            -d "username=inv_admin" \
+                            -d "password=$ADMIN_PASS" \
+                            -d "grant_type=password" \
+                            -d "scope=openid product:view product:manage stock:view stock:manage report:view audit:view user:manage" \
+                            | jq -r '.access_token')
+
+                        [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ] && echo "ERROR: sin JWT no hay escaneo autenticado" && exit 1
+
+                        mkdir -p "$WORKSPACE/zap-out" && chmod 777 "$WORKSPACE/zap-out"
+
+                        REPLACER="replacer.full_list(0)"
+                        ZAP_OPTS="-config $REPLACER.description=auth"
+                        ZAP_OPTS="$ZAP_OPTS -config $REPLACER.enabled=true"
+                        ZAP_OPTS="$ZAP_OPTS -config $REPLACER.matchtype=REQ_HEADER"
+                        ZAP_OPTS="$ZAP_OPTS -config $REPLACER.matchstr=Authorization"
+                        ZAP_OPTS="$ZAP_OPTS -config $REPLACER.regex=false"
+                        ZAP_OPTS="$ZAP_OPTS -config $REPLACER.replacement=Bearer $TOKEN"
+
+                        docker run --rm --network host \
+                          -v "$WORKSPACE/zap-out:/zap/wrk/:rw" \
+                          zaproxy/zap-stable zap-api-scan.py \
+                            -t http://localhost:8080/v3/api-docs \
+                            -f openapi \
+                            -r zap-report.html \
+                            -J zap-report.json \
+                            -z "$ZAP_OPTS"
+                    '''
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'zap-out/**', allowEmptyArchive: true
                 }
             }
         }

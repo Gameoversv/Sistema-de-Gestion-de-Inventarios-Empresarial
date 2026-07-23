@@ -30,7 +30,7 @@ Salvo la cobertura, medida sobre el artefacto de CI, los porcentajes son estimac
 | BRANCH | 71,6 % | **84,2 %** | 80 % |
 | LINE | 84,9 % | **92,2 %** | 80 % |
 
-Medido sobre el artefacto de CI de `main` (`798e6b6`). El frontend se mide aparte y está en **5,4 %** de líneas: hasta ahora el informe daba 100 %, pero solo cubría las 14 sentencias que los tests importaban. Con `all: true` en vitest el número es el real.
+Medido sobre el artefacto de CI de `main` (`798e6b6`). El frontend se mide aparte y está en **5,4 %** de líneas: hasta ahora el informe daba 100 %, pero solo cubría las 14 sentencias que los tests importaban. Con `coverage.include` en la config de vitest el número es el real.
 
 ---
 
@@ -230,7 +230,7 @@ El área queda cerrada: el pendiente que arrastraba (P-2) está hecho.
 | **Q-3** | Job de frontend en CI: lint + coverage | 45 min | **hecho** — el frontend no tenía ningún job; ahora corre lint y tests con cobertura real |
 | **Q-4** | Publicar cobertura como artefacto + badge | 30 min | **hecho** — artefacto `coverage-report`, resumen en cada run y badges verificados en CI |
 | **Q-1** | SonarCloud con las 5 métricas exigidas + badge | 1,5 h | **hecho** — análisis en cada run de CI; 6 badges (quality gate + las 5 métricas) servidos por SonarCloud |
-| **C-4** | Jenkins: añadir E2E, security scan y quality gate | 2 h → **3 h** | pendiente — **el alcance es mayor de lo estimado**: al levantarlo se comprobó que es una instalación limpia, sin job, sin las credenciales que el `Jenkinsfile` referencia (`inventory-env-file`, `kc-admin-password`, `kc-viewer-password`) y sin el tool `jdk-21`. El asistente de instalación ni se ha completado, así que las 8 etapas existentes tampoco se han ejecutado nunca |
+| **C-4** | Jenkins: añadir E2E, security scan y quality gate | 3 h | **parcial** — Jenkins pasa a configurarse como código (`docker/jenkins/`) y el pipeline se ejecuta por primera vez. Corregida la etapa `Unit Tests`, que arrastraba los IT: ahora 284 tests en verde. Añadidas Quality Gate, E2E y Security Scan, validadas de sintaxis con el linter declarativo. **Sin validar en ejecución**: `Integration Tests` no corre bajo Docker Desktop en Windows (ver abajo), y con ella quedan sin alcanzar las tres nuevas |
 | **CI-2** | Tag `v1.0.0` y primera ejecución de `production.yml` | 15 min | pendiente — crea un GitHub Release, decisión explícita |
 | **—** | Smoke test post-release | 45 min | pendiente — depende de CI-2 |
 | **TEST-10** | ZAP autenticado o `zap-full-scan` con umbral | 2 h | **hecho** — `zap-api-scan` sembrado con el OpenAPI y autenticado; sin `-I`, así que un WARN nuevo tumba el despliegue. Validado en local: 29 URLs, 118 reglas PASS, 0 WARN |
@@ -238,7 +238,11 @@ El área queda cerrada: el pendiente que arrastraba (P-2) está hecho.
 
 > **El badge de cobertura del README era falso.** Decía `coverage-placeholder-brightgreen`: verde fijo, sin medir nada. Ahora hay tres badges con los valores reales y [`scripts/verificar-badges-cobertura.sh`](../scripts/verificar-badges-cobertura.sh) falla en CI si se desfasan. No se generan SVG desde el runner a propósito: `main` exige PR con revisión, así que un push automático quedaría bloqueado por la propia protección de rama.
 
-> **Testcontainers no arranca en este equipo.** `./mvnw verify` local termina en `Could not find a valid Docker environment` en los 3 IT, con Docker Desktop levantado y también forzando `DOCKER_HOST=npipe:////./pipe/docker_engine`. En CI pasan sin problema. Afecta a quien intente medir cobertura en local; relacionado con **ENV-1**.
+> **Testcontainers no arranca sobre Docker Desktop en Windows.** `./mvnw verify` local termina en `Could not find a valid Docker environment` en los 3 IT, con Docker Desktop levantado y también forzando `DOCKER_HOST=npipe:////./pipe/docker_engine`.
+>
+> Confirmado también **dentro del contenedor de Jenkins**, donde el socket sí está montado y el cliente de Docker funciona: `/info` responde `400` con `com.docker.desktop.address=npipe://\\.\pipe\docker_cli`. Probado con `DOCKER_HOST` y `TESTCONTAINERS_DOCKER_CLIENT_STRATEGY` explícitos (build #4) y sin ellos (build #3), con idéntico resultado. Es el proxy del socket de Docker Desktop, no la configuración.
+>
+> En los runners Linux de GitHub Actions esos mismos IT pasan en cada PR. **Consecuencia práctica:** la etapa `Integration Tests` de Jenkins —y por tanto todo lo que va detrás— solo se puede validar en un agente Linux.
 
 ### Ola 5 — Documentación (≈11 h)
 

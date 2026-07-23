@@ -45,7 +45,6 @@ jobs:
           KC_DB_USER=keycloak_user
           KC_DB_PASSWORD=${{ secrets.STAGING_KC_DB_PASSWORD }}
           KC_REALM=inventory
-          KC_BACKEND_CLIENT_SECRET=${{ secrets.STAGING_KC_BACKEND_CLIENT_SECRET }}
           KC_USER_ADMIN_USERNAME=inv_admin
           KC_USER_ADMIN_PASSWORD=${{ secrets.STAGING_KC_USER_ADMIN_PASSWORD }}
           KC_USER_CLERK_USERNAME=inv_clerk
