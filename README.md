@@ -4,6 +4,17 @@
 ![Backend coverage](https://img.shields.io/badge/backend%20coverage-92.2%25%20lineas-brightgreen?style=flat-square)
 ![Backend branches](https://img.shields.io/badge/backend%20branches-84.2%25-brightgreen?style=flat-square)
 ![Frontend coverage](https://img.shields.io/badge/frontend%20coverage-5.4%25-critical?style=flat-square)
+
+Las cinco métricas de calidad exigidas, medidas por SonarCloud en cada ejecución de CI:
+
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=Gameoversv_Sistema-de-Gestion-de-Inventarios-Empresarial&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Gameoversv_Sistema-de-Gestion-de-Inventarios-Empresarial)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Gameoversv_Sistema-de-Gestion-de-Inventarios-Empresarial&metric=coverage)](https://sonarcloud.io/component_measures?id=Gameoversv_Sistema-de-Gestion-de-Inventarios-Empresarial&metric=coverage)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=Gameoversv_Sistema-de-Gestion-de-Inventarios-Empresarial&metric=bugs)](https://sonarcloud.io/component_measures?id=Gameoversv_Sistema-de-Gestion-de-Inventarios-Empresarial&metric=bugs)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=Gameoversv_Sistema-de-Gestion-de-Inventarios-Empresarial&metric=vulnerabilities)](https://sonarcloud.io/component_measures?id=Gameoversv_Sistema-de-Gestion-de-Inventarios-Empresarial&metric=vulnerabilities)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=Gameoversv_Sistema-de-Gestion-de-Inventarios-Empresarial&metric=code_smells)](https://sonarcloud.io/component_measures?id=Gameoversv_Sistema-de-Gestion-de-Inventarios-Empresarial&metric=code_smells)
+[![Duplicated Lines](https://sonarcloud.io/api/project_badges/measure?project=Gameoversv_Sistema-de-Gestion-de-Inventarios-Empresarial&metric=duplicated_lines_density)](https://sonarcloud.io/component_measures?id=Gameoversv_Sistema-de-Gestion-de-Inventarios-Empresarial&metric=duplicated_lines_density)
+
+A diferencia de los tres de arriba, estos los sirve SonarCloud a partir del último análisis, así que no pueden quedarse desfasados.
 ![License](https://img.shields.io/github/license/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial?style=flat-square)
 ![Issues](https://img.shields.io/github/issues/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial?style=flat-square)
 ![Last Commit](https://img.shields.io/github/last-commit/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial?style=flat-square)

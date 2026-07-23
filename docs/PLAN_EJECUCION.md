@@ -227,7 +227,7 @@ Queda un único pendiente del área, que pertenece a la Ola 6: **capturar las ca
 | **Q-2** | Retirar `-Dspotless.check.skip=true` de los 8 puntos | 45 min | **hecho** — spotless corre en `validate`, así que ahora se comprueba en cada `compile`, `test`, `verify` y `package` |
 | **Q-3** | Job de frontend en CI: lint + coverage | 45 min | **hecho** — el frontend no tenía ningún job; ahora corre lint y tests con cobertura real |
 | **Q-4** | Publicar cobertura como artefacto + badge | 30 min | **hecho** — artefacto `coverage-report`, resumen en cada run y badges verificados en CI |
-| **Q-1** | SonarCloud con las 5 métricas exigidas + badge | 1,5 h | **bloqueado** — requiere cuenta, organización y `SONAR_TOKEN` |
+| **Q-1** | SonarCloud con las 5 métricas exigidas + badge | 1,5 h | **hecho** — análisis en cada run de CI; 6 badges (quality gate + las 5 métricas) servidos por SonarCloud |
 | **C-4** | Jenkins: añadir E2E, security scan y quality gate | 2 h | pendiente — `inventory-jenkins` lleva semanas parado |
 | **CI-2** | Tag `v1.0.0` y primera ejecución de `production.yml` | 15 min | pendiente — crea un GitHub Release, decisión explícita |
 | **—** | Smoke test post-release | 45 min | pendiente — depende de CI-2 |

@@ -31,8 +31,13 @@
     <mapstruct.version>1.6.3</mapstruct.version>
     <logstash-encoder.version>8.0</logstash-encoder.version>
 
-    <!-- SonarQube properties (override via CI env vars) -->
-    <sonar.host.url>http://localhost:9000</sonar.host.url>
+    <!-- SonarCloud. El token NUNCA va aqui: se pasa por -Dsonar.token desde CI,
+         que lo lee del secret SONAR_TOKEN. -->
+    <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+    <sonar.organization>gameoversv</sonar.organization>
+    <sonar.projectKey>Gameoversv_Sistema-de-Gestion-de-Inventarios-Empresarial</sonar.projectKey>
+    <sonar.projectName>Sistema de Gestion de Inventarios Empresarial</sonar.projectName>
+    <sonar.scanner.version>5.0.0.4389</sonar.scanner.version>
     <sonar.coverage.jacoco.xmlReportPaths>
       ${project.build.directory}/site/jacoco/jacoco.xml
     </sonar.coverage.jacoco.xmlReportPaths>
