@@ -40,6 +40,18 @@ services:
     environment:
       CASC_JENKINS_CONFIG: /var/jenkins_conf/casc.yaml
       JAVA_OPTS: -Djenkins.install.runSetupWizard=false
+      # Configuracion correcta para un agente Linux, donde Testcontainers usa el
+      # socket montado sin mas.
+      #
+      # AVISO: sobre Docker Desktop en Windows NO basta. El socket responde, pero
+      # /info devuelve 400 con `com.docker.desktop.address=npipe://\\.\pipe\docker_cli`,
+      # y ninguna estrategia del cliente lo evita: probado con estas variables puestas
+      # (build #4) y sin ellas (build #3), con identico resultado. Es el proxy del
+      # socket de Docker Desktop, no el pipeline. La etapa Integration Tests solo se
+      # puede validar en un agente Linux; en GitHub Actions esos mismos IT pasan.
+      DOCKER_HOST: unix:///var/run/docker.sock
+      TESTCONTAINERS_DOCKER_CLIENT_STRATEGY: org.testcontainers.dockerclient.UnixSocketClientProviderStrategy
+      TESTCONTAINERS_RYUK_DISABLED: "true"
       # Las dos primeras sin valor por defecto a proposito: si faltan, compose se
       # niega a arrancar en vez de crear un Jenkins con admin vacio.
       JENKINS_ADMIN_ID: ${JENKINS_ADMIN_ID:?falta JENKINS_ADMIN_ID}

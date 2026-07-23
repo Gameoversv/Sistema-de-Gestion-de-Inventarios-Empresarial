@@ -90,7 +90,11 @@ jobs:
                 remote {
                   url('https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial.git')
                 }
-                branch('*/${BRANCH}')
+                // El `^` escapa la interpolacion de JCasC: sin el, JCasC sustituye
+                // ${BRANCH} por vacio al cargar la configuracion y el job termina
+                // buscando `refs/remotes/origin/`. Asi el marcador llega intacto a
+                // Jenkins, que lo resuelve con el parametro en cada ejecucion.
+                branch('*/^${BRANCH}')
               }
             }
             scriptPath('Jenkinsfile')
