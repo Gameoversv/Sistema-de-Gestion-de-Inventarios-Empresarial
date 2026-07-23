@@ -2,7 +2,7 @@
 
 **Fuente de verdad:** `Proyecto_Final_V3.pdf` (revisado íntegro el 2026-07-22)
 **Base de hallazgos:** [ANALISIS_BRECHAS.md](ANALISIS_BRECHAS.md)
-**Actualizado:** 2026-07-23, tras cerrar la Ola 2, seis de las nueve tareas de la Ola 4 (Q-1 a Q-4, ENV-1, TEST-10), P-2 de la Ola 6, D-1…D-4 y T-6 de la Ola 5, y P-2a de la Ola 7.
+**Actualizado:** 2026-07-23, tras cerrar la Ola 2, seis de las nueve tareas de la Ola 4 (Q-1 a Q-4, ENV-1, TEST-10), P-2 de la Ola 6, D-1…D-4 y T-6 de la Ola 5, P-2a de la Ola 7 y los dos obligatorios de sesión (SEC-2, S-2).
 
 > **Aviso de método.** La versión anterior de este plan tomaba como requisito el desglose del análisis de brechas, que en algunos puntos era interpretación propia y no texto del enunciado. Cada requisito de este documento está contrastado con el PDF. Cuando algo es criterio nuestro y no del enunciado, se marca como **[criterio propio]**.
 
@@ -16,7 +16,7 @@ El enunciado define **ocho** áreas. La versión anterior omitía la última.
 |---|---|---|---|---|
 | Funcionalidad | 15% | ~85% | ~85% | ~98% |
 | Testing | 20% | ~60% | ~81% | ~90% |
-| Seguridad | 10% | ~70% | ~85% | ~90% |
+| Seguridad | 10% | ~70% | ~90% | ~90% |
 | Observabilidad | 15% | ~30% | ~90% | ~90% |
 | CI/CD | 15% | ~60% | ~85% | ~90% |
 | Calidad de código | 10% | ~35% | ~60% | ~85% |
@@ -105,8 +105,8 @@ El enunciado es literal: *"Integration Testing — Obligatorio utilizar: Testcon
 | Keycloak + OAuth2 + JWT | cumple |
 | Matriz de 7 permisos | cumple — `user:manage` existe pero no protege nada (**A-2**) |
 | Protección de endpoints por permiso, no por rol | cumple — `@PreAuthorize` con `SCOPE_` |
-| Refresh tokens | **S-2** — sin test |
-| Expiración de sesiones | **SEC-2** — sin manejo de `onTokenExpired` |
+| Refresh tokens | **cumple** — S-2: 5 comprobaciones en el paso de API tests de `staging.yml`, contra Keycloak vivo |
+| Expiración de sesiones | **cumple** — SEC-2: `onTokenExpired` y `onAuthRefreshError` conectados en `src/lib/session.ts`, con 5 tests |
 | Policies | **G-1** — implementar o justificar por ADR |
 
 ### 4.3 Full Stack Testing (20%) — las 8 capas
@@ -308,8 +308,8 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 | F-1 | ADR-002 sobre el soft delete | 30 min |
 | D-4 | `@axe-core/playwright` en E2E | 1 h |
 | E-2 | Validación condicional de `quantity` | 45 min |
-| **SEC-2** | `onTokenExpired` — **"expiración de sesiones" es obligatorio** | 45 min |
-| **S-2** | Test con `grant_type=refresh_token` — **"refresh tokens" es obligatorio** | 30 min |
+| ~~**SEC-2**~~ | ~~`onTokenExpired`~~ — **hecho**: renovación proactiva más cierre de sesión cuando el refresco falla. [Informe](testing/reportes/SEC-2-S-2-ciclo-de-vida-del-token.md) | — |
+| ~~**S-2**~~ | ~~Test con `grant_type=refresh_token`~~ — **hecho**: 5 comprobaciones, incluida la negativa (refresh inválido → 400) | — |
 | — | ~~**[criterio propio]** Métricas de login de Keycloak vía SPI~~ — **descartada**: Keycloak sí emite `LOGIN_ERROR` con usuario, IP y motivo al log, y Loki lo indexa. Ya visible en el dashboard de Seguridad ([informe](testing/reportes/OBS-dashboards.md)) | — |
 
 ---
@@ -325,7 +325,7 @@ Las cifras de abajo son el hueco que falta por cerrar en cada área, no su peso.
 | Mejoras funcionales (D-1, D-2, F-2) | 1,95 | 5 h | 0,39 |
 | Ola 3 — Testing | 2,40 | 14 h | 0,17 |
 
-**4 horas:** ~~T-6~~ **hecho** + SEC-2 + S-2 + los 16 code smells.
+**4 horas:** ~~T-6 + SEC-2 + S-2~~ **hechos**; queda los 16 code smells.
 Cierra dos obligatorios del enunciado, el único hueco de Calidad y la ausencia total de issues de tipo bug.
 
 **12 horas:** lo anterior + Ola 5 completa.
