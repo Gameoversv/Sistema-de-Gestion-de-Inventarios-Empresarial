@@ -23,7 +23,7 @@ jobs:
 
       - name: Run unit tests
         working-directory: backend
-        run: ./mvnw test -B -Dspotless.check.skip=true
+        run: ./mvnw test -B
 
       - name: Build production image
         run: docker build -t inventory-backend:${{ github.ref_name }} ./backend

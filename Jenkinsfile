@@ -30,7 +30,7 @@ pipeline {
         stage('Build') {
             steps {
                 dir('backend') {
-                    sh './mvnw clean compile -B -Dspotless.check.skip=true'
+                    sh './mvnw clean compile -B'
                 }
             }
         }
@@ -38,7 +38,7 @@ pipeline {
         stage('Unit Tests') {
             steps {
                 dir('backend') {
-                    sh './mvnw test -B -Dspotless.check.skip=true -Dtest=!StockServiceConcurrencyIT'
+                    sh './mvnw test -B -Dtest=!StockServiceConcurrencyIT'
                 }
             }
             post {
@@ -51,7 +51,7 @@ pipeline {
         stage('Integration Tests') {
             steps {
                 dir('backend') {
-                    sh './mvnw verify -B -Dspotless.check.skip=true'
+                    sh './mvnw verify -B'
                 }
             }
             post {
@@ -65,7 +65,7 @@ pipeline {
         stage('Package') {
             steps {
                 dir('backend') {
-                    sh './mvnw package -B -DskipTests -Dspotless.check.skip=true'
+                    sh './mvnw package -B -DskipTests'
                 }
                 archiveArtifacts artifacts: 'backend/target/*.jar', fingerprint: true
             }

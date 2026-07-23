@@ -19,7 +19,7 @@ El enunciado define **ocho** áreas. La versión anterior omitía la última.
 | Seguridad | 10% | ~70% | ~85% | ~90% |
 | Observabilidad | 15% | ~30% | ~90% | ~90% |
 | CI/CD | 15% | ~60% | ~85% | ~90% |
-| Calidad de código | 10% | ~35% | ~45% | ~85% |
+| Calidad de código | 10% | ~35% | ~60% | ~85% |
 | Documentación | 10% | ~25% | ~40% | ~90% |
 | **Presentación final** | **5%** | **0%** | **0%** | **~90%** |
 
@@ -27,8 +27,10 @@ Salvo la cobertura, medida sobre el artefacto de CI, los porcentajes son estimac
 
 | Cobertura (artefacto JaCoCo en Actions) | Inicial | Actual | Umbral |
 |---|---|---|---|
-| BRANCH | 71,6 % | **83,2 %** | 80 % |
-| LINE | 84,9 % | **91,3 %** | 80 % |
+| BRANCH | 71,6 % | **84,2 %** | 80 % |
+| LINE | 84,9 % | **92,2 %** | 80 % |
+
+Medido sobre el artefacto de CI de `main` (`798e6b6`). El frontend se mide aparte y está en **5,4 %** de líneas: hasta ahora el informe daba 100 %, pero solo cubría las 14 sentencias que los tests importaban. Con `all: true` en vitest el número es el real.
 
 ---
 
@@ -112,7 +114,7 @@ El enunciado es literal: *"Integration Testing — Obligatorio utilizar: Testcon
 | Capa | Exigencia | Estado |
 |---|---|---|
 | 1. Unit | Servicios, validaciones, lógica | cumple — 284 tests |
-| 2. Integration | Testcontainers: **BD real, Keycloak**, integraciones | parcial — BD sí, **Keycloak no** (TEST-1) |
+| 2. Integration | Testcontainers: **BD real, Keycloak**, integraciones | parcial — BD sí (y desde ENV-1, también contra la base desplegada), **Keycloak no** (TEST-1) |
 | 3. API / Contract | Endpoints, contratos OpenAPI, status codes, payloads | parcial — Postman sin CI (TEST-3), RestAssured sin uso (TEST-2) |
 | 4. E2E | Snapshots, flujos, navegación, **roles**, seguridad, **responsive** | **no se ejecuta en CI** (C-1, TEST-7/8/9) |
 | 5. Security | ZAP, JWT, permisos, CORS, Dependency Check/Snyk, autenticación | parcial — ZAP baseline sí; faltan T-5, TEST-11 |
@@ -220,17 +222,21 @@ Queda un único pendiente del área, que pertenece a la Ola 6: **capturar las ca
 
 ### Ola 4 — Calidad y CI/CD (≈7 h)
 
-| # | Acción | Esfuerzo |
-|---|---|---|
-| **Q-1** | SonarCloud con las 5 métricas exigidas + badge | 1,5 h |
-| **Q-3** | Job de frontend en CI: lint + coverage | 45 min |
-| **Q-2** | Retirar `-Dspotless.check.skip=true` de los 8 puntos | 45 min |
-| **Q-4** | Publicar cobertura como artefacto + badge | 30 min |
-| **C-4** | Jenkins: añadir E2E, security scan y quality gate | 2 h |
-| **CI-2** | Tag `v1.0.0` y primera ejecución de `production.yml` | 15 min |
-| **—** | Smoke test post-release | 45 min |
-| **TEST-10** | ZAP autenticado o `zap-full-scan` con umbral | 2 h |
-| **ENV-1** | IT con URL de BD por configuración externa | 1 h |
+| # | Acción | Esfuerzo | Estado |
+|---|---|---|---|
+| **Q-2** | Retirar `-Dspotless.check.skip=true` de los 8 puntos | 45 min | **hecho** — spotless corre en `validate`, así que ahora se comprueba en cada `compile`, `test`, `verify` y `package` |
+| **Q-3** | Job de frontend en CI: lint + coverage | 45 min | **hecho** — el frontend no tenía ningún job; ahora corre lint y tests con cobertura real |
+| **Q-4** | Publicar cobertura como artefacto + badge | 30 min | **hecho** — artefacto `coverage-report`, resumen en cada run y badges verificados en CI |
+| **Q-1** | SonarCloud con las 5 métricas exigidas + badge | 1,5 h | **hecho** — análisis en cada run de CI; 6 badges (quality gate + las 5 métricas) servidos por SonarCloud |
+| **C-4** | Jenkins: añadir E2E, security scan y quality gate | 2 h → **3 h** | pendiente — **el alcance es mayor de lo estimado**: al levantarlo se comprobó que es una instalación limpia, sin job, sin las credenciales que el `Jenkinsfile` referencia (`inventory-env-file`, `kc-admin-password`, `kc-viewer-password`) y sin el tool `jdk-21`. El asistente de instalación ni se ha completado, así que las 8 etapas existentes tampoco se han ejecutado nunca |
+| **CI-2** | Tag `v1.0.0` y primera ejecución de `production.yml` | 15 min | pendiente — crea un GitHub Release, decisión explícita |
+| **—** | Smoke test post-release | 45 min | pendiente — depende de CI-2 |
+| **TEST-10** | ZAP autenticado o `zap-full-scan` con umbral | 2 h | **hecho** — `zap-api-scan` sembrado con el OpenAPI y autenticado; sin `-I`, así que un WARN nuevo tumba el despliegue. Validado en local: 29 URLs, 118 reglas PASS, 0 WARN |
+| **ENV-1** | IT con URL de BD por configuración externa | 1 h | **hecho** — `LiveDatabaseIT` + perfil `live-db-it`; verificado que falla cuando no hay base, en vez de saltarse |
+
+> **El badge de cobertura del README era falso.** Decía `coverage-placeholder-brightgreen`: verde fijo, sin medir nada. Ahora hay tres badges con los valores reales y [`scripts/verificar-badges-cobertura.sh`](../scripts/verificar-badges-cobertura.sh) falla en CI si se desfasan. No se generan SVG desde el runner a propósito: `main` exige PR con revisión, así que un push automático quedaría bloqueado por la propia protección de rama.
+
+> **Testcontainers no arranca en este equipo.** `./mvnw verify` local termina en `Could not find a valid Docker environment` en los 3 IT, con Docker Desktop levantado y también forzando `DOCKER_HOST=npipe:////./pipe/docker_engine`. En CI pasan sin problema. Afecta a quien intente medir cobertura en local; relacionado con **ENV-1**.
 
 ### Ola 5 — Documentación (≈11 h)
 
@@ -263,6 +269,7 @@ Queda un único pendiente del área, que pertenece a la Ola 6: **capturar las ca
 | **G-8** | `scopeMappings` en Keycloak: corrección de raíz de G-6 y prerrequisito de G-2 | 1 h |
 | **S-4b** | Quitar `JWT_SECRET` y `JWT_EXPIRATION_MS` de `staging.yml` | 10 min |
 | **ADR-001** | Por qué el mapa rol→scopes vive en Java | 30 min |
+| **TEST-10b** | El realm emite tokens de 300 s y el escaneo activo de ZAP puede durar más. Al caducar, el resto de la API se recorre sin autenticar y el escaneo aprueba precisamente por no encontrar nada. Ya hay un paso que lo detecta y falla; falta la corrección de raíz: un cliente de Keycloak dedicado al escaneo con `accessTokenLifespan` mayor | 45 min |
 
 ### Ola 8 — Alto coste, decidir explícitamente
 
