@@ -1,9 +1,10 @@
-name: E2E — Playwright
+name: E2E + API — Playwright & Newman
 
-# Etapa E2E del pipeline (C-1 / TEST-7). Los tres specs de Playwright viven en
-# e2e/ pero ninguna etapa de CI los ejecutaba. Este workflow despliega el stack
-# completo con el perfil demo (CORS local, logs JSON) y corre Playwright contra
-# el sistema ya desplegado, como exige el enunciado para E2E.
+# Etapas E2E (C-1/TEST-7) y API testing (TEST-3) del pipeline. Los specs de
+# Playwright y la colección Postman vivían en el repo pero ninguna etapa de CI
+# los ejecutaba. Este workflow despliega el stack completo con el perfil demo
+# (CORS local, logs JSON) y corre ambos contra el sistema ya desplegado, como
+# exige el enunciado.
 #
 # No se corre en local: Docker Desktop en Windows no levanta el stack de forma
 # fiable (C-4). El veredicto lo da este job en ubuntu-latest.
@@ -15,7 +16,7 @@ on:
 
 jobs:
   e2e:
-    name: Deploy demo stack → Playwright
+    name: Deploy demo stack → Playwright + Newman
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -120,6 +121,40 @@ jobs:
         with:
           name: playwright-report
           path: e2e/playwright-report
+          retention-days: 7
+
+      # ── API testing con Newman (TEST-3) ────────────────────────────────────
+      # La colección Postman de docs/postman/ no corría en ninguna parte. Se
+      # ejecuta contra el mismo stack desplegado, tras Playwright para no
+      # perturbar su estado inicial. Necesita un token de admin (todos los
+      # scopes) y uno de viewer (solo lectura) para los casos negativos 403.
+      - name: API tests (Newman)
+        run: |
+          KC=http://localhost:8180/realms/inventory/protocol/openid-connect/token
+          ADMIN_TOKEN=$(curl -s "$KC" -d client_id=inventory-frontend -d grant_type=password \
+            -d username=inv_admin -d password=Admin123 \
+            -d 'scope=openid product:view product:manage stock:view stock:manage report:view audit:view' \
+            | jq -r .access_token)
+          VIEWER_TOKEN=$(curl -s "$KC" -d client_id=inventory-frontend -d grant_type=password \
+            -d username=inv_viewer -d password=Viewer123 \
+            -d 'scope=openid product:view stock:view report:view' \
+            | jq -r .access_token)
+          if [ -z "$ADMIN_TOKEN" ] || [ "$ADMIN_TOKEN" = "null" ]; then
+            echo "No se pudo obtener el token de admin"; exit 1
+          fi
+          npx -y newman run docs/postman/inventory-api.postman_collection.json \
+            --env-var baseUrl=http://localhost:8080 \
+            --env-var token="$ADMIN_TOKEN" \
+            --env-var viewer_token="$VIEWER_TOKEN" \
+            --reporters cli,junit \
+            --reporter-junit-export newman-report.xml
+
+      - name: Upload Newman report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: newman-report
+          path: newman-report.xml
           retention-days: 7
 
       - name: Stack logs on failure
