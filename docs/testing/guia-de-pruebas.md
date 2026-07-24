@@ -24,7 +24,7 @@ El enunciado exige **ocho capas** de testing. Esta guía dice, capa por capa, qu
 | 7. Data | Parcial | migraciones y seeds; faltan duplicados y constraints |
 | 8. Exploratory | **Cumple** | 3 charters, 15 bugs con reproducción |
 
-**307 `@Test` en 33 ficheros.** Cobertura del backend: **84,5 % de ramas, 92,1 % de líneas** (JaCoCo en CI, umbral 80 %). Frontend: **9,6 %** de líneas — el hueco de calidad conocido.
+**307 `@Test` en 33 ficheros.** Cobertura del backend: **84,5 % de ramas, 92,1 % de líneas** (JaCoCo en CI, umbral 80 %). Frontend: **9,3 %** de líneas — el hueco de calidad conocido.
 
 Dos capas completas, cinco parciales, una a cero. Los parciales se concentran en el pipeline: pruebas escritas que el CI todavía no ejecuta.
 
@@ -108,7 +108,12 @@ Tres specs escritos en `e2e/tests/`:
 
 **El pipeline los ejecuta (C-1 / TEST-7).** `e2e.yml` despliega el stack con perfil demo y corre los tres specs contra el sistema desplegado en cada PR, subiendo el informe de Playwright como artefacto. Era la única de las 10 etapas del pipeline que faltaba en Actions.
 
-Redactar esta etapa destapó un defecto real: el SPA llamaba `keycloak.login()` sin `scope`, así que el token no traía los permisos (son *optional scopes*) y `PermissionGuard` ocultaba toda la interfaz protegida. Corregido pidiendo los siete scopes en el login; los `scope-mappings` de G-8 los recortan por rol.
+Esta etapa destapó **dos defectos reales de autenticación**, no fragilidad de los specs:
+
+1. El SPA llamaba `keycloak.login()` sin `scope`, así que el token no traía los permisos (son *optional scopes*) y `PermissionGuard` ocultaba toda la interfaz protegida. Corregido pidiendo los siete scopes en el login; los `scope-mappings` de G-8 los recortan por rol.
+2. Tras un **refresco de página**, `check-sso` obtenía un token silencioso sin los optional scopes, y la interfaz protegida volvía a desaparecer. Corregido en `AuthContext`: si el token no trae scopes de negocio, se reobtiene con un login silencioso (sesión SSO activa), con guard anti-bucle.
+
+En producción, ambos habrían dejado la app inservible: el primero desde el arranque, el segundo tras cualquier F5.
 
 **Qué falta dentro de la capa:**
 - **TEST-8** — `toHaveScreenshot()` en dashboard, productos y stock (snapshots).

@@ -30,7 +30,7 @@ Salvo la cobertura, medida sobre el artefacto de CI, los porcentajes son estimac
 | BRANCH | 71,6 % | **85,0 %** | 80 % |
 | LINE | 84,9 % | **92,7 %** | 80 % |
 
-Cifras vigentes tras `KeycloakAuthIT` (TEST-1), que ejercita en integración `SecurityConfig` y los controladores con un token real y subió la cobertura desde 84,5/92,1. La medición original de la que parte esta tabla es el artefacto de `798e6b6`. El frontend se mide aparte y está en **9,6 %** de líneas: el test de scopes de G-3a lo subió desde 7,1 %. El informe daba 100 % hasta que se configuró `coverage.include` en vitest, que solo cubría las 14 sentencias que los tests importaban; con esa opción el número es el real.
+Cifras vigentes tras `KeycloakAuthIT` (TEST-1), que ejercita en integración `SecurityConfig` y los controladores con un token real y subió la cobertura desde 84,5/92,1. La medición original de la que parte esta tabla es el artefacto de `798e6b6`. El frontend se mide aparte y está en **9,3 %** de líneas: el test de scopes de G-3a lo subió desde 7,1 %. El informe daba 100 % hasta que se configuró `coverage.include` en vitest, que solo cubría las 14 sentencias que los tests importaban; con esa opción el número es el real.
 
 ---
 
