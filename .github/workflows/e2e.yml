@@ -1,10 +1,10 @@
-name: E2E + API — Playwright & Newman
+name: E2E + API + Perf — Playwright, Newman & k6
 
-# Etapas E2E (C-1/TEST-7) y API testing (TEST-3) del pipeline. Los specs de
-# Playwright y la colección Postman vivían en el repo pero ninguna etapa de CI
-# los ejecutaba. Este workflow despliega el stack completo con el perfil demo
-# (CORS local, logs JSON) y corre ambos contra el sistema ya desplegado, como
-# exige el enunciado.
+# Etapas E2E (C-1/TEST-7), API testing (TEST-3) y performance (T-3) del pipeline.
+# Los specs de Playwright, la colección Postman y el script de k6 vivían en el
+# repo pero ninguna etapa de CI los ejecutaba. Este workflow despliega el stack
+# completo con el perfil demo (CORS local, logs JSON) y corre los tres contra el
+# sistema ya desplegado, como exige el enunciado.
 #
 # No se corre en local: Docker Desktop en Windows no levanta el stack de forma
 # fiable (C-4). El veredicto lo da este job en ubuntu-latest.
@@ -155,6 +155,30 @@ jobs:
         with:
           name: newman-report
           path: newman-report.xml
+          retention-days: 7
+
+      # ── Performance testing con k6 (T-3) ───────────────────────────────────
+      # Load + stress contra el stack desplegado. Los umbrales del script
+      # (p(95)<500ms, <1% de error) hacen fallar el job si el rendimiento se
+      # degrada. Solo lecturas, asi que no importa que Newman/Playwright hayan
+      # mutado datos antes.
+      - name: Performance tests (k6)
+        run: |
+          K6=k6-v0.54.0-linux-amd64
+          curl -sfL "https://github.com/grafana/k6/releases/download/v0.54.0/${K6}.tar.gz" | tar xz
+          ./${K6}/k6 run \
+            -e BASE_URL=http://localhost:8080 \
+            -e KC_URL=http://localhost:8180 \
+            -e KC_PASSWORD=Admin123 \
+            --summary-export=k6-summary.json \
+            scripts/k6/load-test.js
+
+      - name: Upload k6 summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-summary
+          path: k6-summary.json
           retention-days: 7
 
       - name: Stack logs on failure
