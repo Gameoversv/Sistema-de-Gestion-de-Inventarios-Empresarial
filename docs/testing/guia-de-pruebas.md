@@ -24,7 +24,7 @@ El enunciado exige **ocho capas** de testing. Esta guía dice, capa por capa, qu
 | 7. Data | Parcial | migraciones y seeds; faltan duplicados y constraints |
 | 8. Exploratory | **Cumple** | 3 charters, 15 bugs con reproducción |
 
-**307 `@Test` en 33 ficheros.** Cobertura del backend: **84,5 % de ramas, 92,1 % de líneas** (JaCoCo en CI, umbral 80 %). Frontend: **9,2 %** de líneas — el hueco de calidad conocido.
+**307 `@Test` en 33 ficheros.** Cobertura del backend: **84,5 % de ramas, 92,1 % de líneas** (JaCoCo en CI, umbral 80 %). Frontend: **9,6 %** de líneas — el hueco de calidad conocido.
 
 Dos capas completas, cinco parciales, una a cero. Los parciales se concentran en el pipeline: pruebas escritas que el CI todavía no ejecuta.
 
@@ -59,7 +59,7 @@ Dos capas completas, cinco parciales, una a cero. Los parciales se concentran en
 
 ---
 
-## 2. Integration Testing — **Parcial**
+## 2. Integration Testing — **Cumple**
 
 > *"Obligatorio utilizar: Testcontainers. Debe probarse: Base de datos real, Keycloak, Integraciones"*
 
@@ -106,10 +106,11 @@ Tres specs escritos en `e2e/tests/`:
 | `products.spec.ts` | Flujo de productos: listado, alta, edición |
 | `stock.spec.ts` | Registro de movimiento y su reflejo |
 
-**El problema es que el pipeline no los ejecuta (C-1 / TEST-7).** Están en el repo pero ninguna etapa de GitHub Actions los lanza, así que no hay verificación continua de la navegación ni de los flujos. Es la **única de las 10 etapas del pipeline que falta en Actions**, y la mejor palanca disponible: confirmaría de paso roles, seguridad y responsive de una vez.
+**El pipeline los ejecuta (C-1 / TEST-7).** `e2e.yml` despliega el stack con perfil demo y corre los tres specs contra el sistema desplegado en cada PR, subiendo el informe de Playwright como artefacto. Era la única de las 10 etapas del pipeline que faltaba en Actions.
+
+Redactar esta etapa destapó un defecto real: el SPA llamaba `keycloak.login()` sin `scope`, así que el token no traía los permisos (son *optional scopes*) y `PermissionGuard` ocultaba toda la interfaz protegida. Corregido pidiendo los siete scopes en el login; los `scope-mappings` de G-8 los recortan por rol.
 
 **Qué falta dentro de la capa:**
-- **TEST-7** — ejecutar los specs en `staging.yml` con los 4 usuarios de prueba.
 - **TEST-8** — `toHaveScreenshot()` en dashboard, productos y stock (snapshots).
 - **TEST-9** — responsive a 375 / 768 / 1440 px.
 - **D-4** — `@axe-core/playwright` para accesibilidad automatizada.

@@ -120,4 +120,4 @@ Es comodidad de interfaz, **no seguridad**: la autorización real la impone el b
 
 ### Verificación
 
-Cinco suites de test unitario: `Badge`, `csvExport`, `PermissionGuard`, `session` y `scopes` (esta última añadida en G-3a). Cobertura de líneas en **9,2 %** — el hueco de calidad conocido y declarado (RNF-17). Los flujos completos se cubren con los tres specs de Playwright en `e2e/`, que **el pipeline todavía no ejecuta** (C-1).
+Cinco suites de test unitario: `Badge`, `csvExport`, `PermissionGuard`, `session` y `scopes` (esta última añadida en G-3a). Cobertura de líneas en **9,6 %** — el hueco de calidad conocido y declarado (RNF-17). Los flujos completos se cubren con los tres specs de Playwright en `e2e/`, que **el pipeline todavía no ejecuta** (C-1).
