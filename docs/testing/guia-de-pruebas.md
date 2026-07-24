@@ -16,7 +16,7 @@ El enunciado exige **ocho capas** de testing. Esta guía dice, capa por capa, qu
 | Capa | Estado | Evidencia |
 |---|---|---|
 | 1. Unit | **Cumple** | 289 tests unitarios |
-| 2. Integration | Parcial | 18 tests con Testcontainers; base real sí, **Keycloak no** |
+| 2. Integration | **Cumple** | Testcontainers con base real **y Keycloak real** (`KeycloakAuthIT`, TEST-1) |
 | 3. API / Contract | Parcial | API tests en `staging.yml`; Postman y RestAssured sin CI |
 | 4. E2E | Parcial | 3 specs de Playwright escritos, **el CI no los ejecuta** |
 | 5. Security | Parcial | ZAP autenticado con umbral; faltan Dependency Check y CORS |
@@ -74,7 +74,7 @@ Dos capas completas, cinco parciales, una a cero. Los parciales se concentran en
 
 `LiveDatabaseIT` cubre lo que el enunciado pide en Entornos: pruebas contra el sistema desplegado, no solo durante el build. **Falla si no encuentra la base**, en vez de saltarse silenciosamente (ENV-1).
 
-**Qué falta — TEST-1, obligatorio literal.** El enunciado exige Testcontainers también con **Keycloak**, y no existe ningún IT que levante un Keycloak real y valide un token emitido por él. El plan lo restituye con `dasniko/testcontainers-keycloak`. Es la brecha más seria de esta capa porque el enunciado la nombra explícitamente.
+**Keycloak real — TEST-1, cumplido.** `KeycloakAuthIT` levanta un Keycloak en contenedor (`dasniko/testcontainers-keycloak`), importa un realm de test con roles, scopes y `scopeMappings`, y valida la cadena completa con un token firmado de verdad: admin lista (200), viewer no crea (403), sin token (401) y la reverificación de G-8 a nivel IT (un viewer no obtiene `product:manage`). Verificado en el job `integration-test` de CI; no corre en local por C-4.
 
 **Aviso de entorno — C-4.** Estos IT **pasan en los runners Linux de GitHub Actions** en cada PR, pero **no arrancan sobre Docker Desktop en Windows**: terminan en `Could not find a valid Docker environment` aunque Docker esté levantado y el socket montado. Es el proxy del socket de Docker Desktop, no la configuración. Consecuencia: las etapas de Jenkins a partir de `Integration Tests` solo se validan en un agente Linux (issue #49).
 
