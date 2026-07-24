@@ -276,17 +276,17 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 
 > **Dos avisos de P-2 que afectan al guion de P-1.** Los paneles de Negocio usan `increase()`: si en la demo se encadenan todos los movimientos seguidos saldrán en cero, porque Prometheus no puede medir el incremento del primer punto de una serie. Hay que espaciarlos o levantar el stack con antelación. Y la ventana temporal de los dashboards no debe abarcar un reinicio del backend con otro perfil, o cada panel duplica sus series.
 
-### Ola 7 — Deuda abierta por los hallazgos (≈4,5 h)
+### Ola 7 — Deuda abierta por los hallazgos (≈2,5 h restantes)
 
 | # | Acción | Esfuerzo |
 |---|---|---|
 | **G-3a** | Unión de scopes en `AuthContext.tsx`; hoy replica el bug de primer-rol-gana | 45 min |
 | **INF-1** | Redis está desplegado, configurado (pool Lettuce en `application.yml`, dependencia en el POM) y **sin un solo uso** en el código: ni `@Cacheable`, ni `@EnableCaching`, ni `RedisTemplate`. O se conecta a algo (cache de lecturas de reporte) o se borra del compose. Choca con la regla 3 | 30 min |
 | **G-8** | `scopeMappings` en Keycloak: corrección de raíz de G-6 y prerrequisito de G-2 | 1 h |
-| **S-4b** | Quitar `JWT_SECRET` y `JWT_EXPIRATION_MS` de `staging.yml` | 10 min |
-| **ADR-002** | Por qué el mapa rol→scopes vive en Java. **Numerado 002, no 001**: `docs/decisions/ADR-001-stack-selection.md` ya existe | 30 min |
+| ~~**S-4b**~~ | ~~Quitar `JWT_SECRET` y `JWT_EXPIRATION_MS` de `staging.yml`~~ — **hecho**: ningún Java los leía (la firma la valida Keycloak). Retirados del workflow y de `GITHUB_SECRETS.md`. Queda borrar el secreto `STAGING_JWT_SECRET` en la config del repo, a mano. Cierra #47 | — |
+| ~~**ADR-002**~~ | ~~Por qué el mapa rol→scopes vive en Java~~ — **hecho**: [`ADR-002`](decisions/ADR-002-mapa-rol-scopes-en-java.md) documenta la contención de G-6 en el backend, con `SecurityConfig` apuntando a él | — |
 | ~~**P-2a**~~ | ~~CORS de `staging` bloquea el frontend local y deja P-3 sin interfaz~~ — **hecho**: perfil `demo` propio, con CORS local y muestreo al 100 %. Se descartó añadir localhost a `staging`, que espeja producción. Verificado en vivo y fijado con `CorsProfilesTest` [informe](testing/reportes/P-2a-perfil-demo.md) | — |
-| **P-2b** | `keycloak-init` no es idempotente: al reejecutarse sobre un realm existente lanza `duplicate key … uk_cli_scope` y ensucia el panel de eventos | 30 min |
+| ~~**P-2b**~~ | ~~`keycloak-init` no es idempotente: al reejecutarse sobre un realm existente lanza `duplicate key … uk_cli_scope`~~ — **hecho**: comprueba existencia antes de crear scopes y usuarios. Verificado con `sh -n` y lógica; sin doble `down -v && up` en vivo por C-4. Cierra #45 | — |
 | **TEST-10b** | El realm emite tokens de 300 s y el escaneo activo de ZAP puede durar más. Al caducar, el resto de la API se recorre sin autenticar y el escaneo aprueba precisamente por no encontrar nada. Ya hay un paso que lo detecta y falla; falta la corrección de raíz: un cliente de Keycloak dedicado al escaneo con `accessTokenLifespan` mayor | 45 min |
 
 ### Ola 8 — Alto coste, decidir explícitamente

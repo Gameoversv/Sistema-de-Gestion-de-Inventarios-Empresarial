@@ -305,6 +305,7 @@ verificado por commitlint en un hook de Husky.
 - [Informes de QA](docs/testing/reportes/) — hallazgos con reproducción y evidencia
 - [Capturas de observabilidad](docs/testing/capturas/)
 - [ADR-001 — Elección de Stack](docs/decisions/ADR-001-stack-selection.md)
+- [ADR-002 — El mapa rol→scopes vive en el backend](docs/decisions/ADR-002-mapa-rol-scopes-en-java.md)
 - [Guía de Contribución](CONTRIBUTING.md)
 
 ## Licencia
