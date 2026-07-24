@@ -2,7 +2,7 @@
 
 **Fuente de verdad:** `Proyecto_Final_V3.pdf` (revisado íntegro el 2026-07-22)
 **Base de hallazgos:** [ANALISIS_BRECHAS.md](ANALISIS_BRECHAS.md)
-**Actualizado:** 2026-07-23, tras cerrar la Ola 2, la Ola 4 salvo C-4 y CI-2, P-2 de la Ola 6, D-1…D-4 y T-6 de la Ola 5, P-2a de la Ola 7, los dos obligatorios de sesión (SEC-2, S-2), los 16 code smells (Q-5) y el alcance funcional pendiente (F-2, D-1, D-2).
+**Actualizado:** 2026-07-24, sobre `main` en `4243945`, tras cerrar la Ola 2, la Ola 4 salvo C-4 y CI-2, P-2 de la Ola 6, D-1…D-4 y T-6 de la Ola 5, P-2a de la Ola 7, los dos obligatorios de sesión (SEC-2, S-2), los 16 code smells (Q-5) y el alcance funcional pendiente (F-2, D-1, D-2), que se mergeó en el PR #64.
 
 > **Aviso de método.** La versión anterior de este plan tomaba como requisito el desglose del análisis de brechas, que en algunos puntos era interpretación propia y no texto del enunciado. Cada requisito de este documento está contrastado con el PDF. Cuando algo es criterio nuestro y no del enunciado, se marca como **[criterio propio]**.
 
@@ -30,7 +30,7 @@ Salvo la cobertura, medida sobre el artefacto de CI, los porcentajes son estimac
 | BRANCH | 71,6 % | **84,5 %** | 80 % |
 | LINE | 84,9 % | **92,1 %** | 80 % |
 
-Medido sobre el artefacto de CI de `main` (`798e6b6`). El frontend se mide aparte y está en **7,1 %** de líneas: los tests de SEC-2 lo subieron y el código nuevo de F-2/D-1/D-2 lo vuelve a diluir: hasta ahora el informe daba 100 %, pero solo cubría las 14 sentencias que los tests importaban. Con `coverage.include` en la config de vitest el número es el real.
+Cifras vigentes desde `ad3ebaa`, que reajustó ramas a 84,5 % tras el manejador de `sort` inválido; las líneas quedaron fijadas en `8e0f1b4`, con el refactor de Q-5. La medición original de la que parte esta tabla es el artefacto de `798e6b6`. El frontend se mide aparte y está en **7,1 %** de líneas: los tests de SEC-2 lo subieron y el código nuevo de F-2/D-1/D-2 lo vuelve a diluir: hasta ahora el informe daba 100 %, pero solo cubría las 14 sentencias que los tests importaban. Con `coverage.include` en la config de vitest el número es el real.
 
 ---
 
@@ -46,7 +46,7 @@ El enunciado los lista de forma explícita. Sirve como checklist de cierre.
 | GitHub Actions pipeline | **listo** — security scan (ZAP autenticado) y quality gate (SonarCloud) añadidos en la Ola 4 |
 | Dashboards Grafana | listo — **4 de 4**; datasources de Prometheus, Tempo y Loki provisionados |
 | Reportes de pruebas | parcial — surefire, failsafe, JaCoCo, cobertura de frontend e informe de ZAP como artefactos; faltan k6 y Newman |
-| Evidencias QA | **cumple** — 9 informes en `docs/testing/reportes/`, 6 capturas en `docs/testing/capturas/` y 18 issues de bug y charter con reproducción |
+| Evidencias QA | **cumple** — 12 informes en `docs/testing/reportes/`, 6 capturas en `docs/testing/capturas/` y 18 issues de bug y charter con reproducción |
 | Documentación completa | parcial |
 | **Presentación final funcional** | **en curso** — P-2 hecho; faltan guion (P-1) y ensayo (P-3) |
 
@@ -113,7 +113,7 @@ El enunciado es literal: *"Integration Testing — Obligatorio utilizar: Testcon
 
 | Capa | Exigencia | Estado |
 |---|---|---|
-| 1. Unit | Servicios, validaciones, lógica | cumple — 284 tests |
+| 1. Unit | Servicios, validaciones, lógica | cumple — **307 `@Test`** en 33 ficheros. La cifra de 284 que traía este plan es la del pipeline de Jenkins; SEC-2, Q-5 y F-2/D-1/D-2 añadieron tests después |
 | 2. Integration | Testcontainers: **BD real, Keycloak**, integraciones | parcial — BD sí (y desde ENV-1, también contra la base desplegada), **Keycloak no** (TEST-1) |
 | 3. API / Contract | Endpoints, contratos OpenAPI, status codes, payloads | parcial — Postman sin CI (TEST-3), RestAssured sin uso (TEST-2) |
 | 4. E2E | Snapshots, flujos, navegación, **roles**, seguridad, **responsive** | **no se ejecuta en CI** (C-1, TEST-7/8/9) |
@@ -136,8 +136,9 @@ El enunciado es literal: *"Integration Testing — Obligatorio utilizar: Testcon
 
 **Los 7 componentes obligatorios implementados y los 4 dashboards separados.** La Ola 2 queda cerrada; lo que resta del área es capturar evidencia con datos reales para la presentación.
 
-| Métricas exigidas | CPU, Memoria, JVM, Latencia, Throughput, Error rate, DB pool | cumple (CPU y memoria de host desde OBS-3) |
+| Señal | Exigencia del PDF | Estado |
 |---|---|---|
+| **Métricas** | CPU, Memoria, JVM, Latencia, Throughput, Error rate, DB pool | **7 de 7** — CPU y memoria de host desde OBS-3 |
 | **Logs** | traceId, spanId, correlationId, nivel, usuario, endpoint | **6 de 6** — [informe](testing/reportes/OBS-4-logs-loki.md); solo en perfil `staging`/`prod` |
 | **Trazas** | request, database, external calls, errores distribuidos | **3 de 4** — falta verificar errores distribuidos |
 | **Alertas** | CPU, error rate, latencia, servicios caídos, fallos de autenticación | **5 de 5** — dos verificadas disparando; +1 de negocio (`ProductosBajoMinimo`) |
@@ -179,7 +180,7 @@ Spotless estaba declarado en el POM y desactivado con `-Dspotless.check.skip=tru
 | Repositorio público | cumple |
 | README profesional | cumple — rutas reales, matriz rol→scopes y el `scope` obligatorio del token |
 | **Issues** | **31 issues**: 13 épicas de fase, **15 bugs** (7 abiertos) y **3 charters** de testing exploratorio, añadidos en T-6. Las épicas 9, 10 y 11 se pusieron al día en la Ola 4 |
-| Pull Requests | cumple — #30 a #40 |
+| Pull Requests | cumple — **33 PRs**, el último el #64 |
 | Branch strategy | cumple — `main` protegida; corren 4 checks y 2 son obligatorios |
 | Conventional Commits | cumple — commitlint activo |
 | Code Reviews | **riesgo** — BP-1 contaba 6 de 10 PRs sin revisión, y los mergeados el 23-07 tampoco la tuvieron. Es evaluable y `eduardolp-pz` tiene permiso de escritura, así que su aprobación cuenta |
@@ -216,7 +217,7 @@ El área queda cerrada: el pendiente que arrastraba (P-2) está hecho.
 
 | # | Acción | Esfuerzo | Capa |
 |---|---|---|---|
-| **C-1 + TEST-7** | Playwright en `staging.yml` con los 4 usuarios | 3 h | 4 |y
+| **C-1 + TEST-7** | Playwright en `staging.yml` con los 4 usuarios | 3 h | 4 |
 | **TEST-9** | Responsive: 375 / 768 / 1440 px | 45 min | 4 |
 | **TEST-8** | `toHaveScreenshot()` en dashboard, productos y stock | 1 h | 4 |
 | **TEST-1** | `dasniko/testcontainers-keycloak` + IT con token real — **obligatorio** | 3 h | 2 |
@@ -263,7 +264,7 @@ El área queda cerrada: el pendiente que arrastraba (P-2) está hecho.
 
 > **T-6 dejó dos hallazgos nuevos.** Redactar las issues obligó a releer el código, no solo los informes. Salió que [`AuthContext.tsx`](../frontend/src/contexts/AuthContext.tsx) arrastra **los dos** defectos de scopes corregidos en el backend por el PR #33 —G-4 y también G-5, que el plan no había anotado— y que `JWT_SECRET` no está en `application-staging.yml` sino en el workflow `.github/workflows/staging.yml`, con un secreto de repositorio vivo que no protege nada.
 
-### Ola 6 — Presentación final (5%, ≈3 h) · EN CURSO
+### Ola 6 — Presentación final (5%, ≈2 h restantes) · EN CURSO
 
 Es un entregable explícito: *"presentación final funcional del sistema en clase"*.
 
@@ -271,7 +272,7 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 |---|---|---|---|
 | **P-1** | Guion de demo: alta de producto → movimiento de stock → alerta → auditoría → dashboard | 1 h | pendiente |
 | **P-2** | Capturas de los 4 dashboards con datos reales y de una alerta disparada | 1 h | **hecho** — 6 capturas, 34 paneles sin ninguno vacío, alerta verificada hasta Alertmanager, [informe](testing/reportes/P-2-capturas-de-evidencia.md) |
-| **P-3** | Ensayo con el stack levantado desde cero (`down -v && up`) | 1 h | pendiente — **desbloqueado** por P-2a; queda el riesgo de P-2b (`keycloak-init` no es idempotente) en un `up` repetido |
+| **P-3** | Ensayo con el stack levantado desde cero (`down -v && up`) | 1 h | pendiente — el CORS ya no bloquea, resuelto en P-2a. **Queda un bloqueo real: P-2b**, porque `keycloak-init` no es idempotente y el ensayo es precisamente un `up` repetido. Hacer P-2b antes |
 
 > **Dos avisos de P-2 que afectan al guion de P-1.** Los paneles de Negocio usan `increase()`: si en la demo se encadenan todos los movimientos seguidos saldrán en cero, porque Prometheus no puede medir el incremento del primer punto de una serie. Hay que espaciarlos o levantar el stack con antelación. Y la ventana temporal de los dashboards no debe abarcar un reinicio del backend con otro perfil, o cada panel duplica sus series.
 
@@ -282,7 +283,7 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 | **G-3a** | Unión de scopes en `AuthContext.tsx`; hoy replica el bug de primer-rol-gana | 45 min |
 | **G-8** | `scopeMappings` en Keycloak: corrección de raíz de G-6 y prerrequisito de G-2 | 1 h |
 | **S-4b** | Quitar `JWT_SECRET` y `JWT_EXPIRATION_MS` de `staging.yml` | 10 min |
-| **ADR-001** | Por qué el mapa rol→scopes vive en Java | 30 min |
+| **ADR-002** | Por qué el mapa rol→scopes vive en Java. **Numerado 002, no 001**: `docs/decisions/ADR-001-stack-selection.md` ya existe | 30 min |
 | ~~**P-2a**~~ | ~~CORS de `staging` bloquea el frontend local y deja P-3 sin interfaz~~ — **hecho**: perfil `demo` propio, con CORS local y muestreo al 100 %. Se descartó añadir localhost a `staging`, que espeja producción. Verificado en vivo y fijado con `CorsProfilesTest` [informe](testing/reportes/P-2a-perfil-demo.md) | — |
 | **P-2b** | `keycloak-init` no es idempotente: al reejecutarse sobre un realm existente lanza `duplicate key … uk_cli_scope` y ensucia el panel de eventos | 30 min |
 | **TEST-10b** | El realm emite tokens de 300 s y el escaneo activo de ZAP puede durar más. Al caducar, el resto de la API se recorre sin autenticar y el escaneo aprueba precisamente por no encontrar nada. Ya hay un paso que lo detecta y falla; falta la corrección de raíz: un cliente de Keycloak dedicado al escaneo con `accessTokenLifespan` mayor | 45 min |
@@ -292,11 +293,11 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 | # | Acción | Esfuerzo | Alternativa |
 |---|---|---|---|
 | **G-1** | Authorization Services: Resources, Policies, Permissions — **"Policies" está nombrado en el enunciado** | 5 h | ADR argumentando que scopes + roles cubren el modelo |
-| **G-2** | Mover rol→permisos a Keycloak (depende de G-8) | 4 h | ADR-001 |
+| **G-2** | Mover rol→permisos a Keycloak (depende de G-8) | 4 h | ADR-002 |
 | **A-2 / M-1** | `UserController` sobre la Admin API — daría uso a `user:manage` | 4 h | ADR delegando a la consola |
 | **A-1** | Unificar rutas bajo `/api/v1` | 3 h | **Riesgo alto** cerca de la entrega. El mínimo ya está hecho: el README documenta las rutas reales y declara la inconsistencia en vez de disimularla |
 
-### Mejoras funcionales (≈5 h)
+### Mejoras funcionales (≈3,5 h restantes)
 
 | # | Acción | Esfuerzo |
 |---|---|---|
@@ -305,7 +306,7 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 | ~~**F-2**~~ | ~~Ordenamiento en la tabla de productos~~ — **hecho**: el backend ya lo aceptaba, el hook lo fijaba a `name`. Destapó que un `sort` inválido daba **500**, ahora 400 | — |
 | D-3 | `topProducts` con query en BD | 45 min |
 | M-2 | `GET /api/stock/{productId}` con `stock:view` | 30 min |
-| F-1 | ADR-002 sobre el soft delete | 30 min |
+| F-1 | ADR-003 sobre el soft delete — renumerado desde 002, que queda para el mapa rol→scopes de la Ola 7 | 30 min |
 | D-4 | `@axe-core/playwright` en E2E | 1 h |
 | E-2 | Validación condicional de `quantity` | 45 min |
 | ~~**SEC-2**~~ | ~~`onTokenExpired`~~ — **hecho**: renovación proactiva más cierre de sesión cuando el refresco falla. [Informe](testing/reportes/SEC-2-S-2-ciclo-de-vida-del-token.md) | — |
@@ -316,24 +317,24 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 
 ## 6. Qué hacer con el tiempo que quede
 
-Las cifras de abajo son el hueco que falta por cerrar en cada área, no su peso. Es lo que importa para decidir: Testing pesa el doble que cualquier otra, pero ya está en 78 %, así que rinde menos por hora que Documentación o Calidad.
+Las cifras de abajo son el hueco que falta por cerrar en cada área, no su peso. Es lo que importa para decidir: Testing pesa el doble que cualquier otra, pero ya está en 81 %, así que rinde menos por hora que Documentación.
 
 | Bloque | Puntos en juego | Horas | Puntos/hora |
 |---|---|---|---|
 | **Ola 5 — Documentación** | 5,0 | 10 h | 0,50 |
-| **SEC-2 + S-2** (dos obligatorios del enunciado) | — | 1,25 h | muy alta |
-| Mejoras funcionales (D-1, D-2, F-2) | 1,95 | 5 h | 0,39 |
+| Ola 7 — deuda de los hallazgos | — | 4 h | alta: S-4b es un secreto vivo y P-2b bloquea P-3 |
+| Mejoras funcionales restantes (D-3, M-2, F-1, D-4, E-2) | 0,50 | 3,5 h | 0,14 |
 | Ola 3 — Testing | 2,40 | 14 h | 0,17 |
 
-**4 horas:** ~~T-6 + SEC-2 + S-2 + los 16 code smells~~ — **el bloque completo está hecho**.
-Cierra dos obligatorios del enunciado, el único hueco de Calidad y la ausencia total de issues de tipo bug.
+**Ya hecho:** T-6, SEC-2, S-2, los 16 code smells y el alcance funcional (F-2, D-1, D-2).
+Cerró dos obligatorios del enunciado, el único hueco de Calidad, la ausencia total de issues de tipo bug y los tres huecos de Funcionalidad.
 
-**12 horas:** lo anterior + Ola 5 completa.
+**8 horas:** Ola 5 completa.
 Documentación es el mayor déficit que queda y el de mejor rendimiento por hora.
 
-**25 horas:** lo anterior + C-1/TEST-7 (E2E en CI, la única etapa que falta en Actions) + TEST-1 (Testcontainers con Keycloak, obligatorio) + las mejoras funcionales exigidas en el alcance.
+**20 horas:** lo anterior + C-1/TEST-7 (E2E en CI, la única etapa que falta en Actions) + TEST-1 (Testcontainers con Keycloak, obligatorio).
 
-> **Reservar las últimas 3 horas para la Ola 6.** P-2 está hecho, pero el guion (P-1) y el ensayo (P-3) no, y P-3 está bloqueado por el CORS de `staging` (P-2a, 20 min).
+> **Reservar las últimas 2 horas para la Ola 6:** el guion (P-1) y el ensayo (P-3). Antes del ensayo hay que cerrar **P-2b** (30 min), o el `down -v && up` repetido revienta en `keycloak-init`.
 
 ---
 
@@ -345,4 +346,4 @@ Documentación es el mayor déficit que queda y el de mejor rendimiento por hora
 4. **Cada corrección con su evidencia**, archivada en `docs/testing/reportes/`.
 5. **Reviews reales.** Cada PR con aprobación del otro integrante. Es evaluable y sale gratis.
 6. **Participación equitativa.** El enunciado evalúa *"commits individuales, ramas, issues y pull requests"* de ambos. Repartir las olas explícitamente.
-7. **Los bugs van a Issues.** Hay 13 issues y ninguno es un bug, pese a haberse encontrado y corregido varios documentados.
+7. **Los bugs van a Issues.** La regla nació porque había 13 issues y ninguno era un bug, pese a haberse encontrado y corregido varios documentados. T-6 lo cerró: hoy son **31 issues** — 13 épicas, 15 bugs y 3 charters. Todo defecto nuevo abre su issue, también si se arregla en el acto.
