@@ -101,14 +101,18 @@ jobs:
 
           # ── Get JWT from live Keycloak ──────────────────────────────────
           echo "==> Obtaining JWT token from live Keycloak..."
-          TOKEN=$(curl -sf \
+          # Se guarda la respuesta entera, no solo el access_token: el refresh_token que viene en
+          # la misma concesion es lo que prueba el bloque de S-2 mas abajo.
+          TOKEN_RESPONSE=$(curl -sf \
             "$KC/realms/inventory/protocol/openid-connect/token" \
             -d "client_id=inventory-frontend" \
             -d "username=inv_admin" \
             -d "password=${{ secrets.STAGING_KC_USER_ADMIN_PASSWORD }}" \
             -d "grant_type=password" \
-            -d "scope=openid product:view product:manage stock:view stock:manage report:view audit:view user:manage" \
-            | jq -r '.access_token')
+            -d "scope=openid product:view product:manage stock:view stock:manage report:view audit:view user:manage")
+
+          TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token')
+          REFRESH_TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.refresh_token')
 
           if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
             echo "ERROR: failed to obtain JWT from Keycloak"
@@ -171,6 +175,63 @@ jobs:
             echo "✗ Viewer should not be able to create products, got $VIEWER_CREATE"
             exit 1
           fi
+
+          # ── S-2: refresh tokens ────────────────────────────────────────
+          # El enunciado exige refresh tokens de forma explicita y no habia ninguna prueba: el
+          # flujo de password grant se ejercitaba en cada despliegue, pero la renovacion nunca.
+          echo ""
+          echo "==> Verificando el flujo de refresh token..."
+
+          if [ -z "$REFRESH_TOKEN" ] || [ "$REFRESH_TOKEN" = "null" ]; then
+            echo "✗ La concesion por password no devolvio refresh_token"
+            exit 1
+          fi
+          echo "✓ La concesion por password incluye refresh_token"
+
+          REFRESH_RESPONSE=$(curl -s \
+            "$KC/realms/inventory/protocol/openid-connect/token" \
+            -d "client_id=inventory-frontend" \
+            -d "grant_type=refresh_token" \
+            -d "refresh_token=$REFRESH_TOKEN")
+
+          REFRESHED_TOKEN=$(echo "$REFRESH_RESPONSE" | jq -r '.access_token // empty')
+          if [ -z "$REFRESHED_TOKEN" ]; then
+            echo "✗ grant_type=refresh_token no devolvio access_token"
+            echo "$REFRESH_RESPONSE" | jq -r '.error_description // .error // .'
+            exit 1
+          fi
+          echo "✓ grant_type=refresh_token emite un access_token nuevo"
+
+          # Un token identico significaria que Keycloak devolvio el mismo de antes y que la
+          # renovacion no sirve para prolongar la sesion.
+          if [ "$REFRESHED_TOKEN" = "$TOKEN" ]; then
+            echo "✗ El token renovado es identico al original"
+            exit 1
+          fi
+          echo "✓ El token renovado es distinto del original"
+
+          # Lo que importa no es que Keycloak emita algo, sino que el backend lo acepte: el token
+          # renovado debe conservar los scopes de la concesion inicial.
+          REFRESHED_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $REFRESHED_TOKEN" "$BASE/api/audit/stock-movements")
+          if [ "$REFRESHED_STATUS" != "200" ]; then
+            echo "✗ El backend rechazo el token renovado en un endpoint con scope: $REFRESHED_STATUS"
+            exit 1
+          fi
+          echo "✓ El backend acepta el token renovado y conserva sus scopes"
+
+          # Sin esta comprobacion, un endpoint que devolviera un token a cualquiera pasaria las
+          # anteriores. Un refresh token invalido tiene que ser rechazado.
+          BAD_REFRESH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "$KC/realms/inventory/protocol/openid-connect/token" \
+            -d "client_id=inventory-frontend" \
+            -d "grant_type=refresh_token" \
+            -d "refresh_token=no-es-un-token")
+          if [ "$BAD_REFRESH_STATUS" != "400" ]; then
+            echo "✗ Un refresh token invalido deberia dar 400, dio $BAD_REFRESH_STATUS"
+            exit 1
+          fi
+          echo "✓ Un refresh token invalido se rechaza con 400"
 
           echo ""
           echo "✅ All API integration tests passed"
