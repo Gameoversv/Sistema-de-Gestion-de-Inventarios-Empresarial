@@ -2,7 +2,7 @@
 
 **Fuente de verdad:** `Proyecto_Final_V3.pdf` (revisado íntegro el 2026-07-22)
 **Base de hallazgos:** [ANALISIS_BRECHAS.md](ANALISIS_BRECHAS.md)
-**Actualizado:** 2026-07-24, sobre `main` en `4243945`, tras cerrar la Ola 2, la Ola 4 salvo C-4 y CI-2, P-2 de la Ola 6, D-1…D-4 y T-6 de la Ola 5, P-2a de la Ola 7, los dos obligatorios de sesión (SEC-2, S-2), los 16 code smells (Q-5) y el alcance funcional pendiente (F-2, D-1, D-2), que se mergeó en el PR #64.
+**Actualizado:** 2026-07-24, sobre `main` en `4243945`, tras cerrar la Ola 2, la Ola 4 salvo C-4 y CI-2, **la Ola 5 completa** (requisitos, arquitectura, mantenimiento, guía de pruebas, T-6 y D-1…D-4), P-2 de la Ola 6, P-2a de la Ola 7, los dos obligatorios de sesión (SEC-2, S-2), los 16 code smells (Q-5) y el alcance funcional pendiente (F-2, D-1, D-2), que se mergeó en el PR #64. La documentación de la Ola 5 está en rama, sin mergear aún.
 
 > **Aviso de método.** La versión anterior de este plan tomaba como requisito el desglose del análisis de brechas, que en algunos puntos era interpretación propia y no texto del enunciado. Cada requisito de este documento está contrastado con el PDF. Cuando algo es criterio nuestro y no del enunciado, se marca como **[criterio propio]**.
 
@@ -20,7 +20,7 @@ El enunciado define **ocho** áreas. La versión anterior omitía la última.
 | Observabilidad | 15% | ~30% | ~90% | ~90% |
 | CI/CD | 15% | ~60% | ~85% | ~90% |
 | Calidad de código | 10% | ~35% | ~85% | ~85% |
-| Documentación | 10% | ~25% | ~80% | ~90% |
+| Documentación | 10% | ~25% | ~90% | ~90% |
 | **Presentación final** | **5%** | **0%** | **~30%** | **~90%** |
 
 Salvo la cobertura, medida sobre el artefacto de CI, los porcentajes son estimaciones.
@@ -47,7 +47,7 @@ El enunciado los lista de forma explícita. Sirve como checklist de cierre.
 | Dashboards Grafana | listo — **4 de 4**; datasources de Prometheus, Tempo y Loki provisionados |
 | Reportes de pruebas | parcial — surefire, failsafe, JaCoCo, cobertura de frontend e informe de ZAP como artefactos; faltan k6 y Newman |
 | Evidencias QA | **cumple** — 12 informes en `docs/testing/reportes/`, 6 capturas en `docs/testing/capturas/` y 18 issues de bug y charter con reproducción |
-| Documentación completa | parcial — **requisitos, arquitectura y manual de mantenimiento entregados**; falta la guía de pruebas |
+| Documentación completa | **cumple** — requisitos, arquitectura, manual de mantenimiento y guía de pruebas entregados |
 | **Presentación final funcional** | **en curso** — P-2 hecho; faltan guion (P-1) y ensayo (P-3) |
 
 ---
@@ -251,14 +251,14 @@ El área queda cerrada: el pendiente que arrastraba (P-2) está hecho.
 >
 > En los runners Linux de GitHub Actions esos mismos IT pasan en cada PR. **Consecuencia práctica:** la etapa `Integration Tests` de Jenkins —y por tanto todo lo que va detrás— solo se puede validar en un agente Linux.
 
-### Ola 5 — Documentación (≈2 h restantes) · EN CURSO
+### Ola 5 — Documentación · **COMPLETA**
 
 | Documento | Exigencia del PDF | Esfuerzo | Estado |
 |---|---|---|---|
 | **`docs/requisitos/`** | "documento detallado de requisitos funcionales y no funcionales" | 3 h | **hecho** — **22 RF y 24 RNF**, cada uno con su cita del PDF, el `fichero:línea` que lo implementa y la prueba que lo verifica. 35 cumplen, 9 parciales, **2 pendientes**: Policies (RNF-05) y tiempo de respuesta bajo carga (RNF-08) |
 | **`docs/arquitectura/`** | "diagramas de arquitectura, guías de instalación y manuales de mantenimiento" | 3 h | **hecho** — vista de componentes con 5 diagramas Mermaid (contexto, componentes, arranque, 3 flujos), estructura de backend y frontend, y guía de instalación con verificación de la cadena de auth. Destapó **INF-1**: Redis desplegado, configurado y sin un solo uso en el código |
 | **`docs/operacion/manual-mantenimiento.md`** | idem + **la trampa del volumen de Keycloak** | 2 h | **hecho** — qué vigilar, rutinas, respaldo/recuperación y la trampa del volumen de Keycloak con su tabla objetivo→acción. Enlaza P-2b y S-4b |
-| `docs/testing/guia-de-pruebas.md` | "casos de prueba, resultados y cualquier defecto encontrado" | 2 h | pendiente |
+| **`docs/testing/guia-de-pruebas.md`** | "casos de prueba, resultados y cualquier defecto encontrado" | 2 h | **hecho** — las 8 capas de testing una a una: qué se prueba, con qué, dónde vive, resultado y qué falta. 307 tests desglosados por área; los 15 bugs con severidad y tarea, 7 abiertos. Cierra la trazabilidad hacia `reportes/` |
 | **T-6** | Charters y bugs como **issues de GitHub** | 1 h | **hecho** — 15 bugs (#43…#57) y 3 charters (#58…#60). Los 8 ya corregidos se registraron cerrados, cada uno enlazando su PR y declarando en el cuerpo que se abrieron después del arreglo. [Informe](testing/reportes/T-6-issues-de-bug.md) |
 | **D-1…D-4** | README: stack real, badge, rutas correctas | 45 min | **hecho** — declaraba `Base URL: /api/v1`, que no existe, y un `client_id` y unos usuarios que tampoco. Corregido con las rutas reales, la matriz rol→scopes y el aviso del `scope` obligatorio, sin el cual toda petición responde 403. `CONTRIBUTING` alineado con los prefijos de rama que se usan de verdad |
 
@@ -322,18 +322,16 @@ Las cifras de abajo son el hueco que falta por cerrar en cada área, no su peso.
 
 | Bloque | Puntos en juego | Horas | Puntos/hora |
 |---|---|---|---|
-| **Ola 5 — Documentación** | 1,0 | 2 h | 0,50 |
 | Ola 7 — deuda de los hallazgos | — | 4,5 h | alta: S-4b es un secreto vivo y P-2b bloquea P-3 |
 | Mejoras funcionales restantes (D-3, M-2, F-1, D-4, E-2) | 0,50 | 3,5 h | 0,14 |
 | Ola 3 — Testing | 2,40 | 14 h | 0,17 |
 
-**Ya hecho:** T-6, SEC-2, S-2, los 16 code smells, el alcance funcional (F-2, D-1, D-2) y **tres cuartos de la Ola 5** (requisitos, arquitectura, mantenimiento).
-Cerró dos obligatorios del enunciado, el único hueco de Calidad, la ausencia total de issues de tipo bug y los tres huecos de Funcionalidad.
+**Ya hecho:** T-6, SEC-2, S-2, los 16 code smells, el alcance funcional (F-2, D-1, D-2) y **la Ola 5 completa** (requisitos, arquitectura, mantenimiento y guía de pruebas).
+Cerró dos obligatorios del enunciado, el único hueco de Calidad, la ausencia total de issues de tipo bug, los tres huecos de Funcionalidad y **el mayor déficit que quedaba: Documentación, de ~25 % a ~90 %**.
 
-**2 horas:** cerrar la Ola 5 con la guía de pruebas, y Documentación queda en ~90 %.
-Es el último documento exigido y el de mejor rendimiento por hora.
+**Con la Ola 5 cerrada, el siguiente mejor rendimiento es la Ola 7** (deuda barata de los hallazgos): S-4b es un secreto vivo de 10 min y P-2b (30 min) desbloquea el ensayo de la presentación.
 
-**14 horas:** lo anterior + C-1/TEST-7 (E2E en CI, la única etapa que falta en Actions) + TEST-1 (Testcontainers con Keycloak, obligatorio).
+**12 horas:** Ola 7 + C-1/TEST-7 (E2E en CI, la única etapa que falta en Actions) + TEST-1 (Testcontainers con Keycloak, obligatorio).
 
 > **Reservar las últimas 2 horas para la Ola 6:** el guion (P-1) y el ensayo (P-3). Antes del ensayo hay que cerrar **P-2b** (30 min), o el `down -v && up` repetido revienta en `keycloak-init`.
 

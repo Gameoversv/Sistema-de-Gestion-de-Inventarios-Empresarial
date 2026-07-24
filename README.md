@@ -299,6 +299,7 @@ verificado por commitlint en un hook de Husky.
 - [Requisitos](docs/requisitos/) — 22 funcionales y 24 no funcionales, con cita del PDF, `fichero:línea` y prueba
 - [Arquitectura](docs/arquitectura/) — componentes, flujos, backend/frontend y guía de instalación
 - [Manual de mantenimiento](docs/operacion/manual-mantenimiento.md) — operación, respaldo y la trampa del volumen de Keycloak
+- [Guía de pruebas](docs/testing/guia-de-pruebas.md) — las 8 capas de testing, resultados y defectos
 - [Plan de ejecución](docs/PLAN_EJECUCION.md) — estado por área y trabajo pendiente
 - [Análisis de brechas](docs/ANALISIS_BRECHAS.md)
 - [Informes de QA](docs/testing/reportes/) — hallazgos con reproducción y evidencia
