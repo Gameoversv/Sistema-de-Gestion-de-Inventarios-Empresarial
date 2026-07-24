@@ -27,7 +27,7 @@ Salvo la cobertura, medida sobre el artefacto de CI, los porcentajes son estimac
 
 | Cobertura (artefacto JaCoCo en Actions) | Inicial | Actual | Umbral |
 |---|---|---|---|
-| BRANCH | 71,6 % | **84,4 %** | 80 % |
+| BRANCH | 71,6 % | **84,5 %** | 80 % |
 | LINE | 84,9 % | **92,1 %** | 80 % |
 
 Medido sobre el artefacto de CI de `main` (`798e6b6`). El frontend se mide aparte y está en **7,1 %** de líneas: los tests de SEC-2 lo subieron y el código nuevo de F-2/D-1/D-2 lo vuelve a diluir: hasta ahora el informe daba 100 %, pero solo cubría las 14 sentencias que los tests importaban. Con `coverage.include` en la config de vitest el número es el real.
@@ -64,7 +64,7 @@ Verificado en vivo ([informe](testing/reportes/G-6-escalada-de-scopes.md)): Keyc
 
 ### 3.2 La cobertura ya pasa el umbral
 
-84,4 % de ramas y 92,1 % de líneas tras cubrir `UnifiedAuditService` y el refactor de Q-5. Desaparece el trabajo de cobertura previsto en la Ola 4. Desde Q-1, SonarCloud la mide en cada ejecución de CI, así que ya no hay que ir a buscar el artefacto.
+84,5 % de ramas y 92,1 % de líneas tras cubrir `UnifiedAuditService` y el refactor de Q-5. Desaparece el trabajo de cobertura previsto en la Ola 4. Desde Q-1, SonarCloud la mide en cada ejecución de CI, así que ya no hay que ir a buscar el artefacto.
 
 ### 3.3 Había un check de CI que no ejecutaba nada
 
