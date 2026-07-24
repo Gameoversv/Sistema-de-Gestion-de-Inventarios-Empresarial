@@ -1,6 +1,7 @@
 /** Authentication context that exposes Keycloak login state, user roles, permission scopes, and a logout action to the component tree. */
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import keycloak from '@/lib/keycloak'
+import { permittedScopesForRoles } from '@/lib/scopes'
 
 interface AuthContextValue {
   authenticated: boolean
@@ -10,26 +11,6 @@ interface AuthContextValue {
   scopes: string[]
   hasScope: (scope: string) => boolean
   logout: () => void
-}
-
-// Mirrors permittedScopesForRoles() in SecurityConfig.java — keep in sync
-function permittedScopesForRoles(roles: string[]): Set<string> {
-  if (roles.includes('inventory-admin')) {
-    return new Set([
-      'product:view', 'product:manage', 'stock:view', 'stock:manage',
-      'report:view', 'user:manage', 'audit:view',
-    ])
-  }
-  if (roles.includes('warehouse-clerk')) {
-    return new Set([
-      'product:view', 'product:manage', 'stock:view', 'stock:manage', 'report:view',
-    ])
-  }
-  if (roles.includes('auditor')) {
-    return new Set(['product:view', 'stock:view', 'report:view', 'audit:view'])
-  }
-  // viewer and any other role: read-only
-  return new Set(['product:view', 'stock:view', 'report:view'])
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)

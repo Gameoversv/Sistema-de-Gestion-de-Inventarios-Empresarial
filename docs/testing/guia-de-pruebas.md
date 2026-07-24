@@ -24,7 +24,7 @@ El enunciado exige **ocho capas** de testing. Esta guía dice, capa por capa, qu
 | 7. Data | Parcial | migraciones y seeds; faltan duplicados y constraints |
 | 8. Exploratory | **Cumple** | 3 charters, 15 bugs con reproducción |
 
-**307 `@Test` en 33 ficheros.** Cobertura del backend: **84,5 % de ramas, 92,1 % de líneas** (JaCoCo en CI, umbral 80 %). Frontend: **7,1 %** de líneas — el hueco de calidad conocido.
+**307 `@Test` en 33 ficheros.** Cobertura del backend: **84,5 % de ramas, 92,1 % de líneas** (JaCoCo en CI, umbral 80 %). Frontend: **9,2 %** de líneas — el hueco de calidad conocido.
 
 Dos capas completas, cinco parciales, una a cero. Los parciales se concentran en el pipeline: pruebas escritas que el CI todavía no ejecuta.
 

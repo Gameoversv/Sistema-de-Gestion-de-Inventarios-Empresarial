@@ -4,7 +4,7 @@ Cubre la parte de *"Documentación Técnica: incluir diagramas de arquitectura, 
 
 | Documento | Contenido |
 |---|---|
-| [vista-de-componentes.md](vista-de-componentes.md) | Los 15 servicios, cómo se conectan, puertos, volúmenes, orden de arranque y los tres flujos que importan |
+| [vista-de-componentes.md](vista-de-componentes.md) | Los 14 servicios, cómo se conectan, puertos, volúmenes, orden de arranque y los tres flujos que importan |
 | [backend-y-frontend.md](backend-y-frontend.md) | Estructura interna de ambas aplicaciones y las decisiones que la explican |
 | [guia-de-instalacion.md](guia-de-instalacion.md) | Levantar el sistema desde cero, verificarlo y qué hacer cuando no arranca |
 
@@ -72,7 +72,7 @@ Lo que un diagrama bonito escondería. Está aquí para que la revisión no teng
 
 | # | Qué | Impacto |
 |---|---|---|
-| **INF-1** | **Redis está desplegado, configurado y no lo usa nadie.** El servicio corre con contraseña, volumen y healthcheck; `application.yml` define pool de conexiones Lettuce; el POM trae `spring-boot-starter-data-redis`. En el código no hay ni un `@Cacheable`, ni `@EnableCaching`, ni un `RedisTemplate` | Un contenedor, un volumen y una dependencia que no hacen nada. Choca de frente con la regla 3 del plan: *"si algo no se ejecuta, o se conecta o se borra"* |
+| ~~**INF-1**~~ | ~~Redis desplegado, configurado y sin uso~~ — **resuelto**: retirado del compose, el POM y la configuración. El sistema no lo necesitaba. Aplicó la regla 3: *"si algo no se ejecuta, o se conecta o se borra"* | — |
 | **A-1** | Dos prefijos de ruta conviviendo: `/products` y `/categories` sin `/api`, frente a `/api/stock`, `/api/reports` y `/api/audit` | Inconsistencia visible en el contrato público. Unificar cerca de la entrega se descartó por riesgo; el README declara las rutas reales en vez de disimularlo |
 | **A-2** | `user:manage` no protege ningún endpoint | Un permiso de la matriz obligatoria que se emite y no se aplica |
 | **P-2b** | `keycloak-init` no es idempotente | Un `up` repetido falla con `duplicate key … uk_cli_scope`. Afecta al ensayo de la presentación |

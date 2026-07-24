@@ -76,7 +76,7 @@ El perfil `demo` existe porque la demo necesita a la vez log JSON —sin él los
 
 ### Dependencias que marcan la arquitectura
 
-`web`, `data-jpa`, `validation`, `actuator`, `security` + `oauth2-resource-server`, `hibernate-envers`, `flyway-core` + `flyway-database-postgresql`, `springdoc-openapi`. Y `data-redis`, que está presente **sin que el código lo use** (INF-1 en el [README de arquitectura](README.md)).
+`web`, `data-jpa`, `validation`, `actuator`, `security` + `oauth2-resource-server`, `hibernate-envers`, `flyway-core` + `flyway-database-postgresql`, `springdoc-openapi`. Ni una de más: `data-redis` estaba declarado sin uso y se retiró en INF-1.
 
 ---
 
@@ -120,4 +120,4 @@ Es comodidad de interfaz, **no seguridad**: la autorización real la impone el b
 
 ### Verificación
 
-Cuatro suites de test unitario: `Badge`, `csvExport`, `PermissionGuard`, `session`. Cobertura de líneas en **7,1 %** — el hueco de calidad conocido y declarado (RNF-17). Los flujos completos se cubren con los tres specs de Playwright en `e2e/`, que **el pipeline todavía no ejecuta** (C-1).
+Cinco suites de test unitario: `Badge`, `csvExport`, `PermissionGuard`, `session` y `scopes` (esta última añadida en G-3a). Cobertura de líneas en **9,2 %** — el hueco de calidad conocido y declarado (RNF-17). Los flujos completos se cubren con los tres specs de Playwright en `e2e/`, que **el pipeline todavía no ejecuta** (C-1).

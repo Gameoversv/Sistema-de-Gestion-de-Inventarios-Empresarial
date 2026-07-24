@@ -30,13 +30,8 @@ jobs:
           DB_NAME=inventory_db
           DB_USER=inventory_user
           DB_PASSWORD=${{ secrets.STAGING_DB_PASSWORD }}
-          REDIS_HOST=redis
-          REDIS_PORT=6379
-          REDIS_PASSWORD=${{ secrets.STAGING_REDIS_PASSWORD }}
           BACKEND_PORT=8080
           SPRING_PROFILES_ACTIVE=staging
-          JWT_SECRET=${{ secrets.STAGING_JWT_SECRET }}
-          JWT_EXPIRATION_MS=86400000
           LOG_LEVEL=INFO
           KEYCLOAK_PORT=8180
           KEYCLOAK_ADMIN=admin
@@ -173,6 +168,57 @@ jobs:
             echo "✓ Viewer role blocked from POST /products ($VIEWER_CREATE)"
           else
             echo "✗ Viewer should not be able to create products, got $VIEWER_CREATE"
+            exit 1
+          fi
+
+          # ── G-8: la emision de scopes esta gateada por rol en Keycloak ──────
+          # El test anterior solo prueba que el backend bloquea al viewer; pasaria
+          # igual aunque Keycloak siguiera emitiendo scopes de mas, porque el mapa
+          # Java (ADR-002) los descarta. Este paso mira el TOKEN directamente: pide
+          # como viewer los scopes elevados de la reproduccion de G-6 y comprueba
+          # que Keycloak NO los mete en el claim scope. Es el veredicto de G-8.
+          echo ""
+          echo "==> G-8: verificando que Keycloak no emite scopes elevados a un viewer..."
+
+          decode_jwt_scope() {
+            payload=$(echo "$1" | cut -d. -f2)
+            case $((${#payload} % 4)) in
+              2) payload="$payload==" ;;
+              3) payload="$payload=" ;;
+            esac
+            echo "$payload" | tr '_-' '/+' | base64 -d 2>/dev/null | jq -r '.scope // empty'
+          }
+
+          ELEVATED_TOKEN=$(curl -s \
+            "$KC/realms/inventory/protocol/openid-connect/token" \
+            -d "client_id=inventory-frontend" \
+            -d "username=inv_viewer" \
+            -d "password=${{ secrets.STAGING_KC_USER_VIEWER_PASSWORD }}" \
+            -d "grant_type=password" \
+            -d "scope=openid product:view product:manage stock:manage user:manage audit:view" \
+            | jq -r '.access_token // empty')
+
+          if [ -z "$ELEVATED_TOKEN" ]; then
+            echo "✗ G-8: no se pudo obtener token de viewer para la prueba"
+            exit 1
+          fi
+
+          EMITTED_SCOPE=$(decode_jwt_scope "$ELEVATED_TOKEN")
+          echo "  scope emitido: $EMITTED_SCOPE"
+
+          G8_FAIL=0
+          for s in "product:manage" "stock:manage" "user:manage" "audit:view"; do
+            if echo " $EMITTED_SCOPE " | grep -q " $s "; then
+              echo "✗ G-8: el viewer obtuvo '$s' en el scope emitido — Keycloak NO gatea la escalada"
+              G8_FAIL=1
+            fi
+          done
+
+          if [ "$G8_FAIL" = "0" ]; then
+            echo "✓ G-8: Keycloak no emite scopes elevados a un viewer — escalada gateada en el IdP"
+          else
+            echo "  El backend sigue conteniendo la escalada via SCOPES_BY_ROLE (ADR-002);"
+            echo "  este rojo significa que los scope-mappings no gatean el string y G-8 necesita otro enfoque."
             exit 1
           fi
 

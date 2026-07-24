@@ -3,7 +3,7 @@
 ![CI](https://img.shields.io/github/actions/workflow/status/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/ci.yml?label=CI&style=flat-square)
 ![Backend coverage](https://img.shields.io/badge/backend%20coverage-92.1%25%20lineas-brightgreen?style=flat-square)
 ![Backend branches](https://img.shields.io/badge/backend%20branches-84.5%25-brightgreen?style=flat-square)
-![Frontend coverage](https://img.shields.io/badge/frontend%20coverage-7.1%25-critical?style=flat-square)
+![Frontend coverage](https://img.shields.io/badge/frontend%20coverage-9.2%25-critical?style=flat-square)
 
 Las cinco métricas de calidad exigidas, medidas por SonarCloud en cada ejecución de CI:
 
@@ -65,7 +65,7 @@ Plataforma para gestionar inventarios empresariales de forma segura y escalable.
 ├── docker/
 │   └── jenkins/          # Imagen, plugins y configuración como código de Jenkins
 ├── Jenkinsfile
-├── docker-compose.yml    # 15 servicios
+├── docker-compose.yml    # 14 servicios
 └── .env.example
 ```
 
@@ -79,7 +79,7 @@ cd Sistema-de-Gestion-de-Inventarios-Empresarial
 # Configurar variables de entorno
 cp .env.example .env
 
-# Levantar infraestructura (15 servicios)
+# Levantar infraestructura (14 servicios)
 docker compose up -d
 
 # Ver logs
@@ -305,6 +305,7 @@ verificado por commitlint en un hook de Husky.
 - [Informes de QA](docs/testing/reportes/) — hallazgos con reproducción y evidencia
 - [Capturas de observabilidad](docs/testing/capturas/)
 - [ADR-001 — Elección de Stack](docs/decisions/ADR-001-stack-selection.md)
+- [ADR-002 — El mapa rol→scopes vive en el backend](docs/decisions/ADR-002-mapa-rol-scopes-en-java.md)
 - [Guía de Contribución](CONTRIBUTING.md)
 
 ## Licencia

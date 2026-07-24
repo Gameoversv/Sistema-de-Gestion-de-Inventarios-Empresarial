@@ -48,19 +48,6 @@ spring:
     validate-on-migrate: true
     out-of-order: false
 
-  # ── Redis ────────────────────────────────────────────────────────────────
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
-      timeout: 2000ms
-      lettuce:
-        pool:
-          max-active: 8
-          max-idle: 4
-          min-idle: 1
-
   # ── OAuth2 Resource Server (Keycloak) ───────────────────────────────────
   # issuer-uri   → validates the "iss" claim in incoming tokens (external URL)
   # jwk-set-uri  → where to fetch signing keys (internal Docker URL in containers)

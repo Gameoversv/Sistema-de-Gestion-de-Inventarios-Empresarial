@@ -30,7 +30,7 @@ Salvo la cobertura, medida sobre el artefacto de CI, los porcentajes son estimac
 | BRANCH | 71,6 % | **84,5 %** | 80 % |
 | LINE | 84,9 % | **92,1 %** | 80 % |
 
-Cifras vigentes desde `ad3ebaa`, que reajustó ramas a 84,5 % tras el manejador de `sort` inválido; las líneas quedaron fijadas en `8e0f1b4`, con el refactor de Q-5. La medición original de la que parte esta tabla es el artefacto de `798e6b6`. El frontend se mide aparte y está en **7,1 %** de líneas: los tests de SEC-2 lo subieron y el código nuevo de F-2/D-1/D-2 lo vuelve a diluir: hasta ahora el informe daba 100 %, pero solo cubría las 14 sentencias que los tests importaban. Con `coverage.include` en la config de vitest el número es el real.
+Cifras vigentes desde `ad3ebaa`, que reajustó ramas a 84,5 % tras el manejador de `sort` inválido; las líneas quedaron fijadas en `8e0f1b4`, con el refactor de Q-5. La medición original de la que parte esta tabla es el artefacto de `798e6b6`. El frontend se mide aparte y está en **9,2 %** de líneas: el test de scopes de G-3a lo subió desde 7,1 %. El informe daba 100 % hasta que se configuró `coverage.include` en vitest, que solo cubría las 14 sentencias que los tests importaban; con esa opción el número es el real.
 
 ---
 
@@ -41,7 +41,7 @@ El enunciado los lista de forma explícita. Sirve como checklist de cierre.
 | Entregable | Estado |
 |---|---|
 | Código fuente completo | listo |
-| Docker Compose funcional | listo — **15 servicios** |
+| Docker Compose funcional | listo — **14 servicios** (Redis retirado en INF-1, no lo usaba nadie) |
 | Jenkins pipeline | parcial — **11 etapas escritas** y Jenkins configurado como código, pero de `Integration Tests` en adelante nunca se ha ejecutado: hace falta un agente Linux (C-4) |
 | GitHub Actions pipeline | **listo** — security scan (ZAP autenticado) y quality gate (SonarCloud) añadidos en la Ola 4 |
 | Dashboards Grafana | listo — **4 de 4**; datasources de Prometheus, Tempo y Loki provisionados |
@@ -276,17 +276,17 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 
 > **Dos avisos de P-2 que afectan al guion de P-1.** Los paneles de Negocio usan `increase()`: si en la demo se encadenan todos los movimientos seguidos saldrán en cero, porque Prometheus no puede medir el incremento del primer punto de una serie. Hay que espaciarlos o levantar el stack con antelación. Y la ventana temporal de los dashboards no debe abarcar un reinicio del backend con otro perfil, o cada panel duplica sus series.
 
-### Ola 7 — Deuda abierta por los hallazgos (≈4,5 h)
+### Ola 7 — Deuda abierta por los hallazgos · **COMPLETA**
 
 | # | Acción | Esfuerzo |
 |---|---|---|
-| **G-3a** | Unión de scopes en `AuthContext.tsx`; hoy replica el bug de primer-rol-gana | 45 min |
-| **INF-1** | Redis está desplegado, configurado (pool Lettuce en `application.yml`, dependencia en el POM) y **sin un solo uso** en el código: ni `@Cacheable`, ni `@EnableCaching`, ni `RedisTemplate`. O se conecta a algo (cache de lecturas de reporte) o se borra del compose. Choca con la regla 3 | 30 min |
-| **G-8** | `scopeMappings` en Keycloak: corrección de raíz de G-6 y prerrequisito de G-2 | 1 h |
-| **S-4b** | Quitar `JWT_SECRET` y `JWT_EXPIRATION_MS` de `staging.yml` | 10 min |
-| **ADR-002** | Por qué el mapa rol→scopes vive en Java. **Numerado 002, no 001**: `docs/decisions/ADR-001-stack-selection.md` ya existe | 30 min |
+| ~~**G-3a**~~ | ~~Unión de scopes en `AuthContext.tsx`; hoy replica el bug de primer-rol-gana~~ — **hecho**: extraído a `lib/scopes.ts` (función pura, sin el init de Keycloak de por medio) y reescrito como unión espejando el backend. Rol desconocido no aporta nada; sin rol, deniega. 6 tests nuevos, incluido el multi-rol y la independencia del orden. Cierra #44 | — |
+| ~~**INF-1**~~ | ~~Redis desplegado, configurado y sin un solo uso en el código~~ — **hecho**: retirado del `docker-compose.yml` (14 servicios), del POM, de `application.yml`/`-dev`/`-smoke`, de `.env.example` y `staging.yml`. Quitadas también las exclusiones de autoconfig de Redis en los 4 IT, que ya no tienen sentido. Backend compila y los 289 unit tests siguen en verde. Aplicó la regla 3 | — |
+| ~~**G-8**~~ | ~~`scope-mappings` por rol en Keycloak: corrección de raíz de G-6~~ — **hecho y verificado en CI**. `init-users.sh` ata cada client scope a los roles autorizados. El paso "G-8" de `staging.yml` (run [30070253945](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/actions/runs/30070253945), verde) probó a nivel de token que un `inv_viewer` pidiendo scopes elevados recibe solo `product:view`. La sospecha de que los scope-mappings no gatearían el string resultó falsa: sí lo gatean. El mapa Java (ADR-002) se conserva como defensa en profundidad. Cierra #43 | — |
+| ~~**S-4b**~~ | ~~Quitar `JWT_SECRET` y `JWT_EXPIRATION_MS` de `staging.yml`~~ — **hecho**: ningún Java los leía (la firma la valida Keycloak). Retirados del workflow y de `GITHUB_SECRETS.md`. Queda borrar el secreto `STAGING_JWT_SECRET` en la config del repo, a mano. Cierra #47 | — |
+| ~~**ADR-002**~~ | ~~Por qué el mapa rol→scopes vive en Java~~ — **hecho**: [`ADR-002`](decisions/ADR-002-mapa-rol-scopes-en-java.md) documenta la contención de G-6 en el backend, con `SecurityConfig` apuntando a él | — |
 | ~~**P-2a**~~ | ~~CORS de `staging` bloquea el frontend local y deja P-3 sin interfaz~~ — **hecho**: perfil `demo` propio, con CORS local y muestreo al 100 %. Se descartó añadir localhost a `staging`, que espeja producción. Verificado en vivo y fijado con `CorsProfilesTest` [informe](testing/reportes/P-2a-perfil-demo.md) | — |
-| **P-2b** | `keycloak-init` no es idempotente: al reejecutarse sobre un realm existente lanza `duplicate key … uk_cli_scope` y ensucia el panel de eventos | 30 min |
+| ~~**P-2b**~~ | ~~`keycloak-init` no es idempotente: al reejecutarse sobre un realm existente lanza `duplicate key … uk_cli_scope`~~ — **hecho**: comprueba existencia antes de crear scopes y usuarios. Verificado con `sh -n` y lógica; sin doble `down -v && up` en vivo por C-4. Cierra #45 | — |
 | **TEST-10b** | El realm emite tokens de 300 s y el escaneo activo de ZAP puede durar más. Al caducar, el resto de la API se recorre sin autenticar y el escaneo aprueba precisamente por no encontrar nada. Ya hay un paso que lo detecta y falla; falta la corrección de raíz: un cliente de Keycloak dedicado al escaneo con `accessTokenLifespan` mayor | 45 min |
 
 ### Ola 8 — Alto coste, decidir explícitamente

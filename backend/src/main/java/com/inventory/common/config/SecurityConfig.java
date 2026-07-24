@@ -173,7 +173,9 @@ public class SecurityConfig {
 
   // Techo de scopes por rol de realm. Keycloak emite scopes opcionales sin comprobar el rol
   // (ver docs/testing/reportes/G-6-escalada-de-scopes.md), así que esta tabla es el control
-  // efectivo: lo que no aparezca aquí se descarta del token.
+  // efectivo: lo que no aparezca aquí se descarta del token. La decisión y sus consecuencias
+  // están en docs/decisions/ADR-002-mapa-rol-scopes-en-java.md. No editar sin leerlo: es el
+  // único control de acceso hasta que G-8 restrinja la emisión en el propio IdP.
   private static final Map<String, Set<String>> SCOPES_BY_ROLE =
       Map.of(
           "inventory-admin",

@@ -209,7 +209,7 @@ Se añaden **4 series de negocio** **[criterio propio]** — movimientos, unidad
 | **Medición** | **84,5 %** de ramas y **92,1 %** de líneas (JaCoCo en Actions) |
 | **Verificación** | Quality gate en `ci.yml`; `scripts/verificar-badges-cobertura.sh` falla si los badges se desfasan de la medición |
 
-El frontend se mide aparte y está en **7,1 %** de líneas. El informe daba 100 % hasta que se configuró `coverage.include` en vitest: solo contaba las 14 sentencias que los tests importaban. Es el hueco de calidad conocido y declarado.
+El frontend se mide aparte y está en **9,2 %** de líneas. El informe daba 100 % hasta que se configuró `coverage.include` en vitest: solo contaba las 14 sentencias que los tests importaban. Es el hueco de calidad conocido y declarado.
 
 ### RNF-18 — Análisis estático continuo
 
@@ -287,7 +287,7 @@ El perfil `demo` existe porque la presentación necesita a la vez log JSON estru
 | **Criterio** | El stack completo se levanta con un solo comando y sin editar ficheros a mano. |
 | **Origen** | Arquitectura Técnica Obligatoria — *"Contenedores: Docker, Docker Compose"* |
 | **Estado** | **Cumple** |
-| **Implementación** | `docker-compose.yml` con **15 servicios**: base de datos, Redis, Keycloak y su base, backend, frontend y los nueve de observabilidad |
+| **Implementación** | `docker-compose.yml` con **14 servicios**: base de datos, Keycloak y su base, backend, frontend y los nueve de observabilidad (Redis se retiró en INF-1, estaba desplegado sin uso) |
 | **Verificación** | Levantado desde cero para las capturas de P-2 |
 
 Riesgo abierto: `keycloak-init` **no es idempotente**. Al reejecutarse sobre un realm existente lanza `duplicate key … uk_cli_scope` y ensucia el panel de eventos (**P-2b**, issue #45). Afecta directamente al ensayo de la presentación, que es un `down -v && up` repetido.

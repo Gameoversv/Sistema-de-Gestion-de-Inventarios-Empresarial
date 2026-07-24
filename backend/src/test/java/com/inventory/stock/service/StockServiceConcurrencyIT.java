@@ -39,10 +39,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest(
     webEnvironment = WebEnvironment.NONE,
     properties = {
-      "spring.autoconfigure.exclude="
-          + "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration",
       "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=",
       "spring.security.oauth2.resourceserver.jwt.issuer-uri="
     })
