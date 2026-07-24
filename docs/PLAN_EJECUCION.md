@@ -116,7 +116,7 @@ El enunciado es literal: *"Integration Testing — Obligatorio utilizar: Testcon
 | 1. Unit | Servicios, validaciones, lógica | cumple — **307 `@Test`** en 33 ficheros. La cifra de 284 que traía este plan es la del pipeline de Jenkins; SEC-2, Q-5 y F-2/D-1/D-2 añadieron tests después |
 | 2. Integration | Testcontainers: **BD real, Keycloak**, integraciones | **cumple** — BD (y desde ENV-1 contra la base desplegada) y **Keycloak real con `KeycloakAuthIT`** (TEST-1), verificado en CI |
 | 3. API / Contract | Endpoints, contratos OpenAPI, status codes, payloads | parcial — Postman sin CI (TEST-3), RestAssured sin uso (TEST-2) |
-| 4. E2E | Snapshots, flujos, navegación, **roles**, seguridad, **responsive** | **no se ejecuta en CI** (C-1, TEST-7/8/9) |
+| 4. E2E | Snapshots, flujos, navegación, **roles**, seguridad, **responsive** | **se ejecuta en CI** vía `e2e.yml` (C-1/TEST-7), pendiente del veredicto; faltan snapshots (TEST-8) y responsive (TEST-9) |
 | 5. Security | ZAP, JWT, permisos, CORS, Dependency Check/Snyk, autenticación | parcial — **ZAP autenticado** sembrado con el OpenAPI y con umbral (TEST-10); faltan T-5 y TEST-11 |
 | 6. Performance | Stress, load, usuarios concurrentes, tiempo de respuesta, throughput | **cero** (T-3) |
 | 7. Data | Migraciones, integridad, **duplicados**, constraints, seeds | parcial (DATA-1/2, E-1) |
@@ -155,13 +155,13 @@ El enunciado exige **10 etapas** de pipeline: Checkout, Build, Unit tests, Integ
 | Unit tests | sí | sí — ejecutado, 284 en verde |
 | Integration tests | sí | escrita, **sin ejecutar** |
 | API tests | staging.yml | escrita (smoke), sin ejecutar |
-| E2E tests | **no** (C-1) | escrita, sin ejecutar |
+| E2E tests | `e2e.yml` (C-1/TEST-7) | escrita, sin ejecutar |
 | Security scan | staging.yml — ZAP autenticado sobre el OpenAPI | escrita, sin ejecutar |
 | Quality gates | JaCoCo + SonarCloud | escrita, sin ejecutar |
 | Docker build | sí | escrita, sin ejecutar |
 | Deployment | staging.yml | escrita, sin ejecutar |
 
-**GitHub Actions cubre 9 de las 10 etapas**; solo falta E2E (C-1).
+**GitHub Actions cubre las 10 etapas** una vez `e2e.yml` (C-1/TEST-7) esté en verde; hasta el veredicto de CI, 9 confirmadas.
 
 Jenkins pasa de 8 a **11 etapas** y de una instalación vacía a configuración como código en `docker/jenkins/`. Pero solo las cuatro primeras se han llegado a ejecutar: la de integración no arranca sobre Docker Desktop en Windows y bloquea todo lo que va detrás (**C-4**, ver el aviso de Testcontainers más abajo).
 
@@ -217,7 +217,7 @@ El área queda cerrada: el pendiente que arrastraba (P-2) está hecho.
 
 | # | Acción | Esfuerzo | Capa |
 |---|---|---|---|
-| **C-1 + TEST-7** | Playwright en `staging.yml` con los 4 usuarios | 3 h | 4 |
+| **C-1 + TEST-7** | Playwright en CI — **implementado, pendiente del veredicto de CI**: `e2e.yml` despliega el stack con perfil demo (`docker compose up --build`), espera a Keycloak/backend/frontend y corre los 3 specs contra el sistema vivo. Sube el informe de Playwright como artefacto. No corre en local por C-4 | 3 h | 4 |
 | **TEST-9** | Responsive: 375 / 768 / 1440 px | 45 min | 4 |
 | **TEST-8** | `toHaveScreenshot()` en dashboard, productos y stock | 1 h | 4 |
 | ~~**TEST-1**~~ | ~~`dasniko/testcontainers-keycloak` + IT con token real — **obligatorio**~~ — **hecho y verificado en CI**. `KeycloakAuthIT` levanta Keycloak y Postgres reales, obtiene un token por password grant y ejercita la cadena entera (JWKS, firma, emisor, intersección de scopes, `@PreAuthorize`); 4 tests en verde en el job `integration-test`, incluida la reverificación de G-8 a nivel IT. Afinado en 5 iteraciones sobre CI (imagen del contenedor, required actions, User Profile, `realm_access`), ya que C-4 impide correrlo en local | 3 h | 2 |

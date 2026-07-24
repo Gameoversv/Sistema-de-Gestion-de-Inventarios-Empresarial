@@ -18,7 +18,7 @@ El enunciado exige **ocho capas** de testing. Esta guía dice, capa por capa, qu
 | 1. Unit | **Cumple** | 289 tests unitarios |
 | 2. Integration | **Cumple** | Testcontainers con base real **y Keycloak real** (`KeycloakAuthIT`, TEST-1) |
 | 3. API / Contract | Parcial | API tests en `staging.yml`; Postman y RestAssured sin CI |
-| 4. E2E | Parcial | 3 specs de Playwright escritos, **el CI no los ejecuta** |
+| 4. E2E | Parcial | 3 specs de Playwright, **ejecutados en CI** por `e2e.yml` (C-1/TEST-7); faltan snapshots y responsive |
 | 5. Security | Parcial | ZAP autenticado con umbral; faltan Dependency Check y CORS |
 | 6. Performance | **Cero** | sin una sola prueba de carga |
 | 7. Data | Parcial | migraciones y seeds; faltan duplicados y constraints |
