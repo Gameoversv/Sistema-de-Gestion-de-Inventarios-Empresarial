@@ -161,7 +161,7 @@ class StockAuditServiceTest {
       assertThat(result.get(0).revisionType()).isEqualTo(RevisionType.ADD);
       assertThat(result.get(0).movementType()).isEqualTo(MovementType.IN);
       assertThat(result.get(0).quantity()).isEqualTo(10);
-      assertThat(result.get(0).quantityBefore()).isEqualTo(0);
+      assertThat(result.get(0).quantityBefore()).isZero();
       assertThat(result.get(0).quantityAfter()).isEqualTo(10);
     }
   }

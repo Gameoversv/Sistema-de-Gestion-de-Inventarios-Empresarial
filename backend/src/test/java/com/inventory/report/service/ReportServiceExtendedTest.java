@@ -66,7 +66,7 @@ class ReportServiceExtendedTest {
     assertThat(result.count()).isEqualTo(1);
     assertThat(result.products()).hasSize(1);
     assertThat(result.products().get(0).sku()).isEqualTo("SKU-Z");
-    assertThat(result.products().get(0).currentStock()).isEqualTo(0);
+    assertThat(result.products().get(0).currentStock()).isZero();
     assertThat(result.products().get(0).deficit()).isEqualTo(5);
   }
 

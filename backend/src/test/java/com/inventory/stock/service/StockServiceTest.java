@@ -139,10 +139,9 @@ class StockServiceTest {
     product.setStock(3);
     when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
 
-    assertThatThrownBy(
-            () ->
-                stockService.registerMovement(
-                    new StockMovementRequest(1L, MovementType.OUT, 5, null, null), jwt("bob")))
+    StockMovementRequest request = new StockMovementRequest(1L, MovementType.OUT, 5, null, null);
+
+    assertThatThrownBy(() -> stockService.registerMovement(request, jwt("bob")))
         .isInstanceOf(BusinessException.class)
         .hasMessageContaining("Insufficient stock");
 
@@ -161,7 +160,7 @@ class StockServiceTest {
     stockService.registerMovement(
         new StockMovementRequest(1L, MovementType.OUT, 5, null, null), jwt("bob"));
 
-    assertThat(product.getStock()).isEqualTo(0);
+    assertThat(product.getStock()).isZero();
   }
 
   // Verifica que ADJUSTMENT establece el stock en la cantidad absoluta indicada, no relativa.
@@ -233,7 +232,7 @@ class StockServiceTest {
     verify(eventPublisher, never()).publishEvent(any(StockThresholdCrossedEvent.class));
   }
 
-  // Verifica que todo movimiento confirmado publica StockMovementRecordedEvent, que es lo que
+  // Verifica que cada movimiento confirmado publica StockMovementRecordedEvent, que es lo que
   // convierte el movimiento en métrica de negocio (inventory_stock_movements_total).
   @Test
   @DisplayName("publishes StockMovementRecordedEvent with type and quantity")
@@ -271,10 +270,9 @@ class StockServiceTest {
   void registerMovement_productNotFound_throws() {
     when(productRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
 
-    assertThatThrownBy(
-            () ->
-                stockService.registerMovement(
-                    new StockMovementRequest(99L, MovementType.IN, 5, null, null), jwt("alice")))
+    StockMovementRequest request = new StockMovementRequest(99L, MovementType.IN, 5, null, null);
+
+    assertThatThrownBy(() -> stockService.registerMovement(request, jwt("alice")))
         .isInstanceOf(ResourceNotFoundException.class)
         .hasMessageContaining("99");
   }

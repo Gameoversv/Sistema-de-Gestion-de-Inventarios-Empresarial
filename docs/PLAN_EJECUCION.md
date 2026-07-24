@@ -2,7 +2,7 @@
 
 **Fuente de verdad:** `Proyecto_Final_V3.pdf` (revisado íntegro el 2026-07-22)
 **Base de hallazgos:** [ANALISIS_BRECHAS.md](ANALISIS_BRECHAS.md)
-**Actualizado:** 2026-07-23, tras cerrar la Ola 2, seis de las nueve tareas de la Ola 4 (Q-1 a Q-4, ENV-1, TEST-10), P-2 de la Ola 6, D-1…D-4 y T-6 de la Ola 5, P-2a de la Ola 7 y los dos obligatorios de sesión (SEC-2, S-2).
+**Actualizado:** 2026-07-23, tras cerrar la Ola 2, la Ola 4 salvo C-4 y CI-2, P-2 de la Ola 6, D-1…D-4 y T-6 de la Ola 5, P-2a de la Ola 7, los dos obligatorios de sesión (SEC-2, S-2) y los 16 code smells (Q-5).
 
 > **Aviso de método.** La versión anterior de este plan tomaba como requisito el desglose del análisis de brechas, que en algunos puntos era interpretación propia y no texto del enunciado. Cada requisito de este documento está contrastado con el PDF. Cuando algo es criterio nuestro y no del enunciado, se marca como **[criterio propio]**.
 
@@ -19,7 +19,7 @@ El enunciado define **ocho** áreas. La versión anterior omitía la última.
 | Seguridad | 10% | ~70% | ~90% | ~90% |
 | Observabilidad | 15% | ~30% | ~90% | ~90% |
 | CI/CD | 15% | ~60% | ~85% | ~90% |
-| Calidad de código | 10% | ~35% | ~60% | ~85% |
+| Calidad de código | 10% | ~35% | ~85% | ~85% |
 | Documentación | 10% | ~25% | ~40% | ~90% |
 | **Presentación final** | **5%** | **0%** | **~30%** | **~90%** |
 
@@ -168,7 +168,7 @@ Jenkins pasa de 8 a **11 etapas** y de una instalación vacía a configuración 
 
 Exige SonarQube o SonarCloud midiendo Coverage, Bugs, Vulnerabilities, Code smells y Duplicación. **Cubierto en la Ola 4** (Q-1): SonarCloud analiza en cada ejecución de CI y el README publica las cinco métricas más el quality gate.
 
-Primer análisis de `main`: cobertura 88,1 %, 0 bugs, 0 vulnerabilidades, 0 % de duplicación y **16 code smells**, que son deuda preexistente que nadie había medido porque Sonar nunca se había ejecutado. Resolverlos es lo único que queda del área.
+Primer análisis de `main`: cobertura 88,1 %, 0 bugs, 0 vulnerabilidades, 0 % de duplicación y **16 code smells**, deuda preexistente que nadie había medido porque Sonar nunca se había ejecutado. **Los 16 resueltos** (Q-5): 3 en código de producción y 13 en tests. Dos dejaron de ser cosméticos al mirarlos —una lista de `Future` que se llenaba y nunca se leía, y un bloque `catch` vacío sin justificar—, y uno era falso positivo por idioma. [Informe](testing/reportes/Q-5-code-smells.md)
 
 Spotless estaba declarado en el POM y desactivado con `-Dspotless.check.skip=true` en los ocho sitios donde se invoca Maven. Retirado el flag (Q-2): al correr en fase `validate`, ahora se comprueba en cada `compile`, `test`, `verify` y `package`.
 
@@ -325,7 +325,7 @@ Las cifras de abajo son el hueco que falta por cerrar en cada área, no su peso.
 | Mejoras funcionales (D-1, D-2, F-2) | 1,95 | 5 h | 0,39 |
 | Ola 3 — Testing | 2,40 | 14 h | 0,17 |
 
-**4 horas:** ~~T-6 + SEC-2 + S-2~~ **hechos**; queda los 16 code smells.
+**4 horas:** ~~T-6 + SEC-2 + S-2 + los 16 code smells~~ — **el bloque completo está hecho**.
 Cierra dos obligatorios del enunciado, el único hueco de Calidad y la ausencia total de issues de tipo bug.
 
 **12 horas:** lo anterior + Ola 5 completa.

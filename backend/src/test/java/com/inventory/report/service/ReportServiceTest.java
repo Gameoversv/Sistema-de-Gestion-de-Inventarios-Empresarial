@@ -78,7 +78,7 @@ class ReportServiceTest {
 
     assertThat(result.totalProducts()).isEqualTo(2);
     assertThat(result.activeProducts()).isEqualTo(1);
-    assertThat(result.lowStockProducts()).isEqualTo(0);
+    assertThat(result.lowStockProducts()).isZero();
     assertThat(result.totalInventoryValue()).isEqualByComparingTo("100.00");
     assertThat(result.byCategory()).hasSize(1);
     assertThat(result.byCategory().get(0).productCount()).isEqualTo(1);

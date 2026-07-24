@@ -110,6 +110,9 @@ public class UnifiedAuditService {
         productInfo = " | " + s.getProduct().getSku() + " - " + s.getProduct().getName();
       }
     } catch (LazyInitializationException ignored) {
+      // Deliberado: el resumen es informativo y se construye fuera de la transacción que cargó el
+      // movimiento. Si el producto viene como proxy sin sesión, se emite el resumen sin la parte
+      // del producto en vez de tumbar la consulta de auditoría por un dato accesorio.
     }
     return "%s %d unid.%s".formatted(s.getType(), s.getQuantity(), productInfo);
   }

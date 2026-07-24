@@ -34,7 +34,10 @@ class ExceptionTriggerController {
   }
 
   @PostMapping("/validate")
-  void validate(@Valid @RequestBody ValidatedBody body) {}
+  void validate(@Valid @RequestBody ValidatedBody body) {
+    // Vacío a propósito: lo que se prueba es @Valid, que rechaza el cuerpo antes de llegar aquí.
+    // Si la validación pasa, no hay nada que hacer; si falla, este método nunca se ejecuta.
+  }
 
   @GetMapping("/access-denied")
   void accessDenied() {
