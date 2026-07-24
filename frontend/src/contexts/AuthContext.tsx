@@ -28,6 +28,22 @@ const _initPromise: Promise<boolean> = keycloak
       keycloak.login({ scope: LOGIN_SCOPE })
       return new Promise<boolean>(() => {})
     }
+    // check-sso puede devolver un token SIN los optional scopes: el SSO silencioso no vuelve a
+    // pedirlos, asi que tras un refresco de pagina el token trae solo los default y
+    // PermissionGuard ocultaria toda la interfaz protegida. Si faltan, se reobtiene el token con
+    // un login (hay sesion SSO activa, asi que redirige y vuelve sin pedir credenciales). El flag
+    // en sessionStorage evita un bucle cuando el rol del usuario no concede ningun scope.
+    const scope = (keycloak.tokenParsed?.scope as string | undefined) ?? ''
+    const hasBusinessScope = /(?:product|stock|report|audit):/.test(scope)
+    if (hasBusinessScope) {
+      sessionStorage.removeItem('kc-scope-upgrade')
+      return true
+    }
+    if (sessionStorage.getItem('kc-scope-upgrade') !== '1') {
+      sessionStorage.setItem('kc-scope-upgrade', '1')
+      keycloak.login({ scope: LOGIN_SCOPE })
+      return new Promise<boolean>(() => {})
+    }
     return true
   })
 

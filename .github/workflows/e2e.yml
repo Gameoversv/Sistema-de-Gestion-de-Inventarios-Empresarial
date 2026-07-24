@@ -95,19 +95,6 @@ jobs:
           done
           echo "Frontend no responde"; docker compose logs frontend | tail -40; exit 1
 
-      - name: Diag — scopes que emite el stack al admin
-        run: |
-          TOK=$(curl -s http://localhost:8180/realms/inventory/protocol/openid-connect/token \
-            -d client_id=inventory-frontend -d grant_type=password \
-            -d username=inv_admin -d password=Admin123 \
-            -d 'scope=openid product:view product:manage stock:view stock:manage report:view audit:view' \
-            | jq -r .access_token)
-          P=$(echo "$TOK" | cut -d. -f2)
-          case $((${#P} % 4)) in 2) P="$P==";; 3) P="$P=";; esac
-          DEC=$(echo "$P" | tr '_-' '/+' | base64 -d 2>/dev/null)
-          echo "SCOPE emitido: $(echo "$DEC" | jq -r .scope)"
-          echo "ROLES: $(echo "$DEC" | jq -rc .realm_access.roles)"
-
       - name: Setup Node 20
         uses: actions/setup-node@v4
         with:
