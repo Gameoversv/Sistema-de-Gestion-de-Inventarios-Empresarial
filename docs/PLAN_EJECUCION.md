@@ -15,7 +15,7 @@ El enunciado define **ocho** áreas. La versión anterior omitía la última.
 | Área | Peso | Inicial | Actual | Alcanzable |
 |---|---|---|---|---|
 | Funcionalidad | 15% | ~85% | ~97% | ~98% |
-| Testing | 20% | ~60% | ~95% | ~95% |
+| Testing | 20% | ~60% | ~97% | ~97% |
 | Seguridad | 10% | ~70% | ~90% | ~90% |
 | Observabilidad | 15% | ~30% | ~90% | ~90% |
 | CI/CD | 15% | ~60% | ~85% | ~90% |
@@ -128,7 +128,7 @@ Ambos corregidos en el PR de C-1. **Consecuencia de método:** los E2E no son ve
 | 4. E2E | Snapshots, flujos, navegación, **roles**, seguridad, **responsive** | **cumple** — `e2e.yml` (C-1/TEST-7) corre los 3 specs (12 casos) contra el stack desplegado, **12/12 en verde**; faltan snapshots (TEST-8) y responsive (TEST-9) como mejora |
 | 5. Security | ZAP, JWT, permisos, CORS, Dependency Check/Snyk, autenticación | **cumple** — ZAP autenticado con umbral (TEST-10), `CorsHttpTest` de enforcement CORS (TEST-11), y `dependency-scan.yml` con npm audit + OWASP Dependency-Check (T-5) |
 | 6. Performance | Stress, load, usuarios concurrentes, tiempo de respuesta, throughput | **cumple** — k6 en `e2e.yml` (T-3): load + stress, umbral `p(95)<500ms` verde en CI |
-| 7. Data | Migraciones, integridad, **duplicados**, constraints, seeds | parcial (DATA-1/2, E-1) |
+| 7. Data | Migraciones, integridad, **duplicados**, constraints, seeds | **cumple** — Flyway (esquema real en los IT), seeds verificados, `DataIntegrityIT` (duplicado de SKU sembrado y NOT NULL a nivel BD) + el duplicado de `ProductRepositoryIT` |
 | 8. Exploratory | Charters, bugs encontrados, escenarios | **cumple** — 3 charters y 15 bugs como issues, más los informes en `docs/testing/reportes/` (T-6) |
 
 ### 4.4 Observabilidad (15%)
@@ -235,7 +235,7 @@ El área queda cerrada: el pendiente que arrastraba (P-2) está hecho.
 | **TEST-2** | ~~RestAssured para contrato OpenAPI~~ — **hecho**: `OpenApiContractTest` valida las respuestas contra `docs/api/openapi.yaml` con swagger-request-validator sobre MockMvc (job rápido, sin stack). 4 tests en verde en local | 1 h | 3 |
 | ~~**TEST-3**~~ | ~~Newman en CI~~ — **hecho, 39 aserciones en verde**. `e2e.yml` corre la colección Postman contra el stack desplegado. Ejecutarla por primera vez destapó **7 bugs de la colección** (nunca se había probado): `/api/v1` inexistente, `/stock` sin prefijo, IDs hardcodeados que borraban datos sembrados, soft-delete que esperaba 200+body en vez de 204, "Electronics" ya sembrada (409), SKU de prueba inexistente y una aserción de Content-Type mal escrita | 1 h | 3 |
 | ~~**TEST-11**~~ | ~~Test de CORS por perfil~~ — **hecho**: `CorsHttpTest` ejercita el filtro CORS de verdad (preflight de origen permitido recibe `Access-Control-Allow-Origin`, uno no permitido no), complementando a `CorsProfilesTest` que solo mira la config. Verde en local | 30 min | 5 |
-| **DATA-1/2** | Constraints, seeds y **datos duplicados** | 1,5 h | 7 |
+| ~~**DATA-1/2**~~ | ~~Constraints, seeds y **datos duplicados**~~ — **hecho**: `DataIntegrityIT` verifica que Flyway cargó los seeds de V5, que un SKU sembrado duplicado se rechaza por la restricción de unicidad, y que el `NOT NULL` de `minimum_stock` lo aplica el esquema (no solo Bean Validation). El duplicado directo ya lo cubría `ProductRepositoryIT` | 1,5 h | 7 |
 
 > **C-1 + TEST-7 es la mejor palanca disponible.** El enunciado exige E2E con roles, seguridad y responsive, ejecutados *contra el sistema desplegado*. Además es lo único que confirmaría SEC-1.
 

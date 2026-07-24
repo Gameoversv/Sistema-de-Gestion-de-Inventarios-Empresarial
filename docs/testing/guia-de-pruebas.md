@@ -21,12 +21,12 @@ El enunciado exige **ocho capas** de testing. Esta guía dice, capa por capa, qu
 | 4. E2E | **Cumple** | 3 specs (12 casos) de Playwright, **12/12 en CI** por `e2e.yml` (C-1/TEST-7); faltan snapshots y responsive como mejora |
 | 5. Security | **Cumple** | ZAP autenticado (TEST-10), enforcement CORS (TEST-11), npm audit + OWASP Dependency-Check (T-5) |
 | 6. Performance | **Cumple** | k6 en CI (T-3): load + stress, `p(95)<500ms` |
-| 7. Data | Parcial | migraciones y seeds; faltan duplicados y constraints |
+| 7. Data | **Cumple** | Flyway + seeds verificados, `DataIntegrityIT` (duplicados y constraints a nivel BD) |
 | 8. Exploratory | **Cumple** | 3 charters, 15 bugs con reproducción |
 
 **307 `@Test` en 33 ficheros** (más los 4 de `KeycloakAuthIT`). Cobertura del backend: **85,0 % de ramas, 92,7 % de líneas** (JaCoCo en CI, umbral 80 %). Frontend: **9,3 %** de líneas — el hueco de calidad conocido.
 
-**Siete capas completas** — solo **Data** queda parcial (faltan los tests de constraints y datos duplicados, DATA-1/2). Con eso, las 8 capas del enunciado están cubiertas y ejecutándose en CI.
+**Las ocho capas cumplen** y se ejecutan en CI. Lo que queda son mejoras dentro de capas que ya pasan (snapshots y responsive en E2E, TEST-10b en Security), no capas abiertas.
 
 ---
 
@@ -155,19 +155,19 @@ El escaneo de dependencias no fue un trámite: `npm audit` encontró CVEs altas 
 
 ---
 
-## 7. Data Testing — **Parcial**
+## 7. Data Testing — **Cumple**
 
 > *"Migraciones, Integridad de datos, Datos duplicados, Constraints y Seeds"*
 
 | Aspecto | Estado |
 |---|---|
-| Migraciones | **Cumple** — 7 migraciones Flyway (`V1`…`V7`); `ProductRepositoryIT` y `AuditIntegrationIT` levantan el esquema real |
-| Seeds | **Cumple** — `V5__seed_data.sql` |
-| Integridad | Parcial — FK producto↔movimiento validada en `StockServiceConcurrencyIT` |
-| Constraints | Parcial — SKU único definido en el esquema, sin test dedicado que verifique el rechazo del duplicado |
-| **Datos duplicados** | **Falta** — el enunciado lo nombra explícito; no hay caso que inserte un duplicado y compruebe el rechazo |
+| Migraciones | **Cumple** — 7 migraciones Flyway (`V1`…`V7`); los IT levantan el esquema real |
+| Seeds | **Cumple** — `V5__seed_data.sql`; `DataIntegrityIT` verifica que Flyway los cargó |
+| Integridad | **Cumple** — FK producto↔movimiento en `StockServiceConcurrencyIT` |
+| Constraints | **Cumple** — SKU único y `minimum_stock NOT NULL` verificados a nivel BD en `DataIntegrityIT` |
+| **Datos duplicados** | **Cumple** — `DataIntegrityIT` inserta un SKU ya sembrado y comprueba el rechazo por unicidad; `ProductRepositoryIT` cubre el duplicado directo |
 
-Pendiente: **DATA-1/2** — tests de constraints, seeds y datos duplicados.
+`DataIntegrityIT` prueba las restricciones **en el esquema**, no en la capa de aplicación: `minimum_stock` no lleva `@NotNull` en la entidad (solo `@Min`), así que Bean Validation lo deja pasar y es la columna `NOT NULL` la que lo rechaza — justo lo que hay que verificar.
 
 ---
 
@@ -233,12 +233,11 @@ Escalada por primer-rol-gana (#50) y fallback de scopes (#51), el check de CI qu
 
 ---
 
-## Qué falta para cerrar la pirámide
+## Estado de la pirámide
 
-**Siete de las ocho capas cumplen.** Solo queda una para el 100%:
+**Las ocho capas del enunciado cumplen y corren en CI.** Lo que queda son mejoras dentro de capas que ya pasan, no capas abiertas:
 
-1. **DATA-1/2** — Data: tests de constraints y **datos duplicados** (el enunciado lo nombra). Migraciones y seeds ya cumplen; falta el caso que inserta un duplicado y comprueba el rechazo.
-
-Mejoras dentro de capas que ya cumplen: TEST-8 (snapshots), TEST-9 (responsive) y D-4 (accesibilidad) en E2E; TEST-10b en Security.
+- **E2E**: TEST-8 (snapshots), TEST-9 (responsive 375/768/1440), D-4 (accesibilidad con axe).
+- **Security**: TEST-10b (cliente de Keycloak dedicado al escaneo ZAP con `accessTokenLifespan` mayor, issue #46).
 
 Trazabilidad completa de cada identificador en el [plan de ejecución](../PLAN_EJECUCION.md), §4.3.
