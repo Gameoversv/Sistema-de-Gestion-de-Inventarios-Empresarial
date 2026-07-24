@@ -1,5 +1,7 @@
 /** Manejo de expiracion de sesion: renueva el token antes de que caduque y fuerza login cuando ya no se puede renovar. */
 
+import { LOGIN_SCOPE } from './scopes'
+
 /**
  * Margen, en segundos, que se le pide a Keycloak al renovar. El token se refresca si le queda
  * menos que esto de vida. Coincide con el que ya usaba el interceptor de `api.ts`, para que una
@@ -13,7 +15,7 @@ export const MIN_TOKEN_VALIDITY_SECONDS = 30
  */
 export interface SessionClient {
   updateToken(minValidity: number): Promise<boolean>
-  login(): void
+  login(options?: { scope?: string }): void
   clearToken(): void
   onTokenExpired?: () => void
   onAuthRefreshError?: () => void
@@ -45,5 +47,6 @@ export function installSessionHandlers(client: SessionClient): void {
  */
 export function endSession(client: SessionClient): void {
   client.clearToken()
-  client.login()
+  // Se re-solicitan los scopes de negocio; si no, tras un re-login la interfaz quedaria vacia.
+  client.login({ scope: LOGIN_SCOPE })
 }

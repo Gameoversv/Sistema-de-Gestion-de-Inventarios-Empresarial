@@ -1,7 +1,7 @@
 /** Authentication context that exposes Keycloak login state, user roles, permission scopes, and a logout action to the component tree. */
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import keycloak from '@/lib/keycloak'
-import { permittedScopesForRoles } from '@/lib/scopes'
+import { permittedScopesForRoles, LOGIN_SCOPE } from '@/lib/scopes'
 
 interface AuthContextValue {
   authenticated: boolean
@@ -25,7 +25,7 @@ const _initPromise: Promise<boolean> = keycloak
   })
   .then((authenticated) => {
     if (!authenticated) {
-      keycloak.login()
+      keycloak.login({ scope: LOGIN_SCOPE })
       return new Promise<boolean>(() => {})
     }
     return true
