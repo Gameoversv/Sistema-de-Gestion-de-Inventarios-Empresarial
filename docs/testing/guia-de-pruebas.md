@@ -18,13 +18,13 @@ El enunciado exige **ocho capas** de testing. Esta guía dice, capa por capa, qu
 | 1. Unit | **Cumple** | 289 tests unitarios |
 | 2. Integration | **Cumple** | Testcontainers con base real **y Keycloak real** (`KeycloakAuthIT`, TEST-1) |
 | 3. API / Contract | Parcial | API tests en `staging.yml`; Postman y RestAssured sin CI |
-| 4. E2E | Parcial | 3 specs de Playwright, **ejecutados en CI** por `e2e.yml` (C-1/TEST-7); faltan snapshots y responsive |
+| 4. E2E | **Cumple** | 3 specs (12 casos) de Playwright, **12/12 en CI** por `e2e.yml` (C-1/TEST-7); faltan snapshots y responsive como mejora |
 | 5. Security | Parcial | ZAP autenticado con umbral; faltan Dependency Check y CORS |
 | 6. Performance | **Cero** | sin una sola prueba de carga |
 | 7. Data | Parcial | migraciones y seeds; faltan duplicados y constraints |
 | 8. Exploratory | **Cumple** | 3 charters, 15 bugs con reproducción |
 
-**307 `@Test` en 33 ficheros.** Cobertura del backend: **84,5 % de ramas, 92,1 % de líneas** (JaCoCo en CI, umbral 80 %). Frontend: **9,3 %** de líneas — el hueco de calidad conocido.
+**307 `@Test` en 33 ficheros** (más los 4 de `KeycloakAuthIT`). Cobertura del backend: **85,0 % de ramas, 92,7 % de líneas** (JaCoCo en CI, umbral 80 %). Frontend: **9,3 %** de líneas — el hueco de calidad conocido.
 
 Dos capas completas, cinco parciales, una a cero. Los parciales se concentran en el pipeline: pruebas escritas que el CI todavía no ejecuta.
 
@@ -94,7 +94,7 @@ Los controladores están cubiertos en unitario con MockMvc, verificando status c
 
 ---
 
-## 4. E2E Testing — **Parcial**
+## 4. E2E Testing — **Cumple**
 
 > *"Snapshots/Screenshots, Flujos completos, Navegación, Roles, Seguridad y Responsive"* · Playwright.
 
@@ -191,7 +191,7 @@ Los charters no son decorativos: cada uno destapó un defecto real que las prueb
 | Unit + cobertura | `cd backend && ./mvnw test` | `ci.yml` → job `unit-tests` |
 | Integración (Testcontainers) | `cd backend && ./mvnw verify` | `ci.yml` → job `integration-test` (runner Linux) |
 | Frontend unit + cobertura | `cd frontend && npm test` | `ci.yml` → job `frontend` |
-| E2E | `cd e2e && npx playwright test` | **no corre en CI todavía** (C-1) |
+| E2E | `cd e2e && npx playwright test` | `e2e.yml` (C-1/TEST-7), contra el stack desplegado |
 | API + Security contra el desplegado | — | `staging.yml` tras el deploy |
 | Análisis estático | — | SonarCloud en cada run |
 
@@ -203,7 +203,7 @@ Los charters no son decorativos: cada uno destapó un defecto real que las prueb
 
 ## 10. Defectos encontrados
 
-15 bugs registrados como issues, con reproducción en el cuerpo. **8 corregidos, 7 abiertos.** Los corregidos se registraron cerrados, cada uno enlazando el PR que lo arregló y declarando que la issue se abrió después del arreglo, para dejar el rastro (T-6, [informe](reportes/T-6-issues-de-bug.md)).
+17 bugs registrados como issues, con reproducción en el cuerpo. **10 corregidos, 7 abiertos.** Los corregidos se registraron cerrados, cada uno enlazando el PR que lo arregló y declarando que la issue se abrió después del arreglo, para dejar el rastro (T-6, [informe](reportes/T-6-issues-de-bug.md)).
 
 ### Abiertos
 
@@ -219,19 +219,18 @@ Los charters no son decorativos: cada uno destapó un defecto real que las prueb
 
 El #43 está en abierto a propósito: la escalada existe en el IdP y la corrección de raíz (G-8) sigue pendiente, aunque el backend la mitigue descartando los scopes no permitidos. Cerrarlo antes de G-8 falsearía el estado.
 
-### Corregidos (8)
+### Corregidos (10)
 
-Escalada por primer-rol-gana (#50) y fallback de scopes (#51), el check de CI que aprobaba en 12 s (#52), el badge de cobertura placeholder (#53), la cobertura de frontend que informaba 100 % midiendo 14 sentencias (#54), Spotless desactivado en 8 puntos (#55), el README que documentaba una API inexistente (#56) y el CORS de `staging` que bloqueaba la demo (#57). Cada uno con su PR enlazado.
+Escalada por primer-rol-gana (#50) y fallback de scopes (#51), el check de CI que aprobaba en 12 s (#52), el badge de cobertura placeholder (#53), la cobertura de frontend que informaba 100 % midiendo 14 sentencias (#54), Spotless desactivado en 8 puntos (#55), el README que documentaba una API inexistente (#56) y el CORS de `staging` que bloqueaba la demo (#57). Los dos últimos salieron de montar los E2E en CI: el SPA no pedía scopes en el login (#69) y `check-sso` los perdía al refrescar (#70). Cada uno con su PR enlazado.
 
 ---
 
 ## Qué falta para cerrar la pirámide
 
-Ordenado por lo que el enunciado exige con más fuerza:
+Ordenado por lo que el enunciado exige con más fuerza. Los dos obligatorios que faltaban —**TEST-1** (Testcontainers con Keycloak) y **C-1/TEST-7** (E2E en CI)— ya están cerrados y verificados.
 
-1. **TEST-1** — Testcontainers con Keycloak. Obligatorio literal, hoy ausente.
-2. **C-1 / TEST-7** — E2E en CI. Única etapa del pipeline que falta en Actions.
-3. **T-3** — Performance. Única capa a cero.
-4. **T-5, DATA-1/2, TEST-11** — cierres puntuales de Security y Data.
+1. **T-3** — Performance. Única capa a cero.
+2. **T-5, DATA-1/2, TEST-11** — cierres puntuales de Security y Data.
+3. **TEST-8, TEST-9, D-4** — snapshots, responsive y accesibilidad, mejoras dentro de E2E.
 
 Trazabilidad completa de cada identificador en el [plan de ejecución](../PLAN_EJECUCION.md), §4.3.

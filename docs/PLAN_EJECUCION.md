@@ -15,7 +15,7 @@ El enunciado define **ocho** áreas. La versión anterior omitía la última.
 | Área | Peso | Inicial | Actual | Alcanzable |
 |---|---|---|---|---|
 | Funcionalidad | 15% | ~85% | ~97% | ~98% |
-| Testing | 20% | ~60% | ~81% | ~90% |
+| Testing | 20% | ~60% | ~87% | ~90% |
 | Seguridad | 10% | ~70% | ~90% | ~90% |
 | Observabilidad | 15% | ~30% | ~90% | ~90% |
 | CI/CD | 15% | ~60% | ~85% | ~90% |
@@ -54,7 +54,7 @@ El enunciado los lista de forma explícita. Sirve como checklist de cierre.
 
 ## 3. Lo que cambió respecto al plan original
 
-Seis hallazgos de la ejecución alteran prioridades.
+Siete hallazgos de la ejecución alteran prioridades.
 
 ### 3.1 El mapa rol→scopes de Java es el único control de seguridad
 
@@ -83,6 +83,15 @@ El enunciado es literal: *"Integration Testing — Obligatorio utilizar: Testcon
 ### 3.6 "Policies" aparece nombrado en el enunciado
 
 *"modelo de seguridad completamente granular basado en: Keycloak, OAuth2, JWT, Roles, Permisos, Scopes y **Policies**"*. G-1 (Authorization Services) deja de ser puramente opcional: o se implementa, o el ADR debe argumentar por qué los scopes cubren el modelo.
+
+### 3.7 Los E2E destaparon dos bugs de autenticación, no fragilidad de tests
+
+Al montar Playwright en CI (C-1) los flujos de productos y stock fallaban. No eran selectores frágiles: eran **dos defectos reales** que ningún test unitario veía y que en producción dejarían la app inservible.
+
+1. **El SPA no pedía los scopes en el login** (#69). `keycloak.login()` sin `scope`; los siete permisos son *optional scopes*, así que el token no los traía y `PermissionGuard` ocultaba toda la interfaz protegida. Desde el arranque.
+2. **Refrescar la página perdía los scopes** (#70). `check-sso` obtiene un token silencioso que no re-pide los optional scopes; tras un F5 la interfaz protegida volvía a desaparecer. Por eso productos pasaba (navega por sidebar, token en memoria) y stock fallaba (`page.goto`, recarga).
+
+Ambos corregidos en el PR de C-1. **Consecuencia de método:** los E2E no son verificación cosmética; son la única capa que ejercita el token real en el browser, y aquí pagaron su coste de sobra.
 
 ---
 
@@ -116,7 +125,7 @@ El enunciado es literal: *"Integration Testing — Obligatorio utilizar: Testcon
 | 1. Unit | Servicios, validaciones, lógica | cumple — **307 `@Test`** en 33 ficheros. La cifra de 284 que traía este plan es la del pipeline de Jenkins; SEC-2, Q-5 y F-2/D-1/D-2 añadieron tests después |
 | 2. Integration | Testcontainers: **BD real, Keycloak**, integraciones | **cumple** — BD (y desde ENV-1 contra la base desplegada) y **Keycloak real con `KeycloakAuthIT`** (TEST-1), verificado en CI |
 | 3. API / Contract | Endpoints, contratos OpenAPI, status codes, payloads | parcial — Postman sin CI (TEST-3), RestAssured sin uso (TEST-2) |
-| 4. E2E | Snapshots, flujos, navegación, **roles**, seguridad, **responsive** | **se ejecuta en CI** vía `e2e.yml` (C-1/TEST-7), pendiente del veredicto; faltan snapshots (TEST-8) y responsive (TEST-9) |
+| 4. E2E | Snapshots, flujos, navegación, **roles**, seguridad, **responsive** | **cumple** — `e2e.yml` (C-1/TEST-7) corre los 3 specs (12 casos) contra el stack desplegado, **12/12 en verde**; faltan snapshots (TEST-8) y responsive (TEST-9) como mejora |
 | 5. Security | ZAP, JWT, permisos, CORS, Dependency Check/Snyk, autenticación | parcial — **ZAP autenticado** sembrado con el OpenAPI y con umbral (TEST-10); faltan T-5 y TEST-11 |
 | 6. Performance | Stress, load, usuarios concurrentes, tiempo de respuesta, throughput | **cero** (T-3) |
 | 7. Data | Migraciones, integridad, **duplicados**, constraints, seeds | parcial (DATA-1/2, E-1) |
@@ -155,13 +164,13 @@ El enunciado exige **10 etapas** de pipeline: Checkout, Build, Unit tests, Integ
 | Unit tests | sí | sí — ejecutado, 284 en verde |
 | Integration tests | sí | escrita, **sin ejecutar** |
 | API tests | staging.yml | escrita (smoke), sin ejecutar |
-| E2E tests | `e2e.yml` (C-1/TEST-7) | escrita, sin ejecutar |
+| E2E tests | `e2e.yml` (C-1/TEST-7) — **12/12 verde** | escrita, sin ejecutar |
 | Security scan | staging.yml — ZAP autenticado sobre el OpenAPI | escrita, sin ejecutar |
 | Quality gates | JaCoCo + SonarCloud | escrita, sin ejecutar |
 | Docker build | sí | escrita, sin ejecutar |
 | Deployment | staging.yml | escrita, sin ejecutar |
 
-**GitHub Actions cubre las 10 etapas** una vez `e2e.yml` (C-1/TEST-7) esté en verde; hasta el veredicto de CI, 9 confirmadas.
+**GitHub Actions cubre las 10 etapas.** La última que faltaba, E2E, corre en `e2e.yml` (C-1/TEST-7) con los 12 casos en verde contra el stack desplegado.
 
 Jenkins pasa de 8 a **11 etapas** y de una instalación vacía a configuración como código en `docker/jenkins/`. Pero solo las cuatro primeras se han llegado a ejecutar: la de integración no arranca sobre Docker Desktop en Windows y bloquea todo lo que va detrás (**C-4**, ver el aviso de Testcontainers más abajo).
 
@@ -179,7 +188,7 @@ Spotless estaba declarado en el POM y desactivado con `-Dspotless.check.skip=tru
 |---|---|
 | Repositorio público | cumple |
 | README profesional | cumple — rutas reales, matriz rol→scopes y el `scope` obligatorio del token |
-| **Issues** | **31 issues**: 13 épicas de fase, **15 bugs** (7 abiertos) y **3 charters** de testing exploratorio, añadidos en T-6. Las épicas 9, 10 y 11 se pusieron al día en la Ola 4 |
+| **Issues** | **33 issues**: 13 épicas de fase, **17 bugs** (7 abiertos) y **3 charters**. Los dos últimos bugs (#69, #70) salieron de montar los E2E en CI. Las épicas 9, 10 y 11 se pusieron al día en la Ola 4 |
 | Pull Requests | cumple — **33 PRs**, el último el #64 |
 | Branch strategy | cumple — `main` protegida; corren 4 checks y 2 son obligatorios |
 | Conventional Commits | cumple — commitlint activo |
@@ -217,7 +226,7 @@ El área queda cerrada: el pendiente que arrastraba (P-2) está hecho.
 
 | # | Acción | Esfuerzo | Capa |
 |---|---|---|---|
-| **C-1 + TEST-7** | Playwright en CI — **implementado, pendiente del veredicto de CI**: `e2e.yml` despliega el stack con perfil demo (`docker compose up --build`), espera a Keycloak/backend/frontend y corre los 3 specs contra el sistema vivo. Sube el informe de Playwright como artefacto. No corre en local por C-4 | 3 h | 4 |
+| ~~**C-1 + TEST-7**~~ | ~~Playwright en CI~~ — **hecho y verificado, 12/12 en verde**. `e2e.yml` despliega el stack con perfil demo (`docker compose up --build`), espera a Keycloak/backend/frontend y corre los 3 specs contra el sistema vivo, subiendo el informe como artefacto. Destapó **dos bugs de auth reales** (#69, #70), no fragilidad de los specs: el SPA no pedía scopes en el login, y `check-sso` los perdía al refrescar. Ambos corregidos en el mismo PR. No corre en local por C-4 | 3 h | 4 |
 | **TEST-9** | Responsive: 375 / 768 / 1440 px | 45 min | 4 |
 | **TEST-8** | `toHaveScreenshot()` en dashboard, productos y stock | 1 h | 4 |
 | ~~**TEST-1**~~ | ~~`dasniko/testcontainers-keycloak` + IT con token real — **obligatorio**~~ — **hecho y verificado en CI**. `KeycloakAuthIT` levanta Keycloak y Postgres reales, obtiene un token por password grant y ejercita la cadena entera (JWKS, firma, emisor, intersección de scopes, `@PreAuthorize`); 4 tests en verde en el job `integration-test`, incluida la reverificación de G-8 a nivel IT. Afinado en 5 iteraciones sobre CI (imagen del contenedor, required actions, User Profile, `realm_access`), ya que C-4 impide correrlo en local | 3 h | 2 |
@@ -345,4 +354,4 @@ Cerró dos obligatorios del enunciado, el único hueco de Calidad, la ausencia t
 4. **Cada corrección con su evidencia**, archivada en `docs/testing/reportes/`.
 5. **Reviews reales.** Cada PR con aprobación del otro integrante. Es evaluable y sale gratis.
 6. **Participación equitativa.** El enunciado evalúa *"commits individuales, ramas, issues y pull requests"* de ambos. Repartir las olas explícitamente.
-7. **Los bugs van a Issues.** La regla nació porque había 13 issues y ninguno era un bug, pese a haberse encontrado y corregido varios documentados. T-6 lo cerró: hoy son **31 issues** — 13 épicas, 15 bugs y 3 charters. Todo defecto nuevo abre su issue, también si se arregla en el acto.
+7. **Los bugs van a Issues.** La regla nació porque había 13 issues y ninguno era un bug, pese a haberse encontrado y corregido varios documentados. T-6 lo cerró: hoy son **33 issues** — 13 épicas, 17 bugs y 3 charters. Todo defecto nuevo abre su issue, también si se arregla en el acto (así se registraron #69 y #70).
