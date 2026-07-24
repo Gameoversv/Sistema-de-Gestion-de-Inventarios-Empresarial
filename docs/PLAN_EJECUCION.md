@@ -114,7 +114,7 @@ El enunciado es literal: *"Integration Testing — Obligatorio utilizar: Testcon
 | Capa | Exigencia | Estado |
 |---|---|---|
 | 1. Unit | Servicios, validaciones, lógica | cumple — **307 `@Test`** en 33 ficheros. La cifra de 284 que traía este plan es la del pipeline de Jenkins; SEC-2, Q-5 y F-2/D-1/D-2 añadieron tests después |
-| 2. Integration | Testcontainers: **BD real, Keycloak**, integraciones | parcial — BD sí (y desde ENV-1, también contra la base desplegada), **Keycloak no** (TEST-1) |
+| 2. Integration | Testcontainers: **BD real, Keycloak**, integraciones | BD sí (y desde ENV-1 contra la base desplegada); **Keycloak con `KeycloakAuthIT`** (TEST-1), pendiente del veredicto de CI |
 | 3. API / Contract | Endpoints, contratos OpenAPI, status codes, payloads | parcial — Postman sin CI (TEST-3), RestAssured sin uso (TEST-2) |
 | 4. E2E | Snapshots, flujos, navegación, **roles**, seguridad, **responsive** | **no se ejecuta en CI** (C-1, TEST-7/8/9) |
 | 5. Security | ZAP, JWT, permisos, CORS, Dependency Check/Snyk, autenticación | parcial — **ZAP autenticado** sembrado con el OpenAPI y con umbral (TEST-10); faltan T-5 y TEST-11 |
@@ -220,7 +220,7 @@ El área queda cerrada: el pendiente que arrastraba (P-2) está hecho.
 | **C-1 + TEST-7** | Playwright en `staging.yml` con los 4 usuarios | 3 h | 4 |
 | **TEST-9** | Responsive: 375 / 768 / 1440 px | 45 min | 4 |
 | **TEST-8** | `toHaveScreenshot()` en dashboard, productos y stock | 1 h | 4 |
-| **TEST-1** | `dasniko/testcontainers-keycloak` + IT con token real — **obligatorio** | 3 h | 2 |
+| **TEST-1** | `dasniko/testcontainers-keycloak` + IT con token real — **obligatorio**. **Implementado, pendiente del job `integration-test` de CI**: `KeycloakAuthIT` levanta Keycloak y Postgres reales, obtiene un token por password grant y ejercita la cadena entera (JWKS, firma, emisor, intersección de scopes, `@PreAuthorize`). Incluye la reverificación de G-8 a nivel IT. No se corre en local por C-4 | 3 h | 2 |
 | **T-3** | k6: load, stress, usuarios concurrentes, `p(95)<500ms` | 3 h | 6 |
 | **T-5** | OWASP Dependency Check y `npm audit`/Snyk en CI | 45 min | 5 |
 | **TEST-3 + TEST-2** | Newman en CI + RestAssured para contrato OpenAPI | 2 h | 3 |

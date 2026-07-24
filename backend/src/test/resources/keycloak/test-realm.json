@@ -1,0 +1,74 @@
+{
+  "realm": "inventory",
+  "enabled": true,
+  "sslRequired": "none",
+  "accessTokenLifespan": 300,
+  "roles": {
+    "realm": [
+      { "name": "inventory-admin", "description": "Full access — IT" },
+      { "name": "viewer", "description": "Read-only — IT" }
+    ]
+  },
+  "clientScopes": [
+    {
+      "name": "product:view",
+      "description": "View product catalog",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    },
+    {
+      "name": "product:manage",
+      "description": "Create and update products",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    }
+  ],
+  "scopeMappings": [
+    { "clientScope": "product:view", "roles": ["inventory-admin", "viewer"] },
+    { "clientScope": "product:manage", "roles": ["inventory-admin"] }
+  ],
+  "clients": [
+    {
+      "clientId": "inventory-frontend",
+      "name": "Inventory Frontend — IT",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "bearerOnly": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": true,
+      "redirectUris": ["*"],
+      "webOrigins": ["*"],
+      "defaultClientScopes": ["web-origins", "acr", "roles", "profile", "email"],
+      "optionalClientScopes": ["product:view", "product:manage"]
+    }
+  ],
+  "users": [
+    {
+      "username": "it-admin",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        { "type": "password", "value": "it-admin-pass", "temporary": false }
+      ],
+      "realmRoles": ["inventory-admin"]
+    },
+    {
+      "username": "it-viewer",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        { "type": "password", "value": "it-viewer-pass", "temporary": false }
+      ],
+      "realmRoles": ["viewer"]
+    }
+  ]
+}
