@@ -26,7 +26,7 @@ El enunciado exige **ocho capas** de testing. Esta guía dice, capa por capa, qu
 
 **307 `@Test` en 33 ficheros** (más los 4 de `KeycloakAuthIT`). Cobertura del backend: **85,0 % de ramas, 92,7 % de líneas** (JaCoCo en CI, umbral 80 %). Frontend: **9,3 %** de líneas — el hueco de calidad conocido.
 
-Dos capas completas, cinco parciales, una a cero. Los parciales se concentran en el pipeline: pruebas escritas que el CI todavía no ejecuta.
+**Cuatro capas completas** (Unit, Integration, E2E, Exploratory), tres parciales (API/Contract, Security, Data) y una a cero (Performance). Los dos obligatorios que faltaban —Testcontainers con Keycloak (TEST-1) y E2E en CI (C-1/TEST-7)— ya están cerrados; lo que queda son pruebas por escribir, no pruebas escritas sin ejecutar.
 
 ---
 
