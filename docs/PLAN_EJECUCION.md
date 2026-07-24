@@ -30,7 +30,7 @@ Salvo la cobertura, medida sobre el artefacto de CI, los porcentajes son estimac
 | BRANCH | 71,6 % | **84,5 %** | 80 % |
 | LINE | 84,9 % | **92,1 %** | 80 % |
 
-Cifras vigentes desde `ad3ebaa`, que reajustó ramas a 84,5 % tras el manejador de `sort` inválido; las líneas quedaron fijadas en `8e0f1b4`, con el refactor de Q-5. La medición original de la que parte esta tabla es el artefacto de `798e6b6`. El frontend se mide aparte y está en **7,1 %** de líneas: los tests de SEC-2 lo subieron y el código nuevo de F-2/D-1/D-2 lo vuelve a diluir: hasta ahora el informe daba 100 %, pero solo cubría las 14 sentencias que los tests importaban. Con `coverage.include` en la config de vitest el número es el real.
+Cifras vigentes desde `ad3ebaa`, que reajustó ramas a 84,5 % tras el manejador de `sort` inválido; las líneas quedaron fijadas en `8e0f1b4`, con el refactor de Q-5. La medición original de la que parte esta tabla es el artefacto de `798e6b6`. El frontend se mide aparte y está en **9,2 %** de líneas: el test de scopes de G-3a lo subió desde 7,1 %. El informe daba 100 % hasta que se configuró `coverage.include` en vitest, que solo cubría las 14 sentencias que los tests importaban; con esa opción el número es el real.
 
 ---
 

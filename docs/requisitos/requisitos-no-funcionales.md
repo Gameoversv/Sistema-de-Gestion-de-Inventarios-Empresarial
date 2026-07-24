@@ -209,7 +209,7 @@ Se añaden **4 series de negocio** **[criterio propio]** — movimientos, unidad
 | **Medición** | **84,5 %** de ramas y **92,1 %** de líneas (JaCoCo en Actions) |
 | **Verificación** | Quality gate en `ci.yml`; `scripts/verificar-badges-cobertura.sh` falla si los badges se desfasan de la medición |
 
-El frontend se mide aparte y está en **7,1 %** de líneas. El informe daba 100 % hasta que se configuró `coverage.include` en vitest: solo contaba las 14 sentencias que los tests importaban. Es el hueco de calidad conocido y declarado.
+El frontend se mide aparte y está en **9,2 %** de líneas. El informe daba 100 % hasta que se configuró `coverage.include` en vitest: solo contaba las 14 sentencias que los tests importaban. Es el hueco de calidad conocido y declarado.
 
 ### RNF-18 — Análisis estático continuo
 
