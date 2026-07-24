@@ -99,17 +99,12 @@ class KeycloakAuthIT {
     return node.path("scope").asText("");
   }
 
-  private String payload(String jwt) {
-    return new String(Base64.getUrlDecoder().decode(jwt.split("\\.")[1]));
-  }
-
   // ── Tests ──────────────────────────────────────────────────────────────────
 
   @Test
   @DisplayName("token real de admin: lista productos (200)")
   void adminToken_canListProducts() {
     String token = token("it-admin", "it-admin-pass", "openid product:view product:manage");
-    System.out.println("=== TEST-1 DIAG admin payload === " + payload(token));
 
     given()
         .baseUri("http://localhost:" + port)

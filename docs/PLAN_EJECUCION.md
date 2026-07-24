@@ -27,10 +27,10 @@ Salvo la cobertura, medida sobre el artefacto de CI, los porcentajes son estimac
 
 | Cobertura (artefacto JaCoCo en Actions) | Inicial | Actual | Umbral |
 |---|---|---|---|
-| BRANCH | 71,6 % | **84,5 %** | 80 % |
-| LINE | 84,9 % | **92,1 %** | 80 % |
+| BRANCH | 71,6 % | **85,0 %** | 80 % |
+| LINE | 84,9 % | **92,7 %** | 80 % |
 
-Cifras vigentes desde `ad3ebaa`, que reajustó ramas a 84,5 % tras el manejador de `sort` inválido; las líneas quedaron fijadas en `8e0f1b4`, con el refactor de Q-5. La medición original de la que parte esta tabla es el artefacto de `798e6b6`. El frontend se mide aparte y está en **9,2 %** de líneas: el test de scopes de G-3a lo subió desde 7,1 %. El informe daba 100 % hasta que se configuró `coverage.include` en vitest, que solo cubría las 14 sentencias que los tests importaban; con esa opción el número es el real.
+Cifras vigentes tras `KeycloakAuthIT` (TEST-1), que ejercita en integración `SecurityConfig` y los controladores con un token real y subió la cobertura desde 84,5/92,1. La medición original de la que parte esta tabla es el artefacto de `798e6b6`. El frontend se mide aparte y está en **9,2 %** de líneas: el test de scopes de G-3a lo subió desde 7,1 %. El informe daba 100 % hasta que se configuró `coverage.include` en vitest, que solo cubría las 14 sentencias que los tests importaban; con esa opción el número es el real.
 
 ---
 
@@ -114,7 +114,7 @@ El enunciado es literal: *"Integration Testing — Obligatorio utilizar: Testcon
 | Capa | Exigencia | Estado |
 |---|---|---|
 | 1. Unit | Servicios, validaciones, lógica | cumple — **307 `@Test`** en 33 ficheros. La cifra de 284 que traía este plan es la del pipeline de Jenkins; SEC-2, Q-5 y F-2/D-1/D-2 añadieron tests después |
-| 2. Integration | Testcontainers: **BD real, Keycloak**, integraciones | BD sí (y desde ENV-1 contra la base desplegada); **Keycloak con `KeycloakAuthIT`** (TEST-1), pendiente del veredicto de CI |
+| 2. Integration | Testcontainers: **BD real, Keycloak**, integraciones | **cumple** — BD (y desde ENV-1 contra la base desplegada) y **Keycloak real con `KeycloakAuthIT`** (TEST-1), verificado en CI |
 | 3. API / Contract | Endpoints, contratos OpenAPI, status codes, payloads | parcial — Postman sin CI (TEST-3), RestAssured sin uso (TEST-2) |
 | 4. E2E | Snapshots, flujos, navegación, **roles**, seguridad, **responsive** | **no se ejecuta en CI** (C-1, TEST-7/8/9) |
 | 5. Security | ZAP, JWT, permisos, CORS, Dependency Check/Snyk, autenticación | parcial — **ZAP autenticado** sembrado con el OpenAPI y con umbral (TEST-10); faltan T-5 y TEST-11 |
@@ -220,7 +220,7 @@ El área queda cerrada: el pendiente que arrastraba (P-2) está hecho.
 | **C-1 + TEST-7** | Playwright en `staging.yml` con los 4 usuarios | 3 h | 4 |
 | **TEST-9** | Responsive: 375 / 768 / 1440 px | 45 min | 4 |
 | **TEST-8** | `toHaveScreenshot()` en dashboard, productos y stock | 1 h | 4 |
-| **TEST-1** | `dasniko/testcontainers-keycloak` + IT con token real — **obligatorio**. **Implementado, pendiente del job `integration-test` de CI**: `KeycloakAuthIT` levanta Keycloak y Postgres reales, obtiene un token por password grant y ejercita la cadena entera (JWKS, firma, emisor, intersección de scopes, `@PreAuthorize`). Incluye la reverificación de G-8 a nivel IT. No se corre en local por C-4 | 3 h | 2 |
+| ~~**TEST-1**~~ | ~~`dasniko/testcontainers-keycloak` + IT con token real — **obligatorio**~~ — **hecho y verificado en CI**. `KeycloakAuthIT` levanta Keycloak y Postgres reales, obtiene un token por password grant y ejercita la cadena entera (JWKS, firma, emisor, intersección de scopes, `@PreAuthorize`); 4 tests en verde en el job `integration-test`, incluida la reverificación de G-8 a nivel IT. Afinado en 5 iteraciones sobre CI (imagen del contenedor, required actions, User Profile, `realm_access`), ya que C-4 impide correrlo en local | 3 h | 2 |
 | **T-3** | k6: load, stress, usuarios concurrentes, `p(95)<500ms` | 3 h | 6 |
 | **T-5** | OWASP Dependency Check y `npm audit`/Snyk en CI | 45 min | 5 |
 | **TEST-3 + TEST-2** | Newman en CI + RestAssured para contrato OpenAPI | 2 h | 3 |
