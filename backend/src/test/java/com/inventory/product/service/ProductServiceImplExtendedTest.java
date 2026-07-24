@@ -27,6 +27,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
@@ -85,7 +88,7 @@ class ProductServiceImplExtendedTest {
 
     ProductResponse result = productService.create(request);
 
-    assertThat(result.minimumStock()).isEqualTo(0);
+    assertThat(result.minimumStock()).isZero();
   }
 
   // Verifica que active nulo en el request se establece como true por defecto.
@@ -159,39 +162,17 @@ class ProductServiceImplExtendedTest {
 
   // ── findAll – branch coverage ──────────────────────────────────────────────
 
-  // Verifica que findAll sin filtros retorna todos los productos de la página.
-  @Test
-  @DisplayName("findAll - no filters returns all products")
-  void findAll_noFilters_returnsAll() {
-    when(productRepository.findAll(any(Specification.class), any(PageRequest.class)))
-        .thenReturn(new PageImpl<>(List.of(existingProduct)));
-
-    Page<ProductResponse> result = productService.findAll(null, null, null, PageRequest.of(0, 10));
-
-    assertThat(result.getContent()).hasSize(1);
-  }
-
-  // Verifica que un string de búsqueda en blanco se trata como ausencia de filtro.
-  @Test
-  @DisplayName("findAll - blank search string is ignored")
-  void findAll_blankSearch_treatedAsNoFilter() {
-    when(productRepository.findAll(any(Specification.class), any(PageRequest.class)))
-        .thenReturn(new PageImpl<>(List.of(existingProduct)));
-
-    Page<ProductResponse> result = productService.findAll("   ", null, null, PageRequest.of(0, 10));
-
-    assertThat(result.getContent()).hasSize(1);
-  }
-
-  // Verifica que un filtro de búsqueda de texto delega correctamente a la specification.
-  @Test
-  @DisplayName("findAll - with search filter delegates to specification")
-  void findAll_withSearch_appliesSpec() {
+  // Verifica que findAll delega en la specification y devuelve la página sea cual sea el filtro
+  // de búsqueda: ausente, en blanco (que se trata como ausencia) o con texto.
+  @ParameterizedTest(name = "findAll - search={0}")
+  @NullSource
+  @ValueSource(strings = {"   ", "laptop"})
+  void findAll_anySearchFilter_returnsPage(String search) {
     when(productRepository.findAll(any(Specification.class), any(PageRequest.class)))
         .thenReturn(new PageImpl<>(List.of(existingProduct)));
 
     Page<ProductResponse> result =
-        productService.findAll("laptop", null, null, PageRequest.of(0, 10));
+        productService.findAll(search, null, null, PageRequest.of(0, 10));
 
     assertThat(result.getContent()).hasSize(1);
   }
@@ -315,10 +296,10 @@ class ProductServiceImplExtendedTest {
   void patch_missingProduct_throwsNotFound() {
     when(productRepository.findById(99L)).thenReturn(Optional.empty());
 
-    assertThatThrownBy(
-            () ->
-                productService.patch(
-                    99L, new ProductPatchRequest(null, null, null, null, null, null, null, null)))
+    ProductPatchRequest patch =
+        new ProductPatchRequest(null, null, null, null, null, null, null, null);
+
+    assertThatThrownBy(() -> productService.patch(99L, patch))
         .isInstanceOf(ResourceNotFoundException.class)
         .hasMessageContaining("99");
   }

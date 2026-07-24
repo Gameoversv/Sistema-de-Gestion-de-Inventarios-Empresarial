@@ -54,10 +54,7 @@ public class ReportServiceImpl implements ReportService {
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     Map<String, List<Product>> grouped =
-        active.stream()
-            .collect(
-                Collectors.groupingBy(
-                    p -> p.getCategory() != null ? p.getCategory().getName() : "Sin categoría"));
+        active.stream().collect(Collectors.groupingBy(ReportServiceImpl::categoryNameOf));
 
     List<CategoryStockDto> byCategory =
         grouped.entrySet().stream()
@@ -167,6 +164,16 @@ public class ReportServiceImpl implements ReportService {
     return new RecentMovementsResponse(effectiveLimit, dtos.size(), dtos);
   }
 
+  /**
+   * Nombre de categoría para los informes, con la etiqueta que usan los productos sin categoría.
+   *
+   * <p>La ternaria estaba repetida en tres sitios, con el literal dentro de cada una. Extraerla
+   * evita que un cambio de etiqueta deje dos informes diciendo una cosa y el tercero otra.
+   */
+  private static String categoryNameOf(Product p) {
+    return p.getCategory() != null ? p.getCategory().getName() : "Sin categoría";
+  }
+
   private CategoryStockDto toCategoryDto(String name, List<Product> products) {
     long totalStock = products.stream().mapToLong(Product::getStock).sum();
     BigDecimal totalValue =
@@ -184,19 +191,13 @@ public class ReportServiceImpl implements ReportService {
         p.getStock(),
         p.getMinimumStock(),
         p.getMinimumStock() - p.getStock(),
-        p.getCategory() != null ? p.getCategory().getName() : "Sin categoría");
+        categoryNameOf(p));
   }
 
   private TopProductDto toTopProductDto(Product p) {
     BigDecimal value = p.getPrice().multiply(BigDecimal.valueOf(p.getStock()));
     return new TopProductDto(
-        p.getId(),
-        p.getSku(),
-        p.getName(),
-        p.getStock(),
-        p.getPrice(),
-        value,
-        p.getCategory() != null ? p.getCategory().getName() : "Sin categoría");
+        p.getId(), p.getSku(), p.getName(), p.getStock(), p.getPrice(), value, categoryNameOf(p));
   }
 
   private RecentMovementDto toRecentMovementDto(StockMovement m) {

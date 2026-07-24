@@ -29,9 +29,21 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class ProductServiceImpl implements ProductService {
 
+  private static final String NOT_FOUND_BY_SKU = "Product not found by SKU: ";
+
   private final ProductRepository productRepository;
   private final CategoryRepository categoryRepository;
   private final ProductMapper productMapper;
+
+  /**
+   * Excepción de producto inexistente por id.
+   *
+   * <p>El mismo mensaje estaba escrito en cuatro sitios. Concentrarlo aquí evita que una búsqueda
+   * futura por ese texto —en logs o en tests— encuentre solo algunas de las rutas que lo emiten.
+   */
+  private static ResourceNotFoundException productNotFound(Long id) {
+    return new ResourceNotFoundException("Product not found: " + id);
+  }
 
   @Override
   @Transactional
@@ -51,9 +63,7 @@ public class ProductServiceImpl implements ProductService {
   @Override
   public ProductResponse findById(Long id) {
     return productMapper.toResponse(
-        productRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id)));
+        productRepository.findById(id).orElseThrow(() -> productNotFound(id)));
   }
 
   @Override
@@ -61,7 +71,7 @@ public class ProductServiceImpl implements ProductService {
     return productMapper.toResponse(
         productRepository
             .findBySku(sku)
-            .orElseThrow(() -> new ResourceNotFoundException("Product not found by SKU: " + sku)));
+            .orElseThrow(() -> new ResourceNotFoundException(NOT_FOUND_BY_SKU + sku)));
   }
 
   @Override
@@ -83,10 +93,7 @@ public class ProductServiceImpl implements ProductService {
   @Override
   @Transactional
   public ProductResponse update(Long id, ProductUpdateRequest request) {
-    Product existing =
-        productRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
+    Product existing = productRepository.findById(id).orElseThrow(() -> productNotFound(id));
     if (!existing.getSku().equals(request.sku()) && productRepository.existsBySku(request.sku())) {
       throw new ConflictException("SKU already exists: " + request.sku());
     }
@@ -99,10 +106,7 @@ public class ProductServiceImpl implements ProductService {
   @Override
   @Transactional
   public ProductResponse patch(Long id, ProductPatchRequest request) {
-    Product existing =
-        productRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
+    Product existing = productRepository.findById(id).orElseThrow(() -> productNotFound(id));
     if (request.sku() != null
         && !request.sku().equals(existing.getSku())
         && productRepository.existsBySku(request.sku())) {
@@ -118,10 +122,7 @@ public class ProductServiceImpl implements ProductService {
   @Override
   @Transactional
   public void delete(Long id) {
-    Product product =
-        productRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
+    Product product = productRepository.findById(id).orElseThrow(() -> productNotFound(id));
     product.setActive(Boolean.FALSE);
     productRepository.save(product);
   }

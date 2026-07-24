@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -100,7 +101,7 @@ class StockServiceConcurrencyIT {
   @Test
   @DisplayName(
       "10 concurrent OUT(1) — stock never goes negative, all successful or BusinessException")
-  void concurrentOutRequests_stockNeverNegative() throws InterruptedException {
+  void concurrentOutRequests_stockNeverNegative() throws InterruptedException, ExecutionException {
     int threadCount = 10;
     CountDownLatch startLatch = new CountDownLatch(1);
     CountDownLatch doneLatch = new CountDownLatch(threadCount);
@@ -135,6 +136,12 @@ class StockServiceConcurrencyIT {
     executor.shutdown();
 
     assertThat(completed).as("All threads completed within timeout").isTrue();
+
+    // Sin esto, una excepción distinta de BusinessException moría dentro de su Future y el test
+    // fallaba luego en el invariante 3, con un descuadre de contadores en vez de la causa.
+    for (Future<?> future : futures) {
+      future.get();
+    }
 
     int finalStock = stockService.currentStock(productId);
 

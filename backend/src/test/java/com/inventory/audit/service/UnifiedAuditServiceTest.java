@@ -47,7 +47,8 @@ class UnifiedAuditServiceTest {
   @Test
   void findAll_noRevisions_returnsEmptyList() {
     try (MockedStatic<AuditReaderFactory> factory = mockStatic(AuditReaderFactory.class)) {
-      Fixture fixture = new Fixture(factory);
+      // El constructor arma el mock estático; no hace falta quedarse la referencia.
+      new Fixture(factory);
 
       List<UnifiedAuditEntry> result = unifiedAuditService.findAll();
 
