@@ -3,6 +3,12 @@
 # - Creates custom client scopes
 # - Assigns scopes to clients as optional
 # - Creates test users with roles
+#
+# Idempotente (P-2b): comprueba la existencia de cada scope y usuario ANTES de
+# crearlo. Sin esto, un segundo arranque sobre un realm ya inicializado lanzaba
+# POST sobre recursos existentes; Keycloak respondia 409 y registraba la
+# violacion de la restriccion uk_cli_scope en su panel de eventos. Reejecutar
+# ahora no crea ruido: lo que ya existe se salta.
 set -e
 
 apk add --no-cache curl jq > /dev/null 2>&1
@@ -31,11 +37,19 @@ kc_put()  { curl -sf -X PUT  "$KC/admin/realms/$REALM$1" -H "Authorization: Bear
 # ── Custom client scopes ────────────────────────────────────────────────────
 echo "==> Creating custom client scopes..."
 
+# Nombres de los scopes que ya existen, leidos una sola vez. Se consulta contra
+# esta lista antes de crear, para no lanzar un POST que chocaria con uk_cli_scope.
+EXISTING_SCOPES=$(kc_get "/client-scopes" | jq -r '.[].name')
+
 create_scope() {
   local name="$1" desc="$2"
+  if echo "$EXISTING_SCOPES" | grep -Fxq "$name"; then
+    echo "  scope '$name' already exists — skipping"
+    return
+  fi
   kc_post "/client-scopes" \
     "{\"name\":\"$name\",\"description\":\"$desc\",\"protocol\":\"openid-connect\",\"type\":\"none\",\"attributes\":{\"include.in.token.scope\":\"true\",\"display.on.consent.screen\":\"true\",\"consent.screen.text\":\"$desc\"}}" \
-    2>/dev/null || echo "  scope '$name' already exists — skipping"
+    > /dev/null && echo "  ✓ scope '$name' created"
 }
 
 create_scope "product:view"   "View product catalog"
@@ -73,12 +87,16 @@ echo "==> Creating test users..."
 create_user() {
   local username="$1" password="$2" email="$3" first="$4" role="$5"
 
-  # Create (ignore conflict if already exists)
-  kc_post "/users" \
-    "{\"username\":\"$username\",\"email\":\"$email\",\"firstName\":\"$first\",\"lastName\":\"Test\",\"enabled\":true,\"emailVerified\":true}" \
-    2>/dev/null || true
-
+  # Crear solo si no existe: un POST sobre un usuario ya presente devuelve 409 y
+  # ensucia el log. La contrasena y el rol se re-aplican igual mas abajo, asi
+  # que un usuario preexistente queda con el estado esperado sin recrearlo.
   USER_ID=$(kc_get "/users?username=$username&exact=true" | jq -r '.[0].id // empty')
+  if [ -z "$USER_ID" ]; then
+    kc_post "/users" \
+      "{\"username\":\"$username\",\"email\":\"$email\",\"firstName\":\"$first\",\"lastName\":\"Test\",\"enabled\":true,\"emailVerified\":true}" \
+      > /dev/null || true
+    USER_ID=$(kc_get "/users?username=$username&exact=true" | jq -r '.[0].id // empty')
+  fi
   if [ -z "$USER_ID" ]; then
     echo "  ERROR: could not resolve user '$username'"
     return 1
