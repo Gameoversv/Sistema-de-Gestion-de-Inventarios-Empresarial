@@ -19,14 +19,14 @@ El enunciado exige **ocho capas** de testing. Esta guía dice, capa por capa, qu
 | 2. Integration | **Cumple** | Testcontainers con base real **y Keycloak real** (`KeycloakAuthIT`, TEST-1) |
 | 3. API / Contract | **Cumple** | Contract test contra `openapi.yaml` (TEST-2) + colección Postman con Newman en CI (TEST-3, 39 aserciones) |
 | 4. E2E | **Cumple** | 3 specs (12 casos) de Playwright, **12/12 en CI** por `e2e.yml` (C-1/TEST-7); faltan snapshots y responsive como mejora |
-| 5. Security | Parcial | ZAP autenticado con umbral; faltan Dependency Check y CORS |
-| 6. Performance | **Cero** | sin una sola prueba de carga |
+| 5. Security | **Cumple** | ZAP autenticado (TEST-10), enforcement CORS (TEST-11), npm audit + OWASP Dependency-Check (T-5) |
+| 6. Performance | **Cumple** | k6 en CI (T-3): load + stress, `p(95)<500ms` |
 | 7. Data | Parcial | migraciones y seeds; faltan duplicados y constraints |
 | 8. Exploratory | **Cumple** | 3 charters, 15 bugs con reproducción |
 
 **307 `@Test` en 33 ficheros** (más los 4 de `KeycloakAuthIT`). Cobertura del backend: **85,0 % de ramas, 92,7 % de líneas** (JaCoCo en CI, umbral 80 %). Frontend: **9,3 %** de líneas — el hueco de calidad conocido.
 
-**Cinco capas completas** (Unit, Integration, API/Contract, E2E, Exploratory), dos parciales (Security, Data) y una a cero (Performance). Para el 100% quedan Performance (T-3), y los cierres puntuales de Security (T-5, TEST-11) y Data (DATA-1/2).
+**Siete capas completas** — solo **Data** queda parcial (faltan los tests de constraints y datos duplicados, DATA-1/2). Con eso, las 8 capas del enunciado están cubiertas y ejecutándose en CI.
 
 ---
 
@@ -122,33 +122,36 @@ En producción, ambos habrían dejado la app inservible: el primero desde el arr
 
 ---
 
-## 5. Security Testing — **Parcial**
+## 5. Security Testing — **Cumple**
 
 > *"Escaneo OWASP ZAP, Validación JWT, Validación de permisos, Validación de CORS, OWASP Dependency Check / Snyk, Validación de autenticación"*
 
-**Lo que cumple:**
-
 | Control | Cómo | Resultado |
 |---|---|---|
-| Escaneo ZAP | `zap-api-scan` en `staging.yml`, **autenticado** y sembrado con el OpenAPI, con umbral (sin `-I`) | Local: 29 URLs, 118 reglas PASS, **0 WARN** (TEST-10) |
+| Escaneo ZAP | `zap-api-scan` en `staging.yml`, **autenticado** y sembrado con el OpenAPI, con umbral (sin `-I`) | 29 URLs, 118 reglas PASS, **0 WARN** (TEST-10) |
 | Validación JWT | firma, emisor y expiración | `SecurityIntegrationTest`, `KeycloakJwtConverterTest` |
-| Validación de permisos | scope exigido por endpoint, no rol | `SecurityIntegrationTest` |
+| Validación de permisos | scope exigido por endpoint, no rol | `SecurityIntegrationTest`; y a nivel IT contra Keycloak real (`KeycloakAuthIT`) |
 | Validación de autenticación | 401 sin token en toda ruta de negocio | `SecurityIntegrationTest` |
+| **CORS (TEST-11)** | enforcement real del filtro: preflight de origen permitido recibe `Access-Control-Allow-Origin`, uno no permitido no | `CorsHttpTest` (runtime) + `CorsProfilesTest` (config por perfil) |
+| **Dependencias (T-5)** | `dependency-scan.yml`: npm audit (frontend + e2e) y OWASP Dependency-Check (backend, falla en CVSS≥8) | El audit destapó CVEs reales; los que tenían fix se corrigieron |
 
-**Qué falta:**
-- **T-5** — OWASP Dependency Check y `npm audit`/Snyk en CI. Ningún escaneo de CVEs de dependencias hoy.
-- **TEST-11** — test de CORS de extremo a extremo por perfil (hoy solo `CorsProfilesTest` en unitario).
-- **TEST-10b** — el token del escaneo caduca a los 300 s; si el escaneo activo dura más, el resto de la API se recorre sin autenticar y aprueba por no encontrar nada. Hay un paso que lo detecta y falla; falta un cliente de Keycloak dedicado con `accessTokenLifespan` mayor (issue #46).
+El escaneo de dependencias no fue un trámite: `npm audit` encontró CVEs altas reales (brace-expansion DoS, js-yaml, postcss path traversal), que se corrigieron actualizando el lockfile. Las que quedan son de react-router 7.x sin fix publicado (open redirect en `<Link>` y su modo RSC, que la app no usa); se gatea en critical y se documenta.
+
+**Qué queda (mejora):** **TEST-10b** — el token del escaneo ZAP caduca a los 300 s; si el escaneo activo dura más, el resto de la API se recorre sin autenticar. Hay un paso que lo detecta y falla; falta un cliente de Keycloak dedicado con `accessTokenLifespan` mayor (issue #46).
 
 ---
 
-## 6. Performance Testing — **Cero**
+## 6. Performance Testing — **Cumple**
 
 > *"Stress testing, Load testing, Concurrent users, Tiempo de respuesta y Throughput"* · JMeter y/o k6.
 
-**No hay ni una sola prueba de carga.** Es la única de las ocho capas literalmente a cero (**T-3**).
+`scripts/k6/load-test.js` ejercita **load, stress y usuarios concurrentes** contra el sistema desplegado en `e2e.yml`, con umbrales que hacen fallar el job:
 
-La instrumentación para medirla **sí existe**: `application.yml` tiene los buckets SLO (`50ms, 100ms, 200ms, 500ms, 1s, 2s`) y el histograma de percentiles activo, y `StockServiceConcurrencyIT` cubre corrección bajo concurrencia — pero corrección no es rendimiento. El plan define k6 con `p(95) < 500ms`, stress, load y usuarios concurrentes. Hasta que exista, RNF-08 y RNF-10 quedan implementados pero **sin evidencia de comportamiento bajo carga**.
+- **Tiempo de respuesta:** `http_req_duration` con `p(95)<500ms`.
+- **Throughput / concurrencia:** perfil por etapas — rampa a 10 VUs, 30 s sostenidos, pico de **25 VUs concurrentes** (stress), ramp-down.
+- **Fiabilidad bajo carga:** `<1%` de peticiones fallidas y `>99%` de checks en 200.
+
+`setup()` obtiene un token compartido; cada VU recorre 7 endpoints de lectura (productos con paginación y búsqueda, categorías, reportes, stock). El resumen JSON se sube como artefacto. La instrumentación del backend (buckets SLO `50ms…2s`, histograma de percentiles) da las series que respaldan la medición.
 
 ---
 
@@ -194,12 +197,15 @@ Los charters no son decorativos: cada uno destapó un defecto real que las prueb
 | Contract (OpenAPI) | `cd backend && ./mvnw -Dtest=OpenApiContractTest test` | `ci.yml` → job `unit-tests` (TEST-2) |
 | E2E | `cd e2e && npx playwright test` | `e2e.yml` (C-1/TEST-7), contra el stack desplegado |
 | API (Newman) | `newman run docs/postman/...json` | `e2e.yml` (TEST-3), contra el stack desplegado |
+| Performance (k6) | `k6 run scripts/k6/load-test.js` | `e2e.yml` (T-3), contra el stack desplegado |
+| Dependency scan | `cd frontend && npm audit` | `dependency-scan.yml` (T-5): npm audit + OWASP DC |
+| CORS (TEST-11) | `cd backend && ./mvnw -Dtest=CorsHttpTest test` | `ci.yml` → job `unit-tests` |
 | API + Security contra el desplegado | — | `staging.yml` tras el deploy |
 | Análisis estático | — | SonarCloud en cada run |
 
 > Los IT **no arrancan sobre Docker Desktop en Windows** (C-4). En local, en Windows, `./mvnw test` (solo unit) sí corre; para los IT hace falta un entorno Linux o el propio CI.
 
-**Reportes generados:** surefire (unit), failsafe (IT), JaCoCo (cobertura), cobertura de frontend, informe de ZAP, informe de Playwright y el JUnit de Newman, todos como artefactos de CI. Falta el de k6, que depende de T-3.
+**Reportes generados:** surefire (unit), failsafe (IT), JaCoCo (cobertura), cobertura de frontend, informe de ZAP, informe de Playwright, el JUnit de Newman, el resumen JSON de k6 y el informe de OWASP Dependency-Check, todos como artefactos de CI.
 
 ---
 
@@ -229,12 +235,10 @@ Escalada por primer-rol-gana (#50) y fallback de scopes (#51), el check de CI qu
 
 ## Qué falta para cerrar la pirámide
 
-Cinco de las ocho capas cumplen. Para el 100% quedan tres:
+**Siete de las ocho capas cumplen.** Solo queda una para el 100%:
 
-1. **T-3** — Performance. Única capa a cero, la palanca grande.
-2. **T-5, TEST-11** — cierres de Security (Dependency Check/Snyk y CORS por perfil).
-3. **DATA-1/2** — Data: constraints, seeds y datos duplicados.
+1. **DATA-1/2** — Data: tests de constraints y **datos duplicados** (el enunciado lo nombra). Migraciones y seeds ya cumplen; falta el caso que inserta un duplicado y comprueba el rechazo.
 
-Mejoras dentro de capas que ya cumplen: TEST-8 (snapshots), TEST-9 (responsive) y D-4 (accesibilidad) en E2E.
+Mejoras dentro de capas que ya cumplen: TEST-8 (snapshots), TEST-9 (responsive) y D-4 (accesibilidad) en E2E; TEST-10b en Security.
 
 Trazabilidad completa de cada identificador en el [plan de ejecución](../PLAN_EJECUCION.md), §4.3.

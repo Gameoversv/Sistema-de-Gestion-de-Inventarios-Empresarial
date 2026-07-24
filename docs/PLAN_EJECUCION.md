@@ -15,7 +15,7 @@ El enunciado define **ocho** áreas. La versión anterior omitía la última.
 | Área | Peso | Inicial | Actual | Alcanzable |
 |---|---|---|---|---|
 | Funcionalidad | 15% | ~85% | ~97% | ~98% |
-| Testing | 20% | ~60% | ~90% | ~92% |
+| Testing | 20% | ~60% | ~95% | ~95% |
 | Seguridad | 10% | ~70% | ~90% | ~90% |
 | Observabilidad | 15% | ~30% | ~90% | ~90% |
 | CI/CD | 15% | ~60% | ~85% | ~90% |
@@ -126,8 +126,8 @@ Ambos corregidos en el PR de C-1. **Consecuencia de método:** los E2E no son ve
 | 2. Integration | Testcontainers: **BD real, Keycloak**, integraciones | **cumple** — BD (y desde ENV-1 contra la base desplegada) y **Keycloak real con `KeycloakAuthIT`** (TEST-1), verificado en CI |
 | 3. API / Contract | Endpoints, contratos OpenAPI, status codes, payloads | **cumple** — `OpenApiContractTest` valida las respuestas contra `openapi.yaml` (TEST-2) y la colección Postman corre con Newman en CI (TEST-3), 39 aserciones en verde |
 | 4. E2E | Snapshots, flujos, navegación, **roles**, seguridad, **responsive** | **cumple** — `e2e.yml` (C-1/TEST-7) corre los 3 specs (12 casos) contra el stack desplegado, **12/12 en verde**; faltan snapshots (TEST-8) y responsive (TEST-9) como mejora |
-| 5. Security | ZAP, JWT, permisos, CORS, Dependency Check/Snyk, autenticación | parcial — **ZAP autenticado** sembrado con el OpenAPI y con umbral (TEST-10); faltan T-5 y TEST-11 |
-| 6. Performance | Stress, load, usuarios concurrentes, tiempo de respuesta, throughput | **cero** (T-3) |
+| 5. Security | ZAP, JWT, permisos, CORS, Dependency Check/Snyk, autenticación | **cumple** — ZAP autenticado con umbral (TEST-10), `CorsHttpTest` de enforcement CORS (TEST-11), y `dependency-scan.yml` con npm audit + OWASP Dependency-Check (T-5) |
+| 6. Performance | Stress, load, usuarios concurrentes, tiempo de respuesta, throughput | **cumple** — k6 en `e2e.yml` (T-3): load + stress, umbral `p(95)<500ms` verde en CI |
 | 7. Data | Migraciones, integridad, **duplicados**, constraints, seeds | parcial (DATA-1/2, E-1) |
 | 8. Exploratory | Charters, bugs encontrados, escenarios | **cumple** — 3 charters y 15 bugs como issues, más los informes en `docs/testing/reportes/` (T-6) |
 
@@ -230,11 +230,11 @@ El área queda cerrada: el pendiente que arrastraba (P-2) está hecho.
 | **TEST-9** | Responsive: 375 / 768 / 1440 px | 45 min | 4 |
 | **TEST-8** | `toHaveScreenshot()` en dashboard, productos y stock | 1 h | 4 |
 | ~~**TEST-1**~~ | ~~`dasniko/testcontainers-keycloak` + IT con token real — **obligatorio**~~ — **hecho y verificado en CI**. `KeycloakAuthIT` levanta Keycloak y Postgres reales, obtiene un token por password grant y ejercita la cadena entera (JWKS, firma, emisor, intersección de scopes, `@PreAuthorize`); 4 tests en verde en el job `integration-test`, incluida la reverificación de G-8 a nivel IT. Afinado en 5 iteraciones sobre CI (imagen del contenedor, required actions, User Profile, `realm_access`), ya que C-4 impide correrlo en local | 3 h | 2 |
-| **T-3** | k6: load, stress, usuarios concurrentes, `p(95)<500ms` | 3 h | 6 |
-| **T-5** | OWASP Dependency Check y `npm audit`/Snyk en CI | 45 min | 5 |
+| ~~**T-3**~~ | ~~k6: load, stress, usuarios concurrentes, `p(95)<500ms`~~ — **hecho, verde en CI**: `scripts/k6/load-test.js` con perfil load+stress (pico de 25 VUs) sobre 7 endpoints de lectura; umbrales `p(95)<500ms`, <1% error, >99% checks. Corre en `e2e.yml` contra el stack desplegado | 3 h | 6 |
+| ~~**T-5**~~ | ~~OWASP Dependency Check y `npm audit`/Snyk en CI~~ — **hecho**: `dependency-scan.yml` con npm audit (frontend + e2e) y OWASP Dependency-Check (backend, falla en CVSS≥8). El audit destapó CVEs reales; los que tenían fix (brace-expansion, js-yaml, postcss) se corrigieron, y se gatea en critical por los de react-router 7.x sin fix publicado | 45 min | 5 |
 | **TEST-2** | ~~RestAssured para contrato OpenAPI~~ — **hecho**: `OpenApiContractTest` valida las respuestas contra `docs/api/openapi.yaml` con swagger-request-validator sobre MockMvc (job rápido, sin stack). 4 tests en verde en local | 1 h | 3 |
 | ~~**TEST-3**~~ | ~~Newman en CI~~ — **hecho, 39 aserciones en verde**. `e2e.yml` corre la colección Postman contra el stack desplegado. Ejecutarla por primera vez destapó **7 bugs de la colección** (nunca se había probado): `/api/v1` inexistente, `/stock` sin prefijo, IDs hardcodeados que borraban datos sembrados, soft-delete que esperaba 200+body en vez de 204, "Electronics" ya sembrada (409), SKU de prueba inexistente y una aserción de Content-Type mal escrita | 1 h | 3 |
-| **TEST-11** | Test de CORS por perfil | 30 min | 5 |
+| ~~**TEST-11**~~ | ~~Test de CORS por perfil~~ — **hecho**: `CorsHttpTest` ejercita el filtro CORS de verdad (preflight de origen permitido recibe `Access-Control-Allow-Origin`, uno no permitido no), complementando a `CorsProfilesTest` que solo mira la config. Verde en local | 30 min | 5 |
 | **DATA-1/2** | Constraints, seeds y **datos duplicados** | 1,5 h | 7 |
 
 > **C-1 + TEST-7 es la mejor palanca disponible.** El enunciado exige E2E con roles, seguridad y responsive, ejecutados *contra el sistema desplegado*. Además es lo único que confirmaría SEC-1.
