@@ -17,7 +17,7 @@ El enunciado exige **ocho capas** de testing. Esta guía dice, capa por capa, qu
 |---|---|---|
 | 1. Unit | **Cumple** | 289 tests unitarios |
 | 2. Integration | **Cumple** | Testcontainers con base real **y Keycloak real** (`KeycloakAuthIT`, TEST-1) |
-| 3. API / Contract | Parcial | API tests en `staging.yml`; Postman y RestAssured sin CI |
+| 3. API / Contract | **Cumple** | Contract test contra `openapi.yaml` (TEST-2) + colección Postman con Newman en CI (TEST-3, 39 aserciones) |
 | 4. E2E | **Cumple** | 3 specs (12 casos) de Playwright, **12/12 en CI** por `e2e.yml` (C-1/TEST-7); faltan snapshots y responsive como mejora |
 | 5. Security | Parcial | ZAP autenticado con umbral; faltan Dependency Check y CORS |
 | 6. Performance | **Cero** | sin una sola prueba de carga |
@@ -26,7 +26,7 @@ El enunciado exige **ocho capas** de testing. Esta guía dice, capa por capa, qu
 
 **307 `@Test` en 33 ficheros** (más los 4 de `KeycloakAuthIT`). Cobertura del backend: **85,0 % de ramas, 92,7 % de líneas** (JaCoCo en CI, umbral 80 %). Frontend: **9,3 %** de líneas — el hueco de calidad conocido.
 
-Dos capas completas, cinco parciales, una a cero. Los parciales se concentran en el pipeline: pruebas escritas que el CI todavía no ejecuta.
+**Cinco capas completas** (Unit, Integration, API/Contract, E2E, Exploratory), dos parciales (Security, Data) y una a cero (Performance). Para el 100% quedan Performance (T-3), y los cierres puntuales de Security (T-5, TEST-11) y Data (DATA-1/2).
 
 ---
 
@@ -80,17 +80,17 @@ Dos capas completas, cinco parciales, una a cero. Los parciales se concentran en
 
 ---
 
-## 3. API / Contract Testing — **Parcial**
+## 3. API / Contract Testing — **Cumple**
 
 > *"Validación de endpoints, contratos OpenAPI, status codes y payloads"*
 
-**Lo que sí corre:** `staging.yml` ejecuta API tests **contra el sistema desplegado**, incluidas 5 comprobaciones del ciclo de vida del token contra un Keycloak vivo (`grant_type=refresh_token`, y el negativo: refresh inválido → 400). Ver [informe SEC-2/S-2](reportes/SEC-2-S-2-ciclo-de-vida-del-token.md).
+Tres frentes, los tres en CI:
 
-Los controladores están cubiertos en unitario con MockMvc, verificando status codes y payloads: `ProductControllerTest`, `StockControllerTest`, `ReportControllerTest`, `AuditControllerTest`.
+- **Contract testing (TEST-2).** `OpenApiContractTest` valida que las respuestas reales cumplen el contrato de `docs/api/openapi.yaml` con swagger-request-validator sobre MockMvc. Si un controlador deja de encajar con el esquema (campo renombrado, tipo cambiado, status no declarado), falla. Corre en el job rápido, sin stack.
+- **Newman (TEST-3).** La colección Postman de `docs/postman/` corre con Newman contra el stack desplegado en `e2e.yml`, con token de admin y de viewer: **39 aserciones** sobre CRUD de productos y categorías, paginación, búsqueda, y los negativos 400/401/403/404/409.
+- **Contra el desplegado.** `staging.yml` ejecuta además las 5 comprobaciones del ciclo de vida del token contra un Keycloak vivo (`grant_type=refresh_token`; ver [informe SEC-2/S-2](reportes/SEC-2-S-2-ciclo-de-vida-del-token.md)). Los controladores tienen cobertura unitaria con MockMvc.
 
-**Qué falta:**
-- **TEST-3** — la colección Postman de `docs/postman/` no corre en CI con Newman.
-- **TEST-2** — RestAssured para validar el contrato OpenAPI generado (`docs/api/openapi.yaml`) contra la implementación.
+Ejecutar la colección por primera vez destapó **7 bugs propios** (nunca se había probado): apuntaba a `/api/v1` inexistente, `/stock` sin prefijo, IDs hardcodeados que borraban datos sembrados, un soft-delete que esperaba 200+body en vez de 204, un nombre de categoría ya sembrado, un SKU de prueba inexistente y una aserción de Content-Type mal escrita.
 
 ---
 
@@ -191,13 +191,15 @@ Los charters no son decorativos: cada uno destapó un defecto real que las prueb
 | Unit + cobertura | `cd backend && ./mvnw test` | `ci.yml` → job `unit-tests` |
 | Integración (Testcontainers) | `cd backend && ./mvnw verify` | `ci.yml` → job `integration-test` (runner Linux) |
 | Frontend unit + cobertura | `cd frontend && npm test` | `ci.yml` → job `frontend` |
+| Contract (OpenAPI) | `cd backend && ./mvnw -Dtest=OpenApiContractTest test` | `ci.yml` → job `unit-tests` (TEST-2) |
 | E2E | `cd e2e && npx playwright test` | `e2e.yml` (C-1/TEST-7), contra el stack desplegado |
+| API (Newman) | `newman run docs/postman/...json` | `e2e.yml` (TEST-3), contra el stack desplegado |
 | API + Security contra el desplegado | — | `staging.yml` tras el deploy |
 | Análisis estático | — | SonarCloud en cada run |
 
 > Los IT **no arrancan sobre Docker Desktop en Windows** (C-4). En local, en Windows, `./mvnw test` (solo unit) sí corre; para los IT hace falta un entorno Linux o el propio CI.
 
-**Reportes generados:** surefire (unit), failsafe (IT), JaCoCo (cobertura), cobertura de frontend e informe de ZAP, todos como artefactos de CI. Faltan los de k6 y Newman, que dependen de T-3 y TEST-3.
+**Reportes generados:** surefire (unit), failsafe (IT), JaCoCo (cobertura), cobertura de frontend, informe de ZAP, informe de Playwright y el JUnit de Newman, todos como artefactos de CI. Falta el de k6, que depende de T-3.
 
 ---
 
@@ -227,10 +229,12 @@ Escalada por primer-rol-gana (#50) y fallback de scopes (#51), el check de CI qu
 
 ## Qué falta para cerrar la pirámide
 
-Ordenado por lo que el enunciado exige con más fuerza. Los dos obligatorios que faltaban —**TEST-1** (Testcontainers con Keycloak) y **C-1/TEST-7** (E2E en CI)— ya están cerrados y verificados.
+Cinco de las ocho capas cumplen. Para el 100% quedan tres:
 
-1. **T-3** — Performance. Única capa a cero.
-2. **T-5, DATA-1/2, TEST-11** — cierres puntuales de Security y Data.
-3. **TEST-8, TEST-9, D-4** — snapshots, responsive y accesibilidad, mejoras dentro de E2E.
+1. **T-3** — Performance. Única capa a cero, la palanca grande.
+2. **T-5, TEST-11** — cierres de Security (Dependency Check/Snyk y CORS por perfil).
+3. **DATA-1/2** — Data: constraints, seeds y datos duplicados.
+
+Mejoras dentro de capas que ya cumplen: TEST-8 (snapshots), TEST-9 (responsive) y D-4 (accesibilidad) en E2E.
 
 Trazabilidad completa de cada identificador en el [plan de ejecución](../PLAN_EJECUCION.md), §4.3.

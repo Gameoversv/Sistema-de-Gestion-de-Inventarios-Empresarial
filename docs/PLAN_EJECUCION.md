@@ -15,7 +15,7 @@ El enunciado define **ocho** áreas. La versión anterior omitía la última.
 | Área | Peso | Inicial | Actual | Alcanzable |
 |---|---|---|---|---|
 | Funcionalidad | 15% | ~85% | ~97% | ~98% |
-| Testing | 20% | ~60% | ~87% | ~90% |
+| Testing | 20% | ~60% | ~90% | ~92% |
 | Seguridad | 10% | ~70% | ~90% | ~90% |
 | Observabilidad | 15% | ~30% | ~90% | ~90% |
 | CI/CD | 15% | ~60% | ~85% | ~90% |
@@ -124,7 +124,7 @@ Ambos corregidos en el PR de C-1. **Consecuencia de método:** los E2E no son ve
 |---|---|---|
 | 1. Unit | Servicios, validaciones, lógica | cumple — **307 `@Test`** en 33 ficheros. La cifra de 284 que traía este plan es la del pipeline de Jenkins; SEC-2, Q-5 y F-2/D-1/D-2 añadieron tests después |
 | 2. Integration | Testcontainers: **BD real, Keycloak**, integraciones | **cumple** — BD (y desde ENV-1 contra la base desplegada) y **Keycloak real con `KeycloakAuthIT`** (TEST-1), verificado en CI |
-| 3. API / Contract | Endpoints, contratos OpenAPI, status codes, payloads | **TEST-2 hecho** (contract test contra `openapi.yaml`, verde en local); **TEST-3** (Newman) en CI, pendiente del veredicto |
+| 3. API / Contract | Endpoints, contratos OpenAPI, status codes, payloads | **cumple** — `OpenApiContractTest` valida las respuestas contra `openapi.yaml` (TEST-2) y la colección Postman corre con Newman en CI (TEST-3), 39 aserciones en verde |
 | 4. E2E | Snapshots, flujos, navegación, **roles**, seguridad, **responsive** | **cumple** — `e2e.yml` (C-1/TEST-7) corre los 3 specs (12 casos) contra el stack desplegado, **12/12 en verde**; faltan snapshots (TEST-8) y responsive (TEST-9) como mejora |
 | 5. Security | ZAP, JWT, permisos, CORS, Dependency Check/Snyk, autenticación | parcial — **ZAP autenticado** sembrado con el OpenAPI y con umbral (TEST-10); faltan T-5 y TEST-11 |
 | 6. Performance | Stress, load, usuarios concurrentes, tiempo de respuesta, throughput | **cero** (T-3) |
@@ -233,7 +233,7 @@ El área queda cerrada: el pendiente que arrastraba (P-2) está hecho.
 | **T-3** | k6: load, stress, usuarios concurrentes, `p(95)<500ms` | 3 h | 6 |
 | **T-5** | OWASP Dependency Check y `npm audit`/Snyk en CI | 45 min | 5 |
 | **TEST-2** | ~~RestAssured para contrato OpenAPI~~ — **hecho**: `OpenApiContractTest` valida las respuestas contra `docs/api/openapi.yaml` con swagger-request-validator sobre MockMvc (job rápido, sin stack). 4 tests en verde en local | 1 h | 3 |
-| **TEST-3** | Newman en CI — **implementado, pendiente del veredicto**: `e2e.yml` corre la colección Postman contra el stack desplegado. Al arreglarla salieron **varios bugs**: apuntaba a `/api/v1` (inexistente), `/stock` sin prefijo, IDs hardcodeados que borraban datos sembrados y un soft-delete que esperaba 200+body cuando es 204 | 1 h | 3 |
+| ~~**TEST-3**~~ | ~~Newman en CI~~ — **hecho, 39 aserciones en verde**. `e2e.yml` corre la colección Postman contra el stack desplegado. Ejecutarla por primera vez destapó **7 bugs de la colección** (nunca se había probado): `/api/v1` inexistente, `/stock` sin prefijo, IDs hardcodeados que borraban datos sembrados, soft-delete que esperaba 200+body en vez de 204, "Electronics" ya sembrada (409), SKU de prueba inexistente y una aserción de Content-Type mal escrita | 1 h | 3 |
 | **TEST-11** | Test de CORS por perfil | 30 min | 5 |
 | **DATA-1/2** | Constraints, seeds y **datos duplicados** | 1,5 h | 7 |
 
