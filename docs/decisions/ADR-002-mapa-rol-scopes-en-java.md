@@ -1,9 +1,15 @@
 # ADR-002 — El mapa rol→scopes vive en el backend, no en Keycloak
 
-- **Estado:** Aceptado (medida de contención; ver [G-8](../PLAN_EJECUCION.md) para la corrección de raíz pendiente)
+- **Estado:** Aceptado — ahora **defensa en profundidad**. La corrección de raíz (G-8) está aplicada y verificada en CI; el mapa se conserva a propósito, ver la nota de abajo.
 - **Fecha:** 2026-07-24
 - **Autores:** Equipo de desarrollo
 - **Revisores:** Docente
+
+---
+
+> **Actualización (G-8 verificado).** Los `scope-mappings` por rol en el realm ya restringen la emisión: un `inv_viewer` que pide scopes elevados recibe de Keycloak solo `product:view`, no los cuatro elevados. Verificado a nivel de token por el paso "G-8" de `staging.yml` (run [30070253945](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/actions/runs/30070253945), verde). La escalada de G-6 queda cerrada **en el IdP**, no solo en el backend.
+>
+> El mapa Java deja de ser el único control y pasa a **defensa en profundidad**. Se conserva a propósito: si alguien vuelve a marcar un scope como opcional sin scope-mapping, o edita el realm, el backend sigue descartando lo que el rol no permite. Retirarlo sería otra decisión de seguridad, y el test G-8 debe seguir verde antes de planteárselo.
 
 ---
 
