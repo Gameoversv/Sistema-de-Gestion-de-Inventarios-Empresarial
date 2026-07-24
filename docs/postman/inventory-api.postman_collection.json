@@ -101,7 +101,7 @@
                 "exec": [
                   "pm.test('status is 200', () => pm.response.to.have.status(200));",
                   "pm.test('response is array', () => { const b = pm.response.json(); pm.expect(b).to.be.an('array'); });",
-                  "pm.test('Content-Type is JSON', () => pm.response.to.have.header('Content-Type', /json/));"
+                  "pm.test('Content-Type is JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.match(/json/));"
                 ]
               }
             }
@@ -148,7 +148,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Electronics\",\n  \"description\": \"Electronic products and accessories\"\n}"
+              "raw": "{\n  \"name\": \"Contract Test Category\",\n  \"description\": \"Electronic products and accessories\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/categories",
@@ -619,7 +619,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"sku\": \"EXISTING-SKU\",\n  \"name\": \"Product\",\n  \"price\": 10.00,\n  \"stock\": 5\n}"
+              "raw": "{\n  \"sku\": \"ELEC-001\",\n  \"name\": \"Product\",\n  \"price\": 10.00,\n  \"stock\": 5\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/products",
@@ -636,7 +636,7 @@
               "name": "409 Conflict",
               "status": "Conflict",
               "code": 409,
-              "body": "{\n  \"type\": \"https://inventory.api/problems/conflict\",\n  \"title\": \"Conflict\",\n  \"status\": 409,\n  \"detail\": \"SKU already exists: EXISTING-SKU\",\n  \"instance\": \"/api/v1/products\"\n}"
+              "body": "{\n  \"type\": \"https://inventory.api/problems/conflict\",\n  \"title\": \"Conflict\",\n  \"status\": 409,\n  \"detail\": \"SKU already exists: ELEC-001\",\n  \"instance\": \"/api/v1/products\"\n}"
             }
           ],
           "event": [
