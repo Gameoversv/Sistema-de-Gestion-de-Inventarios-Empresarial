@@ -111,9 +111,27 @@ jobs:
         working-directory: e2e
         run: npx playwright install --with-deps chromium
 
-      - name: Run Playwright
+      # E2E (flujos) + accesibilidad (D-4). Se excluyen los @visual, que se
+      # comparan aparte contra las imágenes de referencia versionadas.
+      - name: Run Playwright (E2E + a11y)
         working-directory: e2e
-        run: npx playwright test
+        run: npx playwright test --grep-invert @visual
+
+      # TEST-8 — Regresión visual. Compara contra las referencias en
+      # tests/*-snapshots/. La primera vez no existen: este paso las genera con
+      # --update-snapshots y las sube como artefacto para versionarlas; una vez
+      # commiteadas, se quita el flag y pasa a comparar de verdad.
+      - name: Visual regression (@visual)
+        working-directory: e2e
+        run: npx playwright test --grep @visual --update-snapshots
+
+      - name: Upload visual snapshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-snapshots
+          path: e2e/tests/**/*-snapshots/**
+          retention-days: 7
 
       - name: Upload Playwright report
         if: always()
