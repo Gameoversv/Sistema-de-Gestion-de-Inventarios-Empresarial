@@ -3,7 +3,7 @@
 ![CI](https://img.shields.io/github/actions/workflow/status/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/ci.yml?label=CI&style=flat-square)
 ![Backend coverage](https://img.shields.io/badge/backend%20coverage-92.7%25%20lineas-brightgreen?style=flat-square)
 ![Backend branches](https://img.shields.io/badge/backend%20branches-85.0%25-brightgreen?style=flat-square)
-![Frontend coverage](https://img.shields.io/badge/frontend%20coverage-9.2%25-critical?style=flat-square)
+![Frontend coverage](https://img.shields.io/badge/frontend%20coverage-9.3%25-critical?style=flat-square)
 
 Las cinco métricas de calidad exigidas, medidas por SonarCloud en cada ejecución de CI:
 

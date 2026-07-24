@@ -22,6 +22,15 @@ const SCOPES_BY_ROLE: Record<string, string[]> = {
 }
 
 /**
+ * Scopes de negocio que el frontend solicita en el login. Son *optional client scopes* en
+ * Keycloak: si no se piden, no llegan al token y `PermissionGuard` oculta toda la interfaz
+ * protegida. Se piden los siete; los `scope-mappings` del realm (G-8) recortan por rol, así que
+ * cada usuario recibe solo los que su rol permite. `openid` lo añade keycloak-js por su cuenta.
+ */
+export const LOGIN_SCOPE =
+  'product:view product:manage stock:view stock:manage report:view audit:view'
+
+/**
  * Devuelve la UNIÓN de los scopes de todos los roles reconocidos, igual que
  * permittedScopesForRoles() en el backend. Un rol no reconocido no aporta nada;
  * sin ningún rol reconocido, el conjunto queda vacío: denegar por defecto.

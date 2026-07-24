@@ -18,13 +18,13 @@ El enunciado exige **ocho capas** de testing. Esta guía dice, capa por capa, qu
 | 1. Unit | **Cumple** | 289 tests unitarios |
 | 2. Integration | **Cumple** | Testcontainers con base real **y Keycloak real** (`KeycloakAuthIT`, TEST-1) |
 | 3. API / Contract | Parcial | API tests en `staging.yml`; Postman y RestAssured sin CI |
-| 4. E2E | Parcial | 3 specs de Playwright escritos, **el CI no los ejecuta** |
+| 4. E2E | Parcial | 3 specs de Playwright, **ejecutados en CI** por `e2e.yml` (C-1/TEST-7); faltan snapshots y responsive |
 | 5. Security | Parcial | ZAP autenticado con umbral; faltan Dependency Check y CORS |
 | 6. Performance | **Cero** | sin una sola prueba de carga |
 | 7. Data | Parcial | migraciones y seeds; faltan duplicados y constraints |
 | 8. Exploratory | **Cumple** | 3 charters, 15 bugs con reproducción |
 
-**307 `@Test` en 33 ficheros.** Cobertura del backend: **84,5 % de ramas, 92,1 % de líneas** (JaCoCo en CI, umbral 80 %). Frontend: **9,2 %** de líneas — el hueco de calidad conocido.
+**307 `@Test` en 33 ficheros.** Cobertura del backend: **84,5 % de ramas, 92,1 % de líneas** (JaCoCo en CI, umbral 80 %). Frontend: **9,3 %** de líneas — el hueco de calidad conocido.
 
 Dos capas completas, cinco parciales, una a cero. Los parciales se concentran en el pipeline: pruebas escritas que el CI todavía no ejecuta.
 
@@ -59,7 +59,7 @@ Dos capas completas, cinco parciales, una a cero. Los parciales se concentran en
 
 ---
 
-## 2. Integration Testing — **Parcial**
+## 2. Integration Testing — **Cumple**
 
 > *"Obligatorio utilizar: Testcontainers. Debe probarse: Base de datos real, Keycloak, Integraciones"*
 
@@ -106,10 +106,16 @@ Tres specs escritos en `e2e/tests/`:
 | `products.spec.ts` | Flujo de productos: listado, alta, edición |
 | `stock.spec.ts` | Registro de movimiento y su reflejo |
 
-**El problema es que el pipeline no los ejecuta (C-1 / TEST-7).** Están en el repo pero ninguna etapa de GitHub Actions los lanza, así que no hay verificación continua de la navegación ni de los flujos. Es la **única de las 10 etapas del pipeline que falta en Actions**, y la mejor palanca disponible: confirmaría de paso roles, seguridad y responsive de una vez.
+**El pipeline los ejecuta (C-1 / TEST-7).** `e2e.yml` despliega el stack con perfil demo y corre los tres specs contra el sistema desplegado en cada PR, subiendo el informe de Playwright como artefacto. Era la única de las 10 etapas del pipeline que faltaba en Actions.
+
+Esta etapa destapó **dos defectos reales de autenticación**, no fragilidad de los specs:
+
+1. El SPA llamaba `keycloak.login()` sin `scope`, así que el token no traía los permisos (son *optional scopes*) y `PermissionGuard` ocultaba toda la interfaz protegida. Corregido pidiendo los siete scopes en el login; los `scope-mappings` de G-8 los recortan por rol.
+2. Tras un **refresco de página**, `check-sso` obtenía un token silencioso sin los optional scopes, y la interfaz protegida volvía a desaparecer. Corregido en `AuthContext`: si el token no trae scopes de negocio, se reobtiene con un login silencioso (sesión SSO activa), con guard anti-bucle.
+
+En producción, ambos habrían dejado la app inservible: el primero desde el arranque, el segundo tras cualquier F5.
 
 **Qué falta dentro de la capa:**
-- **TEST-7** — ejecutar los specs en `staging.yml` con los 4 usuarios de prueba.
 - **TEST-8** — `toHaveScreenshot()` en dashboard, productos y stock (snapshots).
 - **TEST-9** — responsive a 375 / 768 / 1440 px.
 - **D-4** — `@axe-core/playwright` para accesibilidad automatizada.
