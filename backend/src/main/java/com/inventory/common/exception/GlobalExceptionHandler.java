@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -92,6 +93,27 @@ public class GlobalExceptionHandler {
         ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     problem.setType(URI.create(PROBLEM_BASE_URI + "/validation-error"));
     problem.setTitle("Constraint Violation");
+    problem.setInstance(URI.create(request.getRequestURI()));
+    return ResponseEntity.badRequest().body(problem);
+  }
+
+  /**
+   * Campo de ordenamiento desconocido en {@code ?sort=}.
+   *
+   * <p>Sin este manejador, Spring Data lanza {@code PropertyReferenceException} y el fallback
+   * genérico responde 500. Es entrada del usuario —desde F-2, la tabla de productos ordena por la
+   * columna que se pulse—, así que un nombre que la entidad no tiene es un 400.
+   *
+   * <p>El mensaje de la excepción nombra el campo pedido y la entidad; se devuelve tal cual porque
+   * no expone nada que el cliente no supiera ya, y sin él el error no es accionable.
+   */
+  @ExceptionHandler(PropertyReferenceException.class)
+  public ResponseEntity<ProblemDetail> handleUnknownSortProperty(
+      PropertyReferenceException ex, HttpServletRequest request) {
+    ProblemDetail problem =
+        ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+    problem.setType(URI.create(PROBLEM_BASE_URI + "/invalid-sort-property"));
+    problem.setTitle("Invalid Sort Property");
     problem.setInstance(URI.create(request.getRequestURI()));
     return ResponseEntity.badRequest().body(problem);
   }

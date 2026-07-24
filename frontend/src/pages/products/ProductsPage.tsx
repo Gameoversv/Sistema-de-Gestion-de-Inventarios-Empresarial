@@ -1,8 +1,9 @@
 /** Products management page with search, category filtering, pagination, and permission-gated create/edit/delete actions. */
 import { useState } from 'react'
-import { Plus, Search, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
 import type { ProductResponse } from '@/types/index'
 import { useProducts, useCategories } from '@/hooks/useProducts'
+import type { ProductSortField, SortDirection } from '@/hooks/useProducts'
 import { PermissionGuard } from '@/components/auth/PermissionGuard'
 import { SkeletonTable } from '@/components/ui/Skeleton'
 import { Badge } from '@/components/ui/Badge'
@@ -17,8 +18,30 @@ export function ProductsPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [editProduct, setEditProduct] = useState<ProductResponse | null>(null)
   const [deleteProduct, setDeleteProduct] = useState<ProductResponse | null>(null)
+  const [sortBy, setSortBy] = useState<ProductSortField>('name')
+  const [sortDir, setSortDir] = useState<SortDirection>('asc')
 
-  const { data, isLoading, isError } = useProducts({ search, categoryId, active, page, size: 20 })
+  // Al reordenar hay que volver a la primera pagina: quedarse en la 3 de un orden nuevo muestra
+  // un tramo arbitrario del listado y parece que la ordenacion no ha hecho nada.
+  const handleSort = (field: ProductSortField) => {
+    if (field === sortBy) {
+      setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(field)
+      setSortDir('asc')
+    }
+    setPage(0)
+  }
+
+  const { data, isLoading, isError } = useProducts({
+    search,
+    categoryId,
+    active,
+    page,
+    size: 20,
+    sortBy,
+    sortDir,
+  })
   const { data: categories = [] } = useCategories()
 
   const handleSearchChange = (v: string) => {
@@ -95,11 +118,11 @@ export function ProductsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50">
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">SKU</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Nombre</th>
+                <SortableHeader field="sku" label="SKU" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                <SortableHeader field="name" label="Nombre" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">Categoría</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Precio</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">Stock</th>
+                <SortableHeader field="price" label="Precio" align="right" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                <SortableHeader field="stock" label="Stock" align="right" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wide">Estado</th>
                 <PermissionGuard scope="product:manage">
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wide">Acciones</th>
@@ -203,5 +226,48 @@ export function ProductsPage() {
         <DeleteConfirmModal product={deleteProduct} onClose={() => setDeleteProduct(null)} />
       )}
     </div>
+  )
+}
+
+interface SortableHeaderProps {
+  field: ProductSortField
+  label: string
+  sortBy: ProductSortField
+  sortDir: SortDirection
+  onSort: (field: ProductSortField) => void
+  align?: 'left' | 'right'
+}
+
+/**
+ * Cabecera de columna ordenable.
+ *
+ * La flecha solo aparece en la columna activa; el resto muestran el icono neutro en gris claro,
+ * que anuncia que la columna se puede ordenar sin competir con el indicador real.
+ *
+ * `aria-sort` va en el `th` porque es ahi donde los lectores de pantalla lo buscan, no en el boton.
+ */
+function SortableHeader({ field, label, sortBy, sortDir, onSort, align = 'left' }: SortableHeaderProps) {
+  const isActive = sortBy === field
+  const Icon = isActive ? (sortDir === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown
+
+  return (
+    <th
+      aria-sort={isActive ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+      className={`px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide ${
+        align === 'right' ? 'text-right' : 'text-left'
+      }`}
+    >
+      <button
+        type="button"
+        onClick={() => onSort(field)}
+        title={`Ordenar por ${label}`}
+        className={`inline-flex items-center gap-1 uppercase transition-colors hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1 rounded ${
+          isActive ? 'text-gray-900' : ''
+        } ${align === 'right' ? 'flex-row-reverse' : ''}`}
+      >
+        {label}
+        <Icon className={`h-3 w-3 ${isActive ? 'text-indigo-600' : 'text-gray-300'}`} />
+      </button>
+    </th>
   )
 }

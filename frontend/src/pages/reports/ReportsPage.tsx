@@ -212,7 +212,7 @@ export function ReportsPage() {
           </div>
           <div className="divide-y divide-gray-100">
             {criticalStock?.products?.map((p) => (
-              <div key={p.id} className="flex items-center justify-between px-5 py-3">
+              <div key={p.productId} className="flex items-center justify-between px-5 py-3">
                 <div>
                   <p className="text-sm font-medium text-gray-900">{p.name}</p>
                   <p className="text-xs text-gray-400">

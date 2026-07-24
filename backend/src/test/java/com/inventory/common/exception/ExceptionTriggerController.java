@@ -3,7 +3,10 @@ package com.inventory.common.exception;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import java.util.List;
 import java.util.Set;
+import org.springframework.data.mapping.PropertyReferenceException;
+import org.springframework.data.util.ClassTypeInformation;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -47,6 +50,13 @@ class ExceptionTriggerController {
   @GetMapping("/constraint-violation")
   void constraintViolation() {
     throw new ConstraintViolationException("must be positive", Set.of());
+  }
+
+  @GetMapping("/unknown-sort-property")
+  void unknownSortProperty() {
+    // Lo que lanza Spring Data cuando ?sort= nombra un campo que la entidad no tiene.
+    throw new PropertyReferenceException(
+        "noExiste", ClassTypeInformation.from(Object.class), List.of());
   }
 
   @GetMapping("/generic-error")

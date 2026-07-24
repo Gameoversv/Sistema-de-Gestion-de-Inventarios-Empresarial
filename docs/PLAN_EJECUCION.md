@@ -2,7 +2,7 @@
 
 **Fuente de verdad:** `Proyecto_Final_V3.pdf` (revisado íntegro el 2026-07-22)
 **Base de hallazgos:** [ANALISIS_BRECHAS.md](ANALISIS_BRECHAS.md)
-**Actualizado:** 2026-07-23, tras cerrar la Ola 2, la Ola 4 salvo C-4 y CI-2, P-2 de la Ola 6, D-1…D-4 y T-6 de la Ola 5, P-2a de la Ola 7, los dos obligatorios de sesión (SEC-2, S-2) y los 16 code smells (Q-5).
+**Actualizado:** 2026-07-23, tras cerrar la Ola 2, la Ola 4 salvo C-4 y CI-2, P-2 de la Ola 6, D-1…D-4 y T-6 de la Ola 5, P-2a de la Ola 7, los dos obligatorios de sesión (SEC-2, S-2), los 16 code smells (Q-5) y el alcance funcional pendiente (F-2, D-1, D-2).
 
 > **Aviso de método.** La versión anterior de este plan tomaba como requisito el desglose del análisis de brechas, que en algunos puntos era interpretación propia y no texto del enunciado. Cada requisito de este documento está contrastado con el PDF. Cuando algo es criterio nuestro y no del enunciado, se marca como **[criterio propio]**.
 
@@ -14,7 +14,7 @@ El enunciado define **ocho** áreas. La versión anterior omitía la última.
 
 | Área | Peso | Inicial | Actual | Alcanzable |
 |---|---|---|---|---|
-| Funcionalidad | 15% | ~85% | ~85% | ~98% |
+| Funcionalidad | 15% | ~85% | ~97% | ~98% |
 | Testing | 20% | ~60% | ~81% | ~90% |
 | Seguridad | 10% | ~70% | ~90% | ~90% |
 | Observabilidad | 15% | ~30% | ~90% | ~90% |
@@ -30,7 +30,7 @@ Salvo la cobertura, medida sobre el artefacto de CI, los porcentajes son estimac
 | BRANCH | 71,6 % | **84,4 %** | 80 % |
 | LINE | 84,9 % | **92,1 %** | 80 % |
 
-Medido sobre el artefacto de CI de `main` (`798e6b6`). El frontend se mide aparte y está en **7,5 %** de líneas tras los tests de SEC-2: hasta ahora el informe daba 100 %, pero solo cubría las 14 sentencias que los tests importaban. Con `coverage.include` en la config de vitest el número es el real.
+Medido sobre el artefacto de CI de `main` (`798e6b6`). El frontend se mide aparte y está en **7,1 %** de líneas: los tests de SEC-2 lo subieron y el código nuevo de F-2/D-1/D-2 lo vuelve a diluir: hasta ahora el informe daba 100 %, pero solo cubría las 14 sentencias que los tests importaban. Con `coverage.include` en la config de vitest el número es el real.
 
 ---
 
@@ -92,11 +92,11 @@ El enunciado es literal: *"Integration Testing — Obligatorio utilizar: Testcon
 
 | Requisito | Estado |
 |---|---|
-| Productos: agregar, editar, eliminar, visualizar con paginación/búsqueda/filtros/ordenamiento | **F-2** — falta ordenamiento en la tabla |
+| Productos: agregar, editar, eliminar, visualizar con paginación/búsqueda/filtros/ordenamiento | **cumple** — F-2: ordenamiento por SKU, nombre, precio y stock, con `aria-sort` |
 | Stock: actualizar, alertas por mínimo, historial con 6 campos | cumple |
 | Auditoría con Hibernate Envers | cumple |
 | API REST con OpenAPI y Swagger UI | cumple |
-| Dashboard: productos críticos, **más vendidos**, historial reciente, métricas, indicadores | **D-1, D-2** — faltan 2 de 5 |
+| Dashboard: productos críticos, **más vendidos**, historial reciente, métricas, indicadores | **cumple** — D-1 (`/api/reports/best-sellers`, agregando movimientos `OUT`) y D-2 (lista de críticos, no solo el contador) |
 
 ### 4.2 Seguridad (10%)
 
@@ -300,9 +300,9 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 
 | # | Acción | Esfuerzo |
 |---|---|---|
-| **D-1** | "Productos más vendidos" agregando movimientos `OUT` — **exigido en el dashboard** | 1,5 h |
-| **D-2** | Listar productos críticos — **exigido en el dashboard** | 45 min |
-| **F-2** | Ordenamiento en la tabla de productos — **exigido en el alcance** | 1 h |
+| ~~**D-1**~~ | ~~"Productos más vendidos"~~ — **hecho**: endpoint nuevo con agregación en BD. El panel anterior mostraba precio × stock, que mide lo guardado y no lo vendido. [Informe](testing/reportes/F-2-D-1-D-2-alcance-funcional.md) | — |
+| ~~**D-2**~~ | ~~Listar productos críticos~~ — **hecho**: el dashboard mostraba solo el contador. De paso, el tipo TS de `CriticalStockResponse` estaba mal y rompía las `key` de React | — |
+| ~~**F-2**~~ | ~~Ordenamiento en la tabla de productos~~ — **hecho**: el backend ya lo aceptaba, el hook lo fijaba a `name`. Destapó que un `sort` inválido daba **500**, ahora 400 | — |
 | D-3 | `topProducts` con query en BD | 45 min |
 | M-2 | `GET /api/stock/{productId}` con `stock:view` | 30 min |
 | F-1 | ADR-002 sobre el soft delete | 30 min |

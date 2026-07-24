@@ -118,6 +118,20 @@ class GlobalExceptionHandlerTest {
         .andExpect(jsonPath("$.status").value(400));
   }
 
+  // ── PropertyReferenceException → 400 ─────────────────────────────────────
+
+  // Verifica que un campo de ordenamiento inexistente da 400 y no 500. F-2 hizo que `sort` pasara
+  // a ser un parámetro que el usuario controla desde la interfaz, así que un nombre desconocido
+  // es entrada inválida, no un fallo del servidor.
+  @Test
+  void handleUnknownSortProperty_returns400WithProblemDetail() throws Exception {
+    mockMvc
+        .perform(get("/test-handler/unknown-sort-property").with(jwt().jwt(j -> j.subject("user"))))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.title").value("Invalid Sort Property"))
+        .andExpect(jsonPath("$.status").value(400));
+  }
+
   // ── NoResourceFoundException → 404 (unmapped path) ───────────────────────
 
   // Verifica que una ruta que no existe en el servidor retorna 404.

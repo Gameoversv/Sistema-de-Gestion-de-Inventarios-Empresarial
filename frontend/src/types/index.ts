@@ -95,9 +95,24 @@ export interface LowStockReportResponse {
 }
 
 export interface CriticalStockResponse {
-  generatedAt: string
   count: number
-  products: ProductResponse[]
+  // El backend devuelve LowStockItemDto, no ProductResponse. Estaba mal declarado y por eso
+  // ReportsPage usaba `p.id`, que llegaba undefined: el campo se llama `productId`.
+  products: LowStockItemDto[]
+}
+
+export interface BestSellerDto {
+  id: number
+  sku: string
+  name: string
+  unitsSold: number
+  movementCount: number
+}
+
+export interface BestSellersResponse {
+  limit: number
+  count: number
+  products: BestSellerDto[]
 }
 
 export interface TopProductDto {

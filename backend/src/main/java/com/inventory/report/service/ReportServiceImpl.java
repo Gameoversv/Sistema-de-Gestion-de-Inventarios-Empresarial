@@ -3,6 +3,8 @@ package com.inventory.report.service;
 import com.inventory.product.domain.Product;
 import com.inventory.product.repository.CategoryRepository;
 import com.inventory.product.repository.ProductRepository;
+import com.inventory.report.dto.BestSellerDto;
+import com.inventory.report.dto.BestSellersResponse;
 import com.inventory.report.dto.CategoryStockDto;
 import com.inventory.report.dto.CriticalStockResponse;
 import com.inventory.report.dto.DashboardMetricsResponse;
@@ -35,6 +37,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class ReportServiceImpl implements ReportService {
+
+  /** Techo por defecto de los rankings cuando no se pide límite o el pedido no tiene sentido. */
+  private static final int DEFAULT_LIMIT = 10;
 
   private final ProductRepository productRepository;
   private final CategoryRepository categoryRepository;
@@ -90,7 +95,7 @@ public class ReportServiceImpl implements ReportService {
   @Override
   @Transactional(readOnly = true)
   public TopProductsResponse topProducts(int limit, String metric) {
-    int effectiveLimit = limit > 0 ? limit : 10;
+    int effectiveLimit = limit > 0 ? limit : DEFAULT_LIMIT;
     String effectiveMetric = metric != null && !metric.isBlank() ? metric : "value";
 
     List<Product> active =
@@ -116,6 +121,15 @@ public class ReportServiceImpl implements ReportService {
             .toList();
 
     return new TopProductsResponse(effectiveLimit, effectiveMetric, items);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public BestSellersResponse bestSellers(int limit) {
+    int effectiveLimit = limit > 0 ? limit : DEFAULT_LIMIT;
+    List<BestSellerDto> products =
+        stockMovementRepository.findBestSellers(PageRequest.of(0, effectiveLimit));
+    return new BestSellersResponse(effectiveLimit, products.size(), products);
   }
 
   @Override
