@@ -46,11 +46,24 @@ La regla S1135 busca el tag `TODO` sin distinguir mayúsculas, y la palabra espa
 | Smell | Cantidad | Corrección |
 |---|---|---|
 | `isEqualTo(0)` en vez de `isZero()` | 5 | Sustituido |
-| Lambda de `assertThatThrownBy` con más de una invocación que puede lanzar | 3 | Construcción del argumento sacada fuera de la lambda; el sujeto del test no cambia |
+| Lambda de `assertThatThrownBy` con más de una invocación que puede lanzar | 3 | Argumentos sacados fuera de la lambda; el sujeto del test no cambia |
 | Variable local sin usar (`Fixture fixture = new Fixture(factory)`) | 1 | El constructor tiene efecto —arma el mock estático— y la referencia no se usaba: se conserva la llamada sin asignar |
 | Tres tests que solo se diferencian en un argumento | 1 | `@ParameterizedTest` con `@NullSource` y `@ValueSource` |
 
 Sobre el parametrizado: los tres casos de `findAll` —sin filtro, con cadena en blanco y con texto— comprobaban lo mismo con distinta entrada. Quedan como un solo test con tres invocaciones, así que el recuento total no baja y cada caso sigue apareciendo con su nombre en el informe.
+
+### Un arreglo a medias que el propio Sonar cazó
+
+Los tres casos de `assertThatThrownBy` se corrigieron primero sacando solo la construcción del request:
+
+```java
+StockMovementRequest request = new StockMovementRequest(1L, MovementType.OUT, 5, null, null);
+assertThatThrownBy(() -> stockService.registerMovement(request, jwt("bob")))
+```
+
+El análisis del PR volvió a marcar dos de los tres: `jwt("bob")` seguía dentro de la lambda y también es una invocación que puede lanzar. Si `jwt()` fallara, `assertThatThrownBy` capturaría **esa** excepción y el test pasaría por el motivo equivocado — que es exactamente lo que la regla S5778 previene.
+
+Corregido sacando también el token. Vale la pena anotarlo: el arreglo intuitivo dejaba la mitad del problema en pie, y solo se vio porque el gate analiza cada PR.
 
 ## Verificación
 

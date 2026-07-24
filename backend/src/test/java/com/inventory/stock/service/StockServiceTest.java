@@ -140,8 +140,9 @@ class StockServiceTest {
     when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(product));
 
     StockMovementRequest request = new StockMovementRequest(1L, MovementType.OUT, 5, null, null);
+    JwtAuthenticationToken auth = jwt("bob");
 
-    assertThatThrownBy(() -> stockService.registerMovement(request, jwt("bob")))
+    assertThatThrownBy(() -> stockService.registerMovement(request, auth))
         .isInstanceOf(BusinessException.class)
         .hasMessageContaining("Insufficient stock");
 
@@ -271,8 +272,9 @@ class StockServiceTest {
     when(productRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
 
     StockMovementRequest request = new StockMovementRequest(99L, MovementType.IN, 5, null, null);
+    JwtAuthenticationToken auth = jwt("alice");
 
-    assertThatThrownBy(() -> stockService.registerMovement(request, jwt("alice")))
+    assertThatThrownBy(() -> stockService.registerMovement(request, auth))
         .isInstanceOf(ResourceNotFoundException.class)
         .hasMessageContaining("99");
   }
