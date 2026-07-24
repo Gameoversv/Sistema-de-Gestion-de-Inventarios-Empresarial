@@ -287,7 +287,7 @@ El perfil `demo` existe porque la presentación necesita a la vez log JSON estru
 | **Criterio** | El stack completo se levanta con un solo comando y sin editar ficheros a mano. |
 | **Origen** | Arquitectura Técnica Obligatoria — *"Contenedores: Docker, Docker Compose"* |
 | **Estado** | **Cumple** |
-| **Implementación** | `docker-compose.yml` con **15 servicios**: base de datos, Redis, Keycloak y su base, backend, frontend y los nueve de observabilidad |
+| **Implementación** | `docker-compose.yml` con **14 servicios**: base de datos, Keycloak y su base, backend, frontend y los nueve de observabilidad (Redis se retiró en INF-1, estaba desplegado sin uso) |
 | **Verificación** | Levantado desde cero para las capturas de P-2 |
 
 Riesgo abierto: `keycloak-init` **no es idempotente**. Al reejecutarse sobre un realm existente lanza `duplicate key … uk_cli_scope` y ensucia el panel de eventos (**P-2b**, issue #45). Afecta directamente al ensayo de la presentación, que es un `down -v && up` repetido.

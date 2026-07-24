@@ -30,9 +30,6 @@ jobs:
           DB_NAME=inventory_db
           DB_USER=inventory_user
           DB_PASSWORD=${{ secrets.STAGING_DB_PASSWORD }}
-          REDIS_HOST=redis
-          REDIS_PORT=6379
-          REDIS_PASSWORD=${{ secrets.STAGING_REDIS_PASSWORD }}
           BACKEND_PORT=8080
           SPRING_PROFILES_ACTIVE=staging
           LOG_LEVEL=INFO

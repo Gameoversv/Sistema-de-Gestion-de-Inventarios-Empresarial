@@ -17,7 +17,7 @@ Para operar y mantener un sistema ya instalado, ver el [manual de mantenimiento]
 
 Para **ejecutar** el sistema no hace falta ni JDK ni Node: las imágenes se construyen dentro de Docker. Solo se necesitan para desarrollar con recarga.
 
-**Puertos que deben estar libres en el host:** 3000, 3001, 3200, 5432, 6379, 8080, 8180, 9090, 9093, 12345. Todos son configurables por `.env` si alguno choca.
+**Puertos que deben estar libres en el host:** 3000, 3001, 3200, 5432, 8080, 8180, 9090, 9093, 12345. Todos son configurables por `.env` si alguno choca.
 
 ---
 
@@ -31,7 +31,7 @@ cd Sistema-de-Gestion-de-Inventarios-Empresarial
 cp .env.example .env
 #  ← editar .env: cambiar TODOS los valores changeme_* antes de seguir
 
-# Levantar los 15 servicios
+# Levantar los 14 servicios
 docker compose up -d
 
 # Seguir el arranque
@@ -64,7 +64,7 @@ Instalado no es lo mismo que funcionando. Comprobar en este orden:
 docker compose ps
 ```
 
-Los 15 servicios en `running`. Los que tienen healthcheck deben marcar `healthy`, no solo `running`. `keycloak-init` aparece como `exited (0)`: es correcto, es un one-shot que crea scopes y usuarios y termina.
+Los 14 servicios en `running`. Los que tienen healthcheck deben marcar `healthy`, no solo `running`. `keycloak-init` aparece como `exited (0)`: es correcto, es un one-shot que crea scopes y usuarios y termina.
 
 ### 2. Los puntos de entrada responden
 
@@ -144,7 +144,7 @@ Para iterar sin reconstruir imágenes en cada cambio, levantar solo la infraestr
 
 ```bash
 # Infraestructura sí, apps no
-docker compose up -d postgres redis keycloak keycloak-db keycloak-init \
+docker compose up -d postgres keycloak keycloak-db keycloak-init \
   prometheus grafana tempo loki alloy alertmanager node-exporter postgres-exporter
 
 # Backend en caliente

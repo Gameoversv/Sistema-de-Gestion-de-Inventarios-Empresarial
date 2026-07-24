@@ -76,7 +76,7 @@ El perfil `demo` existe porque la demo necesita a la vez log JSON —sin él los
 
 ### Dependencias que marcan la arquitectura
 
-`web`, `data-jpa`, `validation`, `actuator`, `security` + `oauth2-resource-server`, `hibernate-envers`, `flyway-core` + `flyway-database-postgresql`, `springdoc-openapi`. Y `data-redis`, que está presente **sin que el código lo use** (INF-1 en el [README de arquitectura](README.md)).
+`web`, `data-jpa`, `validation`, `actuator`, `security` + `oauth2-resource-server`, `hibernate-envers`, `flyway-core` + `flyway-database-postgresql`, `springdoc-openapi`. Ni una de más: `data-redis` estaba declarado sin uso y se retiró en INF-1.
 
 ---
 

@@ -41,7 +41,7 @@ El enunciado los lista de forma explícita. Sirve como checklist de cierre.
 | Entregable | Estado |
 |---|---|
 | Código fuente completo | listo |
-| Docker Compose funcional | listo — **15 servicios** |
+| Docker Compose funcional | listo — **14 servicios** (Redis retirado en INF-1, no lo usaba nadie) |
 | Jenkins pipeline | parcial — **11 etapas escritas** y Jenkins configurado como código, pero de `Integration Tests` en adelante nunca se ha ejecutado: hace falta un agente Linux (C-4) |
 | GitHub Actions pipeline | **listo** — security scan (ZAP autenticado) y quality gate (SonarCloud) añadidos en la Ola 4 |
 | Dashboards Grafana | listo — **4 de 4**; datasources de Prometheus, Tempo y Loki provisionados |
@@ -276,12 +276,12 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 
 > **Dos avisos de P-2 que afectan al guion de P-1.** Los paneles de Negocio usan `increase()`: si en la demo se encadenan todos los movimientos seguidos saldrán en cero, porque Prometheus no puede medir el incremento del primer punto de una serie. Hay que espaciarlos o levantar el stack con antelación. Y la ventana temporal de los dashboards no debe abarcar un reinicio del backend con otro perfil, o cada panel duplica sus series.
 
-### Ola 7 — Deuda abierta por los hallazgos (≈1,5 h restantes)
+### Ola 7 — Deuda abierta por los hallazgos (≈1 h restante) · G-8 en curso
 
 | # | Acción | Esfuerzo |
 |---|---|---|
 | ~~**G-3a**~~ | ~~Unión de scopes en `AuthContext.tsx`; hoy replica el bug de primer-rol-gana~~ — **hecho**: extraído a `lib/scopes.ts` (función pura, sin el init de Keycloak de por medio) y reescrito como unión espejando el backend. Rol desconocido no aporta nada; sin rol, deniega. 6 tests nuevos, incluido el multi-rol y la independencia del orden. Cierra #44 | — |
-| **INF-1** | Redis está desplegado, configurado (pool Lettuce en `application.yml`, dependencia en el POM) y **sin un solo uso** en el código: ni `@Cacheable`, ni `@EnableCaching`, ni `RedisTemplate`. O se conecta a algo (cache de lecturas de reporte) o se borra del compose. Choca con la regla 3 | 30 min |
+| ~~**INF-1**~~ | ~~Redis desplegado, configurado y sin un solo uso en el código~~ — **hecho**: retirado del `docker-compose.yml` (14 servicios), del POM, de `application.yml`/`-dev`/`-smoke`, de `.env.example` y `staging.yml`. Quitadas también las exclusiones de autoconfig de Redis en los 4 IT, que ya no tienen sentido. Backend compila y los 289 unit tests siguen en verde. Aplicó la regla 3 | — |
 | **G-8** | `scopeMappings` en Keycloak: corrección de raíz de G-6 y prerrequisito de G-2 | 1 h |
 | ~~**S-4b**~~ | ~~Quitar `JWT_SECRET` y `JWT_EXPIRATION_MS` de `staging.yml`~~ — **hecho**: ningún Java los leía (la firma la valida Keycloak). Retirados del workflow y de `GITHUB_SECRETS.md`. Queda borrar el secreto `STAGING_JWT_SECRET` en la config del repo, a mano. Cierra #47 | — |
 | ~~**ADR-002**~~ | ~~Por qué el mapa rol→scopes vive en Java~~ — **hecho**: [`ADR-002`](decisions/ADR-002-mapa-rol-scopes-en-java.md) documenta la contención de G-6 en el backend, con `SecurityConfig` apuntando a él | — |

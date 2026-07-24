@@ -49,10 +49,6 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 @SpringBootTest(
     webEnvironment = WebEnvironment.NONE,
     properties = {
-      "spring.autoconfigure.exclude="
-          + "org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration,"
-          + "org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration",
       // No se migra desde un test contra un entorno desplegado: solo se lee el resultado.
       "spring.flyway.enabled=false",
       "spring.jpa.hibernate.ddl-auto=validate",

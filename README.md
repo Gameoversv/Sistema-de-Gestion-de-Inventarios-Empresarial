@@ -65,7 +65,7 @@ Plataforma para gestionar inventarios empresariales de forma segura y escalable.
 ├── docker/
 │   └── jenkins/          # Imagen, plugins y configuración como código de Jenkins
 ├── Jenkinsfile
-├── docker-compose.yml    # 15 servicios
+├── docker-compose.yml    # 14 servicios
 └── .env.example
 ```
 
@@ -79,7 +79,7 @@ cd Sistema-de-Gestion-de-Inventarios-Empresarial
 # Configurar variables de entorno
 cp .env.example .env
 
-# Levantar infraestructura (15 servicios)
+# Levantar infraestructura (14 servicios)
 docker compose up -d
 
 # Ver logs

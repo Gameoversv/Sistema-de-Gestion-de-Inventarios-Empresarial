@@ -35,7 +35,7 @@ Se adoptará el siguiente stack:
 **PostgreSQL 16**
 
 ### Cache
-**Redis 7**
+**Redis 7** — _previsto en la selección inicial, nunca cableado. Retirado en INF-1 (ver [vista-de-componentes](../arquitectura/vista-de-componentes.md)); si en el futuro hace falta cache, este es el punto de partida._
 
 ### Contenedores
 **Docker + Docker Compose**

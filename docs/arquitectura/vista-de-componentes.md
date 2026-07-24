@@ -1,6 +1,6 @@
 # Vista de Componentes
 
-Los 15 servicios de `docker-compose.yml`, cómo se conectan y en qué orden arrancan. Todos comparten una única red bridge, `inventory-net`.
+Los 14 servicios de `docker-compose.yml`, cómo se conectan y en qué orden arrancan. Todos comparten una única red bridge, `inventory-net`.
 
 ---
 
@@ -15,7 +15,6 @@ graph TB
 
     subgraph DATA["Datos"]
         PG[("postgres<br/>:5432")]
-        RD[("redis<br/>:6379")]
         KCDB[("keycloak-db<br/>sin puerto")]
     end
 
@@ -37,7 +36,6 @@ graph TB
 
     FE -->|REST| BE
     BE --> PG
-    BE -.->|"configurado,<br/>sin uso (INF-1)"| RD
     BE -->|JWKS| KC
     KC --> KCDB
     KCI -->|"scopes + usuarios"| KC
@@ -63,7 +61,6 @@ graph TB
 | Servicio | Imagen | Puerto host | Volumen | Rol |
 |---|---|---|---|---|
 | `postgres` | `postgres:16-alpine` | 5432 | `postgres_data` | Datos de negocio |
-| `redis` | `redis:7-alpine` | 6379 | `redis_data` | Cache — **desplegado sin uso, INF-1** |
 | `keycloak-db` | `postgres:16-alpine` | — | `keycloak_db_data` | Datos del IdP |
 | `keycloak` | `quay.io/keycloak/keycloak:24.0` | 8180 → 8080 | — (realm montado `ro`) | Identidad y emisión de tokens |
 | `keycloak-init` | `alpine:3.19` | — | — | One-shot: crea scopes y los 4 usuarios de prueba |
@@ -78,7 +75,7 @@ graph TB
 | `alertmanager` | `prom/alertmanager:v0.27.0` | 9093 | `alertmanager_data` | Enrutado y agrupación de alertas |
 | `grafana` | `grafana/grafana:latest` | 3001 → 3000 | `grafana_data` | Dashboards |
 
-Nueve volúmenes con nombre. `docker compose down -v` los borra **todos**, incluido el del realm de Keycloak: es exactamente lo que hace falta para un arranque limpio y exactamente lo que no hay que hacer sobre datos que interesen.
+Ocho volúmenes con nombre. `docker compose down -v` los borra **todos**, incluido el del realm de Keycloak: es exactamente lo que hace falta para un arranque limpio y exactamente lo que no hay que hacer sobre datos que interesen.
 
 `prometheus` y `grafana` usan tag `latest` **[criterio propio, discutible]**: reproducible hoy, no necesariamente dentro de seis meses. El resto está fijado a versión.
 
@@ -94,7 +91,6 @@ graph LR
     KC -->|healthy| KCI["keycloak-init"]
     KC -->|healthy| BE["backend"]
     PG["postgres"] -->|healthy| BE
-    RD["redis"] -->|healthy| BE
     BE -->|healthy| FE["frontend"]
     PG -->|healthy| PE["postgres-exporter"]
     TE["tempo"] --> AL["alloy"]
@@ -102,7 +98,7 @@ graph LR
     PR["prometheus"] --> GR["grafana"]
 ```
 
-El backend espera a que Postgres, Redis **y** Keycloak estén sanos. Arrancar antes que Keycloak significaría no poder descargar el JWKS y rechazar todo token durante el arranque.
+El backend espera a que Postgres **y** Keycloak estén sanos. Arrancar antes que Keycloak significaría no poder descargar el JWKS y rechazar todo token durante el arranque.
 
 ### Las sondas que costaron encontrar
 
