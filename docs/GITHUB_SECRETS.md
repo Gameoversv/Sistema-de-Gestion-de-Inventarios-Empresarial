@@ -6,7 +6,6 @@ Go to: **Settings → Secrets and variables → Actions → New repository secre
 |---|---|
 | `STAGING_DB_PASSWORD` | PostgreSQL password |
 | `STAGING_REDIS_PASSWORD` | Redis password |
-| `STAGING_JWT_SECRET` | JWT secret (min 32 chars) |
 | `STAGING_KEYCLOAK_ADMIN_PASSWORD` | Keycloak admin password |
 | `STAGING_KC_DB_PASSWORD` | Keycloak Postgres password |
 | `STAGING_KC_BACKEND_CLIENT_SECRET` | Keycloak backend client secret |
