@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.restassured.http.ContentType;
+import java.time.Duration;
 import java.util.Base64;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,10 +45,14 @@ class KeycloakAuthIT {
           .withUsername("test")
           .withPassword("test");
 
+  // Sin tag explícito: se usa la imagen por defecto de testcontainers-keycloak, cuya wait
+  // strategy (health en el puerto de management) está emparejada con esa versión. Forzar
+  // keycloak:24.0 dejaba la sonda /health/started sin 200 y el contenedor no arrancaba.
   @Container
   static final KeycloakContainer keycloak =
-      new KeycloakContainer("quay.io/keycloak/keycloak:24.0")
-          .withRealmImportFile("keycloak/test-realm.json");
+      new KeycloakContainer()
+          .withRealmImportFile("keycloak/test-realm.json")
+          .withStartupTimeout(Duration.ofMinutes(3));
 
   @DynamicPropertySource
   static void properties(DynamicPropertyRegistry registry) {
