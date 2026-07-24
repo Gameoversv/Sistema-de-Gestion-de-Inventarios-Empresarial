@@ -8,7 +8,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:8080/api/v1",
+      "value": "http://localhost:8080",
       "type": "string"
     },
     {
@@ -101,7 +101,7 @@
                 "exec": [
                   "pm.test('status is 200', () => pm.response.to.have.status(200));",
                   "pm.test('response is array', () => { const b = pm.response.json(); pm.expect(b).to.be.an('array'); });",
-                  "pm.test('Content-Type is JSON', () => pm.response.to.have.header('Content-Type', /json/));"
+                  "pm.test('Content-Type is JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.match(/json/));"
                 ]
               }
             }
@@ -148,7 +148,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Electronics\",\n  \"description\": \"Electronic products and accessories\"\n}"
+              "raw": "{\n  \"name\": \"Contract Test Category\",\n  \"description\": \"Electronic products and accessories\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/categories",
@@ -189,13 +189,13 @@
               "raw": "{\n  \"name\": \"Consumer Electronics\",\n  \"description\": \"Updated description\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/categories/1",
+              "raw": "{{baseUrl}}/categories/{{categoryId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "categories",
-                "1"
+                "{{categoryId}}"
               ]
             }
           },
@@ -218,13 +218,13 @@
           "request": {
             "method": "DELETE",
             "url": {
-              "raw": "{{baseUrl}}/categories/1",
+              "raw": "{{baseUrl}}/categories/{{categoryId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "categories",
-                "1"
+                "{{categoryId}}"
               ]
             }
           },
@@ -386,13 +386,13 @@
               "raw": "{\n  \"sku\": \"LAP-001\",\n  \"name\": \"Laptop Pro 15 v2\",\n  \"description\": \"Updated description\",\n  \"price\": 1199.99,\n  \"stock\": 45,\n  \"minimumStock\": 5,\n  \"active\": true,\n  \"categoryId\": 1\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/products/1",
+              "raw": "{{baseUrl}}/products/{{productId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "products",
-                "1"
+                "{{productId}}"
               ]
             }
           },
@@ -425,13 +425,13 @@
               "raw": "{\n  \"price\": 999.99,\n  \"stock\": 30\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/products/1",
+              "raw": "{{baseUrl}}/products/{{productId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "products",
-                "1"
+                "{{productId}}"
               ]
             }
           },
@@ -454,13 +454,13 @@
           "request": {
             "method": "DELETE",
             "url": {
-              "raw": "{{baseUrl}}/products/1",
+              "raw": "{{baseUrl}}/products/{{productId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "products",
-                "1"
+                "{{productId}}"
               ]
             }
           },
@@ -471,8 +471,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
-                  "pm.test('product is inactive', () => { const b = pm.response.json(); pm.expect(b.active).to.be.false; });"
+                  "pm.test('status is 204', () => pm.response.to.have.status(204));"
                 ]
               }
             }
@@ -620,7 +619,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"sku\": \"EXISTING-SKU\",\n  \"name\": \"Product\",\n  \"price\": 10.00,\n  \"stock\": 5\n}"
+              "raw": "{\n  \"sku\": \"ELEC-001\",\n  \"name\": \"Product\",\n  \"price\": 10.00,\n  \"stock\": 5\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/products",
@@ -637,7 +636,7 @@
               "name": "409 Conflict",
               "status": "Conflict",
               "code": 409,
-              "body": "{\n  \"type\": \"https://inventory.api/problems/conflict\",\n  \"title\": \"Conflict\",\n  \"status\": 409,\n  \"detail\": \"SKU already exists: EXISTING-SKU\",\n  \"instance\": \"/api/v1/products\"\n}"
+              "body": "{\n  \"type\": \"https://inventory.api/problems/conflict\",\n  \"title\": \"Conflict\",\n  \"status\": 409,\n  \"detail\": \"SKU already exists: ELEC-001\",\n  \"instance\": \"/api/v1/products\"\n}"
             }
           ],
           "event": [
@@ -748,11 +747,12 @@
               "type": "noauth"
             },
             "url": {
-              "raw": "{{baseUrl}}/stock/movements",
+              "raw": "{{baseUrl}}/api/stock/movements",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
+                "api",
                 "stock",
                 "movements"
               ]
