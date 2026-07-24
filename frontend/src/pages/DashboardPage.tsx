@@ -20,7 +20,12 @@ import {
   CartesianGrid,
 } from 'recharts'
 import api from '@/lib/api'
-import type { DashboardMetricsResponse, TopProductsResponse, RecentMovementsResponse } from '@/types/index'
+import type {
+  DashboardMetricsResponse,
+  BestSellersResponse,
+  CriticalStockResponse,
+  RecentMovementsResponse,
+} from '@/types/index'
 import { SkeletonCard } from '@/components/ui/Skeleton'
 import { Badge } from '@/components/ui/Badge'
 
@@ -69,11 +74,21 @@ export function DashboardPage() {
     staleTime: 30_000,
   })
 
-  const { data: topProducts } = useQuery({
-    queryKey: ['top-products'],
+  // D-1: «productos mas vendidos» es lo que exige el enunciado. Antes este panel pedia
+  // top-products?metric=value, que ordena por precio x stock: mide lo guardado, no lo vendido.
+  // Ese ranking sigue disponible en la pagina de Reportes, que es donde tiene sentido.
+  const { data: bestSellers } = useQuery({
+    queryKey: ['best-sellers'],
     queryFn: () =>
-      api.get<TopProductsResponse>('/api/reports/top-products?limit=10&metric=value').then((r) => r.data),
+      api.get<BestSellersResponse>('/api/reports/best-sellers?limit=8').then((r) => r.data),
     staleTime: 60_000,
+  })
+
+  // D-2: el dashboard mostraba solo el contador de criticos; el enunciado pide listarlos.
+  const { data: criticalStock } = useQuery({
+    queryKey: ['dashboard-critical'],
+    queryFn: () => api.get<CriticalStockResponse>('/api/reports/critical-stock').then((r) => r.data),
+    staleTime: 30_000,
   })
 
   const { data: recentMovements } = useQuery({
@@ -83,10 +98,10 @@ export function DashboardPage() {
     staleTime: 30_000,
   })
 
-  const chartData = topProducts?.products?.slice(0, 8).map((p) => ({
+  const chartData = bestSellers?.products?.map((p) => ({
     name: p.name.length > 18 ? p.name.slice(0, 18) + '…' : p.name,
-    valor: Number(p.inventoryValue.toFixed(0)),
-    stock: p.currentStock,
+    unidades: p.unitsSold,
+    movimientos: p.movementCount,
   })) ?? []
 
   return (
@@ -135,7 +150,7 @@ export function DashboardPage() {
         <div className="lg:col-span-3 rounded-xl border border-gray-200 bg-white p-5">
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 className="h-4 w-4 text-gray-400" />
-            <h3 className="text-sm font-semibold text-gray-900">Top 8 — valor de inventario</h3>
+            <h3 className="text-sm font-semibold text-gray-900">Top 8 — productos más vendidos</h3>
           </div>
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={240}>
@@ -150,15 +165,15 @@ export function DashboardPage() {
                 />
                 <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} />
                 <Tooltip
-                  formatter={(v) => [`$${Number(v).toLocaleString()}`, 'Valor']}
+                  formatter={(v) => [`${Number(v).toLocaleString()} u`, 'Unidades vendidas']}
                   contentStyle={{ fontSize: 12, borderRadius: 8 }}
                 />
-                <Bar dataKey="valor" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="unidades" fill="#6366f1" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
             <div className="h-60 flex items-center justify-center text-sm text-gray-400">
-              Sin datos de productos
+              Aún no hay salidas registradas
             </div>
           )}
         </div>
@@ -194,6 +209,40 @@ export function DashboardPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* D-2 — Productos criticos. El enunciado los pide listados en el dashboard, no solo
+          contados: un numero rojo dice que hay un problema, la lista dice cual. */}
+      <div className="rounded-xl border border-red-200 bg-white overflow-hidden">
+        <div className="flex items-center gap-2 border-b border-red-200 bg-red-50 px-5 py-3">
+          <AlertTriangle className="h-4 w-4 text-red-500" />
+          <h3 className="text-sm font-semibold text-red-800">
+            Productos críticos
+            {(criticalStock?.count ?? 0) > 0 && ` — ${criticalStock?.count}`}
+          </h3>
+        </div>
+        {(criticalStock?.products?.length ?? 0) === 0 ? (
+          <p className="px-5 py-4 text-sm text-gray-400">Ningún producto en estado crítico</p>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {criticalStock?.products?.map((p) => (
+              <div key={p.productId} className="flex items-center justify-between px-5 py-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-gray-900">{p.name}</p>
+                  <p className="text-xs text-gray-400">
+                    {p.sku} · {p.categoryName}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="text-xs text-gray-400">
+                    mín. {p.minimumStock}
+                  </span>
+                  <Badge variant="red">{p.currentStock} u</Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

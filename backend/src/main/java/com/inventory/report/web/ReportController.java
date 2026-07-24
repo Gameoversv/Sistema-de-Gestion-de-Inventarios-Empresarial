@@ -1,5 +1,6 @@
 package com.inventory.report.web;
 
+import com.inventory.report.dto.BestSellersResponse;
 import com.inventory.report.dto.CriticalStockResponse;
 import com.inventory.report.dto.DashboardMetricsResponse;
 import com.inventory.report.dto.LowStockReportResponse;
@@ -122,6 +123,28 @@ public class ReportController {
           @RequestParam(defaultValue = "value")
           String metric) {
     return reportService.topProducts(limit, metric);
+  }
+
+  @GetMapping("/best-sellers")
+  @PreAuthorize("hasAuthority('SCOPE_report:view')")
+  @Operation(
+      summary = "Productos más vendidos",
+      description =
+          "Ranking por unidades vendidas, agregando los movimientos de salida (OUT). "
+              + "No confundir con /top-products, que mide el inventario en almacén: un producto "
+              + "caro que no se vende encabeza aquel ranking y no aparece en este.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Ranking calculado correctamente",
+            content = @Content(schema = @Schema(implementation = BestSellersResponse.class)))
+      })
+  public BestSellersResponse bestSellers(
+      @Parameter(description = "Número máximo de productos a devolver", example = "10")
+          @RequestParam(defaultValue = "10")
+          int limit) {
+    return reportService.bestSellers(limit);
   }
 
   @GetMapping("/dashboard-metrics")

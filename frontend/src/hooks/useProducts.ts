@@ -3,12 +3,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
 import type { ProductResponse, ProductCreateRequest, ProductUpdateRequest, Page } from '@/types/index'
 
+export type ProductSortField = 'sku' | 'name' | 'price' | 'stock'
+export type SortDirection = 'asc' | 'desc'
+
 interface ProductFilters {
   search?: string
   categoryId?: number
   active?: boolean
   page?: number
   size?: number
+  sortBy?: ProductSortField
+  sortDir?: SortDirection
 }
 
 export function useProducts(filters: ProductFilters = {}) {
@@ -21,7 +26,9 @@ export function useProducts(filters: ProductFilters = {}) {
       if (filters.active != null) params.set('active', String(filters.active))
       params.set('page', String(filters.page ?? 0))
       params.set('size', String(filters.size ?? 20))
-      params.set('sort', 'name')
+      // F-2: el backend ya acepta `sort` via Pageable; hasta ahora el hook lo fijaba a 'name'
+      // y la tabla no podia ordenarse por ninguna otra columna.
+      params.set('sort', `${filters.sortBy ?? 'name'},${filters.sortDir ?? 'asc'}`)
       const { data } = await api.get<Page<ProductResponse>>(`/products?${params}`)
       return data
     },
