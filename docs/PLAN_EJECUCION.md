@@ -125,7 +125,7 @@ Ambos corregidos en el PR de C-1. **Consecuencia de método:** los E2E no son ve
 | 1. Unit | Servicios, validaciones, lógica | cumple — **307 `@Test`** en 33 ficheros. La cifra de 284 que traía este plan es la del pipeline de Jenkins; SEC-2, Q-5 y F-2/D-1/D-2 añadieron tests después |
 | 2. Integration | Testcontainers: **BD real, Keycloak**, integraciones | **cumple** — BD (y desde ENV-1 contra la base desplegada) y **Keycloak real con `KeycloakAuthIT`** (TEST-1), verificado en CI |
 | 3. API / Contract | Endpoints, contratos OpenAPI, status codes, payloads | **cumple** — `OpenApiContractTest` valida las respuestas contra `openapi.yaml` (TEST-2) y la colección Postman corre con Newman en CI (TEST-3), 39 aserciones en verde |
-| 4. E2E | Snapshots, flujos, navegación, **roles**, seguridad, **responsive** | **cumple** — `e2e.yml` (C-1/TEST-7) corre los 3 specs (12 casos) contra el stack desplegado, **12/12 en verde**; faltan snapshots (TEST-8) y responsive (TEST-9) como mejora |
+| 4. E2E | Snapshots, flujos, navegación, **roles**, seguridad, **responsive** | **cumple** — `e2e.yml` (C-1/TEST-7): flujos (12 casos), **snapshots** (TEST-8), **accesibilidad** axe (D-4) y **responsive** 375/768/1440 (TEST-9), todo verde contra el stack desplegado |
 | 5. Security | ZAP, JWT, permisos, CORS, Dependency Check/Snyk, autenticación | **cumple** — ZAP autenticado con umbral (TEST-10), `CorsHttpTest` de enforcement CORS (TEST-11), y `dependency-scan.yml` con npm audit + OWASP Dependency-Check (T-5) |
 | 6. Performance | Stress, load, usuarios concurrentes, tiempo de respuesta, throughput | **cumple** — k6 en `e2e.yml` (T-3): load + stress, umbral `p(95)<500ms` verde en CI |
 | 7. Data | Migraciones, integridad, **duplicados**, constraints, seeds | **cumple** — Flyway (esquema real en los IT), seeds verificados, `DataIntegrityIT` (duplicado de SKU sembrado y NOT NULL a nivel BD) + el duplicado de `ProductRepositoryIT` |
@@ -227,8 +227,8 @@ El área queda cerrada: el pendiente que arrastraba (P-2) está hecho.
 | # | Acción | Esfuerzo | Capa |
 |---|---|---|---|
 | ~~**C-1 + TEST-7**~~ | ~~Playwright en CI~~ — **hecho y verificado, 12/12 en verde**. `e2e.yml` despliega el stack con perfil demo (`docker compose up --build`), espera a Keycloak/backend/frontend y corre los 3 specs contra el sistema vivo, subiendo el informe como artefacto. Destapó **dos bugs de auth reales** (#69, #70), no fragilidad de los specs: el SPA no pedía scopes en el login, y `check-sso` los perdía al refrescar. Ambos corregidos en el mismo PR. No corre en local por C-4 | 3 h | 4 |
-| **TEST-9** | Responsive: 375 / 768 / 1440 px | 45 min | 4 |
-| **TEST-8** | `toHaveScreenshot()` en dashboard, productos y stock | 1 h | 4 |
+| ~~**TEST-9**~~ | ~~Responsive: 375 / 768 / 1440 px~~ — **hecho**: `responsive.spec.ts` comprueba cero desbordamiento horizontal en los tres breakpoints; la app ya era responsive | 45 min | 4 |
+| ~~**TEST-8**~~ | ~~`toHaveScreenshot()`~~ — **hecho**: `visual.spec.ts` compara regiones estables (sidebar, form de alta) contra referencias versionadas generadas en CI | 1 h | 4 |
 | ~~**TEST-1**~~ | ~~`dasniko/testcontainers-keycloak` + IT con token real — **obligatorio**~~ — **hecho y verificado en CI**. `KeycloakAuthIT` levanta Keycloak y Postgres reales, obtiene un token por password grant y ejercita la cadena entera (JWKS, firma, emisor, intersección de scopes, `@PreAuthorize`); 4 tests en verde en el job `integration-test`, incluida la reverificación de G-8 a nivel IT. Afinado en 5 iteraciones sobre CI (imagen del contenedor, required actions, User Profile, `realm_access`), ya que C-4 impide correrlo en local | 3 h | 2 |
 | ~~**T-3**~~ | ~~k6: load, stress, usuarios concurrentes, `p(95)<500ms`~~ — **hecho, verde en CI**: `scripts/k6/load-test.js` con perfil load+stress (pico de 25 VUs) sobre 7 endpoints de lectura; umbrales `p(95)<500ms`, <1% error, >99% checks. Corre en `e2e.yml` contra el stack desplegado | 3 h | 6 |
 | ~~**T-5**~~ | ~~OWASP Dependency Check y `npm audit`/Snyk en CI~~ — **hecho**: `dependency-scan.yml` con npm audit (frontend + e2e) y OWASP Dependency-Check (backend, falla en CVSS≥8). El audit destapó CVEs reales; los que tenían fix (brace-expansion, js-yaml, postcss) se corrigieron, y se gatea en critical por los de react-router 7.x sin fix publicado | 45 min | 5 |
@@ -318,7 +318,7 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 | D-3 | `topProducts` con query en BD | 45 min |
 | M-2 | `GET /api/stock/{productId}` con `stock:view` | 30 min |
 | F-1 | ADR-003 sobre el soft delete — renumerado desde 002, que queda para el mapa rol→scopes de la Ola 7 | 30 min |
-| D-4 | `@axe-core/playwright` en E2E | 1 h |
+| ~~D-4~~ | ~~`@axe-core/playwright` en E2E~~ — **hecho**: `a11y.spec.ts` (axe WCAG 2 A/AA) sobre dashboard, productos y stock; destapó selects/inputs sin nombre accesible, corregidos con `aria-label` | 1 h |
 | E-2 | Validación condicional de `quantity` | 45 min |
 | ~~**SEC-2**~~ | ~~`onTokenExpired`~~ — **hecho**: renovación proactiva más cierre de sesión cuando el refresco falla. [Informe](testing/reportes/SEC-2-S-2-ciclo-de-vida-del-token.md) | — |
 | ~~**S-2**~~ | ~~Test con `grant_type=refresh_token`~~ — **hecho**: 5 comprobaciones, incluida la negativa (refresh inválido → 400) | — |
