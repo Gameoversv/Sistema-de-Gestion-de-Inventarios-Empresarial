@@ -39,6 +39,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class StockServiceImpl implements StockService {
 
+  /** Prefijo del mensaje de "producto inexistente", compartido por las tres búsquedas por id. */
+  private static final String PRODUCT_NOT_FOUND = "Product not found: ";
+
   private final StockMovementRepository movementRepository;
   private final ProductRepository productRepository;
   private final StockMovementMapper movementMapper;
@@ -56,7 +59,7 @@ public class StockServiceImpl implements StockService {
         productRepository
             .findByIdForUpdate(request.productId())
             .orElseThrow(
-                () -> new ResourceNotFoundException("Product not found: " + request.productId()));
+                () -> new ResourceNotFoundException(PRODUCT_NOT_FOUND + request.productId()));
 
     int quantityBefore = product.getStock();
     int newStock = computeNewStock(request.type(), quantityBefore, request.quantity());
@@ -99,7 +102,7 @@ public class StockServiceImpl implements StockService {
     return productRepository
         .findById(productId)
         .map(Product::getStock)
-        .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + productId));
+        .orElseThrow(() -> new ResourceNotFoundException(PRODUCT_NOT_FOUND + productId));
   }
 
   @Override
@@ -115,7 +118,7 @@ public class StockServiceImpl implements StockService {
                     p.getStock(),
                     p.getMinimumStock(),
                     p.getStock() <= p.getMinimumStock()))
-        .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + productId));
+        .orElseThrow(() -> new ResourceNotFoundException(PRODUCT_NOT_FOUND + productId));
   }
 
   @Override

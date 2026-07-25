@@ -93,8 +93,9 @@ class StockMovementRequestValidationTest {
 
     Set<ConstraintViolation<StockMovementRequest>> violations = validator.validate(request);
 
-    assertThat(violations).anyMatch(v -> v.getPropertyPath().toString().equals("type"));
-    assertThat(violations).noneMatch(v -> v.getPropertyPath().toString().equals(QUANTITY_RULE));
+    assertThat(violations)
+        .anyMatch(v -> v.getPropertyPath().toString().equals("type"))
+        .noneMatch(v -> v.getPropertyPath().toString().equals(QUANTITY_RULE));
   }
 
   // Verifica que con quantity nula la regla condicional calla y solo reporta @NotNull.
@@ -105,7 +106,8 @@ class StockMovementRequestValidationTest {
 
     Set<ConstraintViolation<StockMovementRequest>> violations = validator.validate(request);
 
-    assertThat(violations).anyMatch(v -> v.getPropertyPath().toString().equals("quantity"));
-    assertThat(violations).noneMatch(v -> v.getPropertyPath().toString().equals(QUANTITY_RULE));
+    assertThat(violations)
+        .anyMatch(v -> v.getPropertyPath().toString().equals("quantity"))
+        .noneMatch(v -> v.getPropertyPath().toString().equals(QUANTITY_RULE));
   }
 }
