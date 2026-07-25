@@ -278,4 +278,50 @@ class StockServiceTest {
         .isInstanceOf(ResourceNotFoundException.class)
         .hasMessageContaining("99");
   }
+
+  // ── getProductStock (M-2) ─────────────────────────────────────────────────
+
+  // Verifica que se devuelve la existencia del producto con su mínimo configurado.
+  @Test
+  @DisplayName("getProductStock — returns stock and minimum for existing product")
+  void getProductStock_existingProduct_returnsStock() {
+    product.setId(1L);
+    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+
+    var result = stockService.getProductStock(1L);
+
+    assertThat(result.productId()).isEqualTo(1L);
+    assertThat(result.sku()).isEqualTo("SKU-001");
+    assertThat(result.name()).isEqualTo("Widget");
+    assertThat(result.stock()).isEqualTo(20);
+    assertThat(result.minimumStock()).isEqualTo(5);
+    assertThat(result.belowMinimum()).isFalse();
+  }
+
+  // Verifica que belowMinimum es true cuando la existencia iguala al mínimo, el mismo criterio
+  // (<=) que usa la alerta de stock bajo.
+  @Test
+  @DisplayName("getProductStock — belowMinimum is true when stock equals minimum")
+  void getProductStock_stockAtMinimum_flagsBelowMinimum() {
+    product.setId(1L);
+    product.setStock(5);
+    when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+
+    var result = stockService.getProductStock(1L);
+
+    assertThat(result.belowMinimum()).isTrue();
+  }
+
+  // Verifica que un producto inexistente lanza ResourceNotFoundException con el ID, que el
+  // manejador
+  // global traduce a 404.
+  @Test
+  @DisplayName("getProductStock — throws ResourceNotFoundException when product missing")
+  void getProductStock_missingProduct_throws() {
+    when(productRepository.findById(99L)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> stockService.getProductStock(99L))
+        .isInstanceOf(ResourceNotFoundException.class)
+        .hasMessageContaining("99");
+  }
 }

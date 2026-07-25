@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.inventory.common.config.SecurityConfig;
 import com.inventory.product.dto.ProductResponse;
 import com.inventory.stock.domain.StockMovement.MovementType;
+import com.inventory.stock.dto.ProductStockResponse;
 import com.inventory.stock.dto.StockMovementRequest;
 import com.inventory.stock.dto.StockMovementResponse;
 import com.inventory.stock.service.StockService;
@@ -255,6 +256,66 @@ class StockControllerTest {
         .andExpect(status().isOk());
 
     verify(stockService).getMovements(eq(1L), eq(MovementType.IN), isNull(), isNull(), any());
+  }
+
+  // ── GET /api/stock/{productId} (M-2) ──────────────────────────────────────
+
+  // Verifica que consultar la existencia de un producto sin autenticación retorna 401.
+  @Test
+  void stockOf_anonymous_returns401() throws Exception {
+    mockMvc.perform(get("/api/stock/1")).andExpect(status().isUnauthorized());
+  }
+
+  // Verifica que con solo stock:view —sin product:view— se obtiene la existencia del producto.
+  @Test
+  void stockOf_withStockView_returns200WithStock() throws Exception {
+    when(stockService.getProductStock(1L))
+        .thenReturn(new ProductStockResponse(1L, "SKU-001", "Widget", 12, 5, false));
+
+    mockMvc
+        .perform(
+            get("/api/stock/1")
+                .with(
+                    jwt()
+                        .jwt(j -> j.subject("viewer"))
+                        .authorities(new SimpleGrantedAuthority("SCOPE_stock:view"))))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.productId").value(1))
+        .andExpect(jsonPath("$.sku").value("SKU-001"))
+        .andExpect(jsonPath("$.stock").value(12))
+        .andExpect(jsonPath("$.minimumStock").value(5))
+        .andExpect(jsonPath("$.belowMinimum").value(false));
+  }
+
+  // Verifica que un scope ajeno al stock (product:view) no basta para consultar la existencia.
+  @Test
+  void stockOf_withProductViewOnly_returns403() throws Exception {
+    mockMvc
+        .perform(
+            get("/api/stock/1")
+                .with(
+                    jwt()
+                        .jwt(j -> j.subject("viewer"))
+                        .authorities(new SimpleGrantedAuthority("SCOPE_product:view"))))
+        .andExpect(status().isForbidden());
+  }
+
+  // Verifica que la ruta literal /alerts sigue ganando a la plantilla /{productId}.
+  @Test
+  void stockOf_doesNotShadowAlertsRoute() throws Exception {
+    when(stockService.getLowStockAlerts()).thenReturn(List.of());
+
+    mockMvc
+        .perform(
+            get("/api/stock/alerts")
+                .with(
+                    jwt()
+                        .jwt(j -> j.subject("viewer"))
+                        .authorities(new SimpleGrantedAuthority("SCOPE_stock:view"))))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$").isArray());
+
+    verify(stockService).getLowStockAlerts();
   }
 
   // ── GET /api/stock/alerts ─────────────────────────────────────────────────

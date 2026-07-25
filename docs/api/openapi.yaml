@@ -673,6 +673,50 @@ paths:
                 type: object
                 additionalProperties:
                   type: object
+  /api/stock/{productId}:
+    get:
+      tags:
+      - Stock
+      summary: Existencia actual de un producto
+      description: "Consulta la existencia de un producto sin exigir product:view.\
+        \ Es la mitad de \"ver existencia e historial\" que stock:view declara; la\
+        \ otra mitad la cubre GET /api/stock/movements."
+      operationId: stockOf
+      parameters:
+      - name: productId
+        in: path
+        description: ID del producto
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "401":
+          description: Token ausente o inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Scope insuficiente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Producto no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "200":
+          description: Existencia del producto
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductStockResponse"
+      security:
+      - keycloak: []
   /api/stock/alerts:
     get:
       tags:
@@ -1239,6 +1283,37 @@ components:
           type: string
         description:
           type: string
+    ProductStockResponse:
+      type: object
+      properties:
+        productId:
+          type: integer
+          description: ID del producto
+          format: int64
+          example: 1
+        sku:
+          type: string
+          description: SKU del producto
+          example: LAPTOP-001
+        name:
+          type: string
+          description: Nombre del producto
+          example: Laptop Dell XPS 15
+        stock:
+          type: integer
+          description: Unidades en existencia
+          format: int32
+          example: 12
+        minimumStock:
+          type: integer
+          description: Stock mínimo configurado
+          format: int32
+          example: 5
+        belowMinimum:
+          type: boolean
+          description: Si la existencia está en el mínimo o por debajo
+          example: false
+      description: Existencia actual de un producto
     StockMovementRequest:
       required:
       - productId

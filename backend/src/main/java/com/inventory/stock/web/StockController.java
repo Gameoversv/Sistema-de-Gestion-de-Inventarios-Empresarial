@@ -2,6 +2,7 @@ package com.inventory.stock.web;
 
 import com.inventory.product.dto.ProductResponse;
 import com.inventory.stock.domain.StockMovement.MovementType;
+import com.inventory.stock.dto.ProductStockResponse;
 import com.inventory.stock.dto.StockMovementRequest;
 import com.inventory.stock.dto.StockMovementResponse;
 import com.inventory.stock.service.StockService;
@@ -112,6 +113,30 @@ public class StockController {
       @Parameter(description = "Fecha fin (ISO-8601)") @RequestParam(required = false) Instant to,
       @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
     return stockService.getMovements(productId, type, from, to, pageable);
+  }
+
+  @GetMapping("/{productId}")
+  @PreAuthorize("hasAuthority('SCOPE_stock:view') or hasAuthority('SCOPE_stock:manage')")
+  @Operation(
+      summary = "Existencia actual de un producto",
+      description =
+          "Consulta la existencia de un producto sin exigir product:view. Es la mitad de \"ver"
+              + " existencia e historial\" que stock:view declara; la otra mitad la cubre GET"
+              + " /api/stock/movements.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Existencia del producto",
+            content = @Content(schema = @Schema(implementation = ProductStockResponse.class))),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Producto no encontrado",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+      })
+  public ProductStockResponse stockOf(
+      @Parameter(description = "ID del producto") @PathVariable Long productId) {
+    return stockService.getProductStock(productId);
   }
 
   @GetMapping("/alerts")

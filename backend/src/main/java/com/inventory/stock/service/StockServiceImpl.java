@@ -8,6 +8,7 @@ import com.inventory.product.mapper.ProductMapper;
 import com.inventory.product.repository.ProductRepository;
 import com.inventory.stock.domain.StockMovement;
 import com.inventory.stock.domain.StockMovement.MovementType;
+import com.inventory.stock.dto.ProductStockResponse;
 import com.inventory.stock.dto.StockMovementRequest;
 import com.inventory.stock.dto.StockMovementResponse;
 import com.inventory.stock.event.StockMovementRecordedEvent;
@@ -98,6 +99,22 @@ public class StockServiceImpl implements StockService {
     return productRepository
         .findById(productId)
         .map(Product::getStock)
+        .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + productId));
+  }
+
+  @Override
+  public ProductStockResponse getProductStock(Long productId) {
+    return productRepository
+        .findById(productId)
+        .map(
+            p ->
+                new ProductStockResponse(
+                    p.getId(),
+                    p.getSku(),
+                    p.getName(),
+                    p.getStock(),
+                    p.getMinimumStock(),
+                    p.getStock() <= p.getMinimumStock()))
         .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + productId));
   }
 
