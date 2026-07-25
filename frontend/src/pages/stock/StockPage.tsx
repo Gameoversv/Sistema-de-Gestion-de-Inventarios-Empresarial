@@ -111,6 +111,7 @@ function RegisterMovementForm() {
             <label className="text-xs font-medium text-gray-700">Producto *</label>
             <select
               {...register('productId')}
+              aria-label="Producto"
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
             >
               <option value="">Seleccionar...</option>
@@ -129,6 +130,7 @@ function RegisterMovementForm() {
             <label className="text-xs font-medium text-gray-700">Tipo *</label>
             <select
               {...register('type')}
+              aria-label="Tipo de movimiento"
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
             >
               <option value="IN">Entrada</option>
@@ -143,6 +145,7 @@ function RegisterMovementForm() {
               {...register('quantity')}
               type="number"
               min="1"
+              aria-label="Cantidad"
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
             />
             {errors.quantity && (
@@ -154,6 +157,7 @@ function RegisterMovementForm() {
             <label className="text-xs font-medium text-gray-700">Motivo</label>
             <input
               {...register('reason')}
+              aria-label="Motivo"
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
               placeholder="Reposición mensual..."
             />
@@ -163,6 +167,7 @@ function RegisterMovementForm() {
             <label className="text-xs font-medium text-gray-700">Referencia</label>
             <input
               {...register('referenceId')}
+              aria-label="Referencia"
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
               placeholder="PO-2024-001"
             />

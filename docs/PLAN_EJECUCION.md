@@ -15,7 +15,7 @@ El enunciado define **ocho** áreas. La versión anterior omitía la última.
 | Área | Peso | Inicial | Actual | Alcanzable |
 |---|---|---|---|---|
 | Funcionalidad | 15% | ~85% | ~97% | ~98% |
-| Testing | 20% | ~60% | ~90% | ~92% |
+| Testing | 20% | ~60% | ~98% | ~98% |
 | Seguridad | 10% | ~70% | ~90% | ~90% |
 | Observabilidad | 15% | ~30% | ~90% | ~90% |
 | CI/CD | 15% | ~60% | ~85% | ~90% |
@@ -45,7 +45,7 @@ El enunciado los lista de forma explícita. Sirve como checklist de cierre.
 | Jenkins pipeline | parcial — **11 etapas escritas** y Jenkins configurado como código, pero de `Integration Tests` en adelante nunca se ha ejecutado: hace falta un agente Linux (C-4) |
 | GitHub Actions pipeline | **listo** — security scan (ZAP autenticado) y quality gate (SonarCloud) añadidos en la Ola 4 |
 | Dashboards Grafana | listo — **4 de 4**; datasources de Prometheus, Tempo y Loki provisionados |
-| Reportes de pruebas | parcial — surefire, failsafe, JaCoCo, cobertura de frontend e informe de ZAP como artefactos; faltan k6 y Newman |
+| Reportes de pruebas | **cumple** — surefire, failsafe, JaCoCo, cobertura de frontend, ZAP, Playwright, JUnit de Newman, resumen de k6 y OWASP Dependency-Check, todos como artefactos de CI |
 | Evidencias QA | **cumple** — 12 informes en `docs/testing/reportes/`, 6 capturas en `docs/testing/capturas/` y 18 issues de bug y charter con reproducción |
 | Documentación completa | **cumple** — requisitos, arquitectura, manual de mantenimiento y guía de pruebas entregados |
 | **Presentación final funcional** | **en curso** — P-2 hecho; faltan guion (P-1) y ensayo (P-3) |
@@ -125,10 +125,10 @@ Ambos corregidos en el PR de C-1. **Consecuencia de método:** los E2E no son ve
 | 1. Unit | Servicios, validaciones, lógica | cumple — **307 `@Test`** en 33 ficheros. La cifra de 284 que traía este plan es la del pipeline de Jenkins; SEC-2, Q-5 y F-2/D-1/D-2 añadieron tests después |
 | 2. Integration | Testcontainers: **BD real, Keycloak**, integraciones | **cumple** — BD (y desde ENV-1 contra la base desplegada) y **Keycloak real con `KeycloakAuthIT`** (TEST-1), verificado en CI |
 | 3. API / Contract | Endpoints, contratos OpenAPI, status codes, payloads | **cumple** — `OpenApiContractTest` valida las respuestas contra `openapi.yaml` (TEST-2) y la colección Postman corre con Newman en CI (TEST-3), 39 aserciones en verde |
-| 4. E2E | Snapshots, flujos, navegación, **roles**, seguridad, **responsive** | **cumple** — `e2e.yml` (C-1/TEST-7) corre los 3 specs (12 casos) contra el stack desplegado, **12/12 en verde**; faltan snapshots (TEST-8) y responsive (TEST-9) como mejora |
-| 5. Security | ZAP, JWT, permisos, CORS, Dependency Check/Snyk, autenticación | parcial — **ZAP autenticado** sembrado con el OpenAPI y con umbral (TEST-10); faltan T-5 y TEST-11 |
-| 6. Performance | Stress, load, usuarios concurrentes, tiempo de respuesta, throughput | **cero** (T-3) |
-| 7. Data | Migraciones, integridad, **duplicados**, constraints, seeds | parcial (DATA-1/2, E-1) |
+| 4. E2E | Snapshots, flujos, navegación, **roles**, seguridad, **responsive** | **cumple** — `e2e.yml` (C-1/TEST-7): flujos (12 casos), **snapshots** (TEST-8), **accesibilidad** axe (D-4) y **responsive** 375/768/1440 (TEST-9), todo verde contra el stack desplegado |
+| 5. Security | ZAP, JWT, permisos, CORS, Dependency Check/Snyk, autenticación | **cumple** — ZAP autenticado con umbral (TEST-10), `CorsHttpTest` de enforcement CORS (TEST-11), y `dependency-scan.yml` con npm audit + OWASP Dependency-Check (T-5) |
+| 6. Performance | Stress, load, usuarios concurrentes, tiempo de respuesta, throughput | **cumple** — k6 en `e2e.yml` (T-3): load + stress, umbral `p(95)<500ms` verde en CI |
+| 7. Data | Migraciones, integridad, **duplicados**, constraints, seeds | **cumple** — Flyway (esquema real en los IT), seeds verificados, `DataIntegrityIT` (duplicado de SKU sembrado y NOT NULL a nivel BD) + el duplicado de `ProductRepositoryIT` |
 | 8. Exploratory | Charters, bugs encontrados, escenarios | **cumple** — 3 charters y 15 bugs como issues, más los informes en `docs/testing/reportes/` (T-6) |
 
 ### 4.4 Observabilidad (15%)
@@ -227,15 +227,15 @@ El área queda cerrada: el pendiente que arrastraba (P-2) está hecho.
 | # | Acción | Esfuerzo | Capa |
 |---|---|---|---|
 | ~~**C-1 + TEST-7**~~ | ~~Playwright en CI~~ — **hecho y verificado, 12/12 en verde**. `e2e.yml` despliega el stack con perfil demo (`docker compose up --build`), espera a Keycloak/backend/frontend y corre los 3 specs contra el sistema vivo, subiendo el informe como artefacto. Destapó **dos bugs de auth reales** (#69, #70), no fragilidad de los specs: el SPA no pedía scopes en el login, y `check-sso` los perdía al refrescar. Ambos corregidos en el mismo PR. No corre en local por C-4 | 3 h | 4 |
-| **TEST-9** | Responsive: 375 / 768 / 1440 px | 45 min | 4 |
-| **TEST-8** | `toHaveScreenshot()` en dashboard, productos y stock | 1 h | 4 |
+| ~~**TEST-9**~~ | ~~Responsive: 375 / 768 / 1440 px~~ — **hecho**: `responsive.spec.ts` comprueba cero desbordamiento horizontal en los tres breakpoints; la app ya era responsive | 45 min | 4 |
+| ~~**TEST-8**~~ | ~~`toHaveScreenshot()`~~ — **hecho**: `visual.spec.ts` compara regiones estables (sidebar, form de alta) contra referencias versionadas generadas en CI | 1 h | 4 |
 | ~~**TEST-1**~~ | ~~`dasniko/testcontainers-keycloak` + IT con token real — **obligatorio**~~ — **hecho y verificado en CI**. `KeycloakAuthIT` levanta Keycloak y Postgres reales, obtiene un token por password grant y ejercita la cadena entera (JWKS, firma, emisor, intersección de scopes, `@PreAuthorize`); 4 tests en verde en el job `integration-test`, incluida la reverificación de G-8 a nivel IT. Afinado en 5 iteraciones sobre CI (imagen del contenedor, required actions, User Profile, `realm_access`), ya que C-4 impide correrlo en local | 3 h | 2 |
-| **T-3** | k6: load, stress, usuarios concurrentes, `p(95)<500ms` | 3 h | 6 |
-| **T-5** | OWASP Dependency Check y `npm audit`/Snyk en CI | 45 min | 5 |
+| ~~**T-3**~~ | ~~k6: load, stress, usuarios concurrentes, `p(95)<500ms`~~ — **hecho, verde en CI**: `scripts/k6/load-test.js` con perfil load+stress (pico de 25 VUs) sobre 7 endpoints de lectura; umbrales `p(95)<500ms`, <1% error, >99% checks. Corre en `e2e.yml` contra el stack desplegado | 3 h | 6 |
+| ~~**T-5**~~ | ~~OWASP Dependency Check y `npm audit`/Snyk en CI~~ — **hecho**: `dependency-scan.yml` con npm audit (frontend + e2e) y OWASP Dependency-Check (backend, falla en CVSS≥8). El audit destapó CVEs reales; los que tenían fix (brace-expansion, js-yaml, postcss) se corrigieron, y se gatea en critical por los de react-router 7.x sin fix publicado | 45 min | 5 |
 | **TEST-2** | ~~RestAssured para contrato OpenAPI~~ — **hecho**: `OpenApiContractTest` valida las respuestas contra `docs/api/openapi.yaml` con swagger-request-validator sobre MockMvc (job rápido, sin stack). 4 tests en verde en local | 1 h | 3 |
 | ~~**TEST-3**~~ | ~~Newman en CI~~ — **hecho, 39 aserciones en verde**. `e2e.yml` corre la colección Postman contra el stack desplegado. Ejecutarla por primera vez destapó **7 bugs de la colección** (nunca se había probado): `/api/v1` inexistente, `/stock` sin prefijo, IDs hardcodeados que borraban datos sembrados, soft-delete que esperaba 200+body en vez de 204, "Electronics" ya sembrada (409), SKU de prueba inexistente y una aserción de Content-Type mal escrita | 1 h | 3 |
-| **TEST-11** | Test de CORS por perfil | 30 min | 5 |
-| **DATA-1/2** | Constraints, seeds y **datos duplicados** | 1,5 h | 7 |
+| ~~**TEST-11**~~ | ~~Test de CORS por perfil~~ — **hecho**: `CorsHttpTest` ejercita el filtro CORS de verdad (preflight de origen permitido recibe `Access-Control-Allow-Origin`, uno no permitido no), complementando a `CorsProfilesTest` que solo mira la config. Verde en local | 30 min | 5 |
+| ~~**DATA-1/2**~~ | ~~Constraints, seeds y **datos duplicados**~~ — **hecho**: `DataIntegrityIT` verifica que Flyway cargó los seeds de V5, que un SKU sembrado duplicado se rechaza por la restricción de unicidad, y que el `NOT NULL` de `minimum_stock` lo aplica el esquema (no solo Bean Validation). El duplicado directo ya lo cubría `ProductRepositoryIT` | 1,5 h | 7 |
 
 > **C-1 + TEST-7 es la mejor palanca disponible.** El enunciado exige E2E con roles, seguridad y responsive, ejecutados *contra el sistema desplegado*. Además es lo único que confirmaría SEC-1.
 
@@ -297,7 +297,7 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 | ~~**ADR-002**~~ | ~~Por qué el mapa rol→scopes vive en Java~~ — **hecho**: [`ADR-002`](decisions/ADR-002-mapa-rol-scopes-en-java.md) documenta la contención de G-6 en el backend, con `SecurityConfig` apuntando a él | — |
 | ~~**P-2a**~~ | ~~CORS de `staging` bloquea el frontend local y deja P-3 sin interfaz~~ — **hecho**: perfil `demo` propio, con CORS local y muestreo al 100 %. Se descartó añadir localhost a `staging`, que espeja producción. Verificado en vivo y fijado con `CorsProfilesTest` [informe](testing/reportes/P-2a-perfil-demo.md) | — |
 | ~~**P-2b**~~ | ~~`keycloak-init` no es idempotente: al reejecutarse sobre un realm existente lanza `duplicate key … uk_cli_scope`~~ — **hecho**: comprueba existencia antes de crear scopes y usuarios. Verificado con `sh -n` y lógica; sin doble `down -v && up` en vivo por C-4. Cierra #45 | — |
-| **TEST-10b** | El realm emite tokens de 300 s y el escaneo activo de ZAP puede durar más. Al caducar, el resto de la API se recorre sin autenticar y el escaneo aprueba precisamente por no encontrar nada. Ya hay un paso que lo detecta y falla; falta la corrección de raíz: un cliente de Keycloak dedicado al escaneo con `accessTokenLifespan` mayor | 45 min |
+| ~~**TEST-10b**~~ | ~~El realm emite tokens de 300 s y el escaneo activo de ZAP puede durar más~~ — **hecho**: cliente `inventory-zap` en el realm con `access.token.lifespan=3600`; `staging.yml` obtiene el token del escaneo de ese cliente en vez de `inventory-frontend`. Verificado en `e2e.yml` (mismo realm): un paso comprueba que el token de `inventory-zap` vive ~3600 s. Cierra #46 | 45 min |
 
 ### Ola 8 — Alto coste, decidir explícitamente
 
@@ -318,7 +318,7 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 | D-3 | `topProducts` con query en BD | 45 min |
 | M-2 | `GET /api/stock/{productId}` con `stock:view` | 30 min |
 | F-1 | ADR-003 sobre el soft delete — renumerado desde 002, que queda para el mapa rol→scopes de la Ola 7 | 30 min |
-| D-4 | `@axe-core/playwright` en E2E | 1 h |
+| ~~D-4~~ | ~~`@axe-core/playwright` en E2E~~ — **hecho**: `a11y.spec.ts` (axe WCAG 2 A/AA) sobre dashboard, productos y stock; destapó selects/inputs sin nombre accesible, corregidos con `aria-label` | 1 h |
 | E-2 | Validación condicional de `quantity` | 45 min |
 | ~~**SEC-2**~~ | ~~`onTokenExpired`~~ — **hecho**: renovación proactiva más cierre de sesión cuando el refresco falla. [Informe](testing/reportes/SEC-2-S-2-ciclo-de-vida-del-token.md) | — |
 | ~~**S-2**~~ | ~~Test con `grant_type=refresh_token`~~ — **hecho**: 5 comprobaciones, incluida la negativa (refresh inválido → 400) | — |

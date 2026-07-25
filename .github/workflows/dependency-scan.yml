@@ -1,0 +1,65 @@
+name: Dependency Scan
+
+# T-5 — Escaneo de dependencias por CVEs. El enunciado exige OWASP Dependency
+# Check / Snyk y npm audit. Aquí: npm audit para el JS (frontend y e2e) y OWASP
+# Dependency-Check para las dependencias Maven del backend.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  npm-audit:
+    name: npm audit (frontend + e2e)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # Se gatea en 'critical'. Los 'high' que quedan se concentran en
+      # react-router 7.x (open redirect en <Link> y varios de su modo RSC) y no
+      # tienen version con fix publicada: la rama 7.x entera esta marcada. La app
+      # es un SPA cliente sin RSC y con destinos de <Link> hardcodeados, no
+      # tomados de entrada de usuario. El resto de highs con fix (brace-expansion,
+      # js-yaml, postcss) ya se corrigieron actualizando el lockfile.
+      - name: Frontend — npm audit
+        working-directory: frontend
+        run: |
+          npm ci
+          npm audit --audit-level=critical
+      - name: E2E — npm audit
+        working-directory: e2e
+        run: |
+          npm ci
+          npm audit --audit-level=critical
+
+  owasp-backend:
+    name: OWASP Dependency-Check (backend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: inventory-backend
+          path: backend
+          format: HTML
+          # Falla el job si aparece una vulnerabilidad de CVSS >= 8 (alta/crítica).
+          args: >-
+            --failOnCVSS 8
+            --enableRetired
+        env:
+          # Acelera y estabiliza la descarga del feed NVD. Opcional: sin ella el
+          # escaneo funciona pero es más lento y puede toparse con el rate limit.
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: reports
+          retention-days: 7

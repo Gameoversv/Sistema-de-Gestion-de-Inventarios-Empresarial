@@ -128,6 +128,35 @@
         "stock:view", "stock:manage",
         "report:view", "user:manage", "audit:view"
       ]
+    },
+    {
+      "id": "b1b2c3d4-e5f6-4000-b002-000000000003",
+      "clientId": "inventory-zap",
+      "name": "OWASP ZAP scanner",
+      "description": "Cliente dedicado al escaneo de seguridad (TEST-10b). Token de vida larga para que no caduque a mitad del escaneo activo, que puede durar mas de los 300 s del realm.",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "bearerOnly": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "attributes": {
+        "access.token.lifespan": "3600"
+      },
+      "defaultClientScopes": [
+        "web-origins", "acr", "roles", "profile", "email"
+      ],
+      "optionalClientScopes": [
+        "address", "phone", "offline_access", "microprofile-jwt",
+        "product:view", "product:manage",
+        "stock:view", "stock:manage",
+        "report:view", "user:manage", "audit:view"
+      ]
     }
   ]
 }

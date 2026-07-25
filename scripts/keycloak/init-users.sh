@@ -65,6 +65,8 @@ echo "==> Adding custom scopes to clients..."
 
 FRONTEND_ID=$(kc_get "/clients?clientId=inventory-frontend" | jq -r '.[0].id // empty')
 BACKEND_ID=$(kc_get  "/clients?clientId=inventory-backend"  | jq -r '.[0].id // empty')
+# inventory-zap: cliente del escaneo de seguridad, con token de vida larga (TEST-10b).
+ZAP_ID=$(kc_get      "/clients?clientId=inventory-zap"      | jq -r '.[0].id // empty')
 
 for scope_name in "product:view" "product:manage" "stock:view" "stock:manage" "report:view" "user:manage" "audit:view"; do
   SCOPE_ID=$(kc_get "/client-scopes" | jq -r --arg n "$scope_name" '.[] | select(.name==$n) | .id // empty')
@@ -74,6 +76,9 @@ for scope_name in "product:view" "product:manage" "stock:view" "stock:manage" "r
     fi
     if [ -n "$BACKEND_ID" ]; then
       kc_put "/clients/$BACKEND_ID/optional-client-scopes/$SCOPE_ID" ""
+    fi
+    if [ -n "$ZAP_ID" ]; then
+      kc_put "/clients/$ZAP_ID/optional-client-scopes/$SCOPE_ID" ""
     fi
     echo "  ✓ scope '$scope_name' linked to clients"
   else

@@ -8,6 +8,7 @@
     "test:report": "playwright show-report"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
     "@playwright/test": "^1.49.0",
     "@types/node": "^25.9.3"
   }

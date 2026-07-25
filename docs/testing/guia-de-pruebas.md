@@ -19,14 +19,14 @@ El enunciado exige **ocho capas** de testing. Esta guía dice, capa por capa, qu
 | 2. Integration | **Cumple** | Testcontainers con base real **y Keycloak real** (`KeycloakAuthIT`, TEST-1) |
 | 3. API / Contract | **Cumple** | Contract test contra `openapi.yaml` (TEST-2) + colección Postman con Newman en CI (TEST-3, 39 aserciones) |
 | 4. E2E | **Cumple** | 3 specs (12 casos) de Playwright, **12/12 en CI** por `e2e.yml` (C-1/TEST-7); faltan snapshots y responsive como mejora |
-| 5. Security | Parcial | ZAP autenticado con umbral; faltan Dependency Check y CORS |
-| 6. Performance | **Cero** | sin una sola prueba de carga |
-| 7. Data | Parcial | migraciones y seeds; faltan duplicados y constraints |
+| 5. Security | **Cumple** | ZAP autenticado (TEST-10), enforcement CORS (TEST-11), npm audit + OWASP Dependency-Check (T-5) |
+| 6. Performance | **Cumple** | k6 en CI (T-3): load + stress, `p(95)<500ms` |
+| 7. Data | **Cumple** | Flyway + seeds verificados, `DataIntegrityIT` (duplicados y constraints a nivel BD) |
 | 8. Exploratory | **Cumple** | 3 charters, 15 bugs con reproducción |
 
 **307 `@Test` en 33 ficheros** (más los 4 de `KeycloakAuthIT`). Cobertura del backend: **85,0 % de ramas, 92,7 % de líneas** (JaCoCo en CI, umbral 80 %). Frontend: **9,3 %** de líneas — el hueco de calidad conocido.
 
-**Cinco capas completas** (Unit, Integration, API/Contract, E2E, Exploratory), dos parciales (Security, Data) y una a cero (Performance). Para el 100% quedan Performance (T-3), y los cierres puntuales de Security (T-5, TEST-11) y Data (DATA-1/2).
+**Las ocho capas cumplen** y se ejecutan en CI, con las mejoras de E2E (snapshots, accesibilidad, responsive) y de Security (TEST-10b) también cerradas.
 
 ---
 
@@ -115,56 +115,60 @@ Esta etapa destapó **dos defectos reales de autenticación**, no fragilidad de 
 
 En producción, ambos habrían dejado la app inservible: el primero desde el arranque, el segundo tras cualquier F5.
 
-**Qué falta dentro de la capa:**
-- **TEST-8** — `toHaveScreenshot()` en dashboard, productos y stock (snapshots).
-- **TEST-9** — responsive a 375 / 768 / 1440 px.
-- **D-4** — `@axe-core/playwright` para accesibilidad automatizada.
+La capa cubre además, toda en CI, lo que el enunciado nombra —snapshots, roles, seguridad, responsive—:
+- **Regresión visual (TEST-8)** — `visual.spec.ts` compara con `toHaveScreenshot()` regiones estables (sidebar y formulario de alta), con referencias versionadas generadas en CI; un cambio de UI por encima de la tolerancia tumba el job.
+- **Accesibilidad (D-4)** — `a11y.spec.ts` corre axe-core (WCAG 2 A/AA) sobre dashboard, productos y stock, gateando en violaciones critical/serious. Destapó fallos reales: selects e inputs sin nombre accesible, corregidos con `aria-label`. La regla de contraste queda excluida y anotada como ajuste de diseño pendiente.
+- **Responsive (TEST-9)** — `responsive.spec.ts` comprueba que dashboard y productos no desbordan horizontalmente en **375, 768 y 1440 px**.
+- **Roles y seguridad** ya los ejercitan `auth.spec.ts` y el resto: login/logout, acceso denegado, y la gestión gated por permisos.
 
 ---
 
-## 5. Security Testing — **Parcial**
+## 5. Security Testing — **Cumple**
 
 > *"Escaneo OWASP ZAP, Validación JWT, Validación de permisos, Validación de CORS, OWASP Dependency Check / Snyk, Validación de autenticación"*
 
-**Lo que cumple:**
-
 | Control | Cómo | Resultado |
 |---|---|---|
-| Escaneo ZAP | `zap-api-scan` en `staging.yml`, **autenticado** y sembrado con el OpenAPI, con umbral (sin `-I`) | Local: 29 URLs, 118 reglas PASS, **0 WARN** (TEST-10) |
+| Escaneo ZAP | `zap-api-scan` en `staging.yml`, **autenticado** y sembrado con el OpenAPI, con umbral (sin `-I`) | 29 URLs, 118 reglas PASS, **0 WARN** (TEST-10) |
 | Validación JWT | firma, emisor y expiración | `SecurityIntegrationTest`, `KeycloakJwtConverterTest` |
-| Validación de permisos | scope exigido por endpoint, no rol | `SecurityIntegrationTest` |
+| Validación de permisos | scope exigido por endpoint, no rol | `SecurityIntegrationTest`; y a nivel IT contra Keycloak real (`KeycloakAuthIT`) |
 | Validación de autenticación | 401 sin token en toda ruta de negocio | `SecurityIntegrationTest` |
+| **CORS (TEST-11)** | enforcement real del filtro: preflight de origen permitido recibe `Access-Control-Allow-Origin`, uno no permitido no | `CorsHttpTest` (runtime) + `CorsProfilesTest` (config por perfil) |
+| **Dependencias (T-5)** | `dependency-scan.yml`: npm audit (frontend + e2e) y OWASP Dependency-Check (backend, falla en CVSS≥8) | El audit destapó CVEs reales; los que tenían fix se corrigieron |
 
-**Qué falta:**
-- **T-5** — OWASP Dependency Check y `npm audit`/Snyk en CI. Ningún escaneo de CVEs de dependencias hoy.
-- **TEST-11** — test de CORS de extremo a extremo por perfil (hoy solo `CorsProfilesTest` en unitario).
-- **TEST-10b** — el token del escaneo caduca a los 300 s; si el escaneo activo dura más, el resto de la API se recorre sin autenticar y aprueba por no encontrar nada. Hay un paso que lo detecta y falla; falta un cliente de Keycloak dedicado con `accessTokenLifespan` mayor (issue #46).
+El escaneo de dependencias no fue un trámite: `npm audit` encontró CVEs altas reales (brace-expansion DoS, js-yaml, postcss path traversal), que se corrigieron actualizando el lockfile. Las que quedan son de react-router 7.x sin fix publicado (open redirect en `<Link>` y su modo RSC, que la app no usa); se gatea en critical y se documenta.
+
+**TEST-10b — cerrado.** El token del escaneo ZAP caducaba a los 300 s; si el escaneo activo duraba más, el resto de la API se recorría sin autenticar. Ahora `staging.yml` obtiene el token de un cliente dedicado `inventory-zap` con `access.token.lifespan=3600`. Un paso de `e2e.yml` verifica, contra el mismo realm, que ese cliente emite un token de ~3600 s (issue #46).
 
 ---
 
-## 6. Performance Testing — **Cero**
+## 6. Performance Testing — **Cumple**
 
 > *"Stress testing, Load testing, Concurrent users, Tiempo de respuesta y Throughput"* · JMeter y/o k6.
 
-**No hay ni una sola prueba de carga.** Es la única de las ocho capas literalmente a cero (**T-3**).
+`scripts/k6/load-test.js` ejercita **load, stress y usuarios concurrentes** contra el sistema desplegado en `e2e.yml`, con umbrales que hacen fallar el job:
 
-La instrumentación para medirla **sí existe**: `application.yml` tiene los buckets SLO (`50ms, 100ms, 200ms, 500ms, 1s, 2s`) y el histograma de percentiles activo, y `StockServiceConcurrencyIT` cubre corrección bajo concurrencia — pero corrección no es rendimiento. El plan define k6 con `p(95) < 500ms`, stress, load y usuarios concurrentes. Hasta que exista, RNF-08 y RNF-10 quedan implementados pero **sin evidencia de comportamiento bajo carga**.
+- **Tiempo de respuesta:** `http_req_duration` con `p(95)<500ms`.
+- **Throughput / concurrencia:** perfil por etapas — rampa a 10 VUs, 30 s sostenidos, pico de **25 VUs concurrentes** (stress), ramp-down.
+- **Fiabilidad bajo carga:** `<1%` de peticiones fallidas y `>99%` de checks en 200.
+
+`setup()` obtiene un token compartido; cada VU recorre 7 endpoints de lectura (productos con paginación y búsqueda, categorías, reportes, stock). El resumen JSON se sube como artefacto. La instrumentación del backend (buckets SLO `50ms…2s`, histograma de percentiles) da las series que respaldan la medición.
 
 ---
 
-## 7. Data Testing — **Parcial**
+## 7. Data Testing — **Cumple**
 
 > *"Migraciones, Integridad de datos, Datos duplicados, Constraints y Seeds"*
 
 | Aspecto | Estado |
 |---|---|
-| Migraciones | **Cumple** — 7 migraciones Flyway (`V1`…`V7`); `ProductRepositoryIT` y `AuditIntegrationIT` levantan el esquema real |
-| Seeds | **Cumple** — `V5__seed_data.sql` |
-| Integridad | Parcial — FK producto↔movimiento validada en `StockServiceConcurrencyIT` |
-| Constraints | Parcial — SKU único definido en el esquema, sin test dedicado que verifique el rechazo del duplicado |
-| **Datos duplicados** | **Falta** — el enunciado lo nombra explícito; no hay caso que inserte un duplicado y compruebe el rechazo |
+| Migraciones | **Cumple** — 7 migraciones Flyway (`V1`…`V7`); los IT levantan el esquema real |
+| Seeds | **Cumple** — `V5__seed_data.sql`; `DataIntegrityIT` verifica que Flyway los cargó |
+| Integridad | **Cumple** — FK producto↔movimiento en `StockServiceConcurrencyIT` |
+| Constraints | **Cumple** — SKU único y `minimum_stock NOT NULL` verificados a nivel BD en `DataIntegrityIT` |
+| **Datos duplicados** | **Cumple** — `DataIntegrityIT` inserta un SKU ya sembrado y comprueba el rechazo por unicidad; `ProductRepositoryIT` cubre el duplicado directo |
 
-Pendiente: **DATA-1/2** — tests de constraints, seeds y datos duplicados.
+`DataIntegrityIT` prueba las restricciones **en el esquema**, no en la capa de aplicación: `minimum_stock` no lleva `@NotNull` en la entidad (solo `@Min`), así que Bean Validation lo deja pasar y es la columna `NOT NULL` la que lo rechaza — justo lo que hay que verificar.
 
 ---
 
@@ -192,49 +196,44 @@ Los charters no son decorativos: cada uno destapó un defecto real que las prueb
 | Integración (Testcontainers) | `cd backend && ./mvnw verify` | `ci.yml` → job `integration-test` (runner Linux) |
 | Frontend unit + cobertura | `cd frontend && npm test` | `ci.yml` → job `frontend` |
 | Contract (OpenAPI) | `cd backend && ./mvnw -Dtest=OpenApiContractTest test` | `ci.yml` → job `unit-tests` (TEST-2) |
-| E2E | `cd e2e && npx playwright test` | `e2e.yml` (C-1/TEST-7), contra el stack desplegado |
+| E2E | `cd e2e && npx playwright test --grep-invert @visual` | `e2e.yml` (C-1/TEST-7), contra el stack desplegado |
+| Accesibilidad (D-4) | incluida en el run de Playwright | `e2e.yml` — axe-core sobre las páginas |
+| Regresión visual (TEST-8) | `npx playwright test --grep @visual` | `e2e.yml` — snapshots de regiones estables |
+| Responsive (TEST-9) | incluida en el run de Playwright | `e2e.yml` — 375 / 768 / 1440 px |
 | API (Newman) | `newman run docs/postman/...json` | `e2e.yml` (TEST-3), contra el stack desplegado |
+| Performance (k6) | `k6 run scripts/k6/load-test.js` | `e2e.yml` (T-3), contra el stack desplegado |
+| Dependency scan | `cd frontend && npm audit` | `dependency-scan.yml` (T-5): npm audit + OWASP DC |
+| CORS (TEST-11) | `cd backend && ./mvnw -Dtest=CorsHttpTest test` | `ci.yml` → job `unit-tests` |
 | API + Security contra el desplegado | — | `staging.yml` tras el deploy |
 | Análisis estático | — | SonarCloud en cada run |
 
 > Los IT **no arrancan sobre Docker Desktop en Windows** (C-4). En local, en Windows, `./mvnw test` (solo unit) sí corre; para los IT hace falta un entorno Linux o el propio CI.
 
-**Reportes generados:** surefire (unit), failsafe (IT), JaCoCo (cobertura), cobertura de frontend, informe de ZAP, informe de Playwright y el JUnit de Newman, todos como artefactos de CI. Falta el de k6, que depende de T-3.
+**Reportes generados:** surefire (unit), failsafe (IT), JaCoCo (cobertura), cobertura de frontend, informe de ZAP, informe de Playwright, el JUnit de Newman, el resumen JSON de k6 y el informe de OWASP Dependency-Check, todos como artefactos de CI.
 
 ---
 
 ## 10. Defectos encontrados
 
-17 bugs registrados como issues, con reproducción en el cuerpo. **10 corregidos, 7 abiertos.** Los corregidos se registraron cerrados, cada uno enlazando el PR que lo arregló y declarando que la issue se abrió después del arreglo, para dejar el rastro (T-6, [informe](reportes/T-6-issues-de-bug.md)).
+17 bugs registrados como issues, con reproducción en el cuerpo. **15 corregidos, 2 abiertos.** Los corregidos se registraron cerrados, cada uno enlazando el PR que lo arregló y declarando que la issue se abrió después del arreglo, para dejar el rastro (T-6, [informe](reportes/T-6-issues-de-bug.md)). Los dos que siguen abiertos: **#48** (`user:manage` no protege nada, A-2, diferido a la Ola 8) y **#49** (Testcontainers no arranca sobre Docker Desktop en Windows, C-4, limitación de entorno; pasan en los runners Linux).
 
-### Abiertos
+### Abiertos (2)
 
 | # | Defecto | Severidad | Tarea |
 |---|---|---|---|
-| [#43](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/issues/43) | Keycloak emite cualquier scope a cualquier usuario autenticado | **Crítico** | G-8 (mitigado en backend) |
-| [#48](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/issues/48) | `user:manage` no protege ningún endpoint | Alto | A-2 |
-| [#44](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/issues/44) | `AuthContext.tsx` replica el bug de primer-rol-gana | Medio | G-3a |
-| [#46](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/issues/46) | El token de ZAP caduca a los 300 s y el resto del escaneo corre sin autenticar | Medio | TEST-10b |
-| [#47](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/issues/47) | `staging.yml` inyecta `JWT_SECRET` y `JWT_EXPIRATION_MS` que no lee nadie | Medio | S-4b |
-| [#45](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/issues/45) | `keycloak-init` no es idempotente | Bajo | P-2b |
-| [#49](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/issues/49) | Testcontainers no arranca sobre Docker Desktop en Windows | Bajo (entorno) | C-4 |
+| [#48](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/issues/48) | `user:manage` no protege ningún endpoint | Alto | A-2 — diferido a la Ola 8 |
+| [#49](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/issues/49) | Testcontainers no arranca sobre Docker Desktop en Windows | Bajo (entorno) | C-4 — pasan en los runners Linux |
 
-El #43 está en abierto a propósito: la escalada existe en el IdP y la corrección de raíz (G-8) sigue pendiente, aunque el backend la mitigue descartando los scopes no permitidos. Cerrarlo antes de G-8 falsearía el estado.
+Ninguno bloquea el pipeline: #48 es una capacidad diferida (el permiso se emite pero aún no protege un endpoint) y #49 es una limitación de Docker Desktop en Windows, no del código.
 
-### Corregidos (10)
+### Corregidos (15)
 
-Escalada por primer-rol-gana (#50) y fallback de scopes (#51), el check de CI que aprobaba en 12 s (#52), el badge de cobertura placeholder (#53), la cobertura de frontend que informaba 100 % midiendo 14 sentencias (#54), Spotless desactivado en 8 puntos (#55), el README que documentaba una API inexistente (#56) y el CORS de `staging` que bloqueaba la demo (#57). Los dos últimos salieron de montar los E2E en CI: el SPA no pedía scopes en el login (#69) y `check-sso` los perdía al refrescar (#70). Cada uno con su PR enlazado.
+De la sesión de exploración y arreglos: escalada por primer-rol-gana (#50), fallback de scopes (#51), el check de CI que aprobaba en 12 s (#52), el badge placeholder (#53), la cobertura de frontend que informaba 100 % midiendo 14 sentencias (#54), Spotless desactivado (#55), el README que documentaba una API inexistente (#56) y el CORS de `staging` (#57). De montar los E2E en CI: el SPA sin scopes en el login (#69) y `check-sso` que los perdía al refrescar (#70). Y la deuda de la Ola 7, cerrada al mergearse: la escalada de scopes de raíz en el IdP (#43, G-8), `AuthContext` primer-rol-gana (#44, G-3a), `keycloak-init` no idempotente (#45, P-2b), el `JWT_SECRET` muerto (#47, S-4b) y el token del escaneo ZAP (#46, TEST-10b). Cada uno con su PR enlazado.
 
 ---
 
-## Qué falta para cerrar la pirámide
+## Estado de la pirámide
 
-Cinco de las ocho capas cumplen. Para el 100% quedan tres:
-
-1. **T-3** — Performance. Única capa a cero, la palanca grande.
-2. **T-5, TEST-11** — cierres de Security (Dependency Check/Snyk y CORS por perfil).
-3. **DATA-1/2** — Data: constraints, seeds y datos duplicados.
-
-Mejoras dentro de capas que ya cumplen: TEST-8 (snapshots), TEST-9 (responsive) y D-4 (accesibilidad) en E2E.
+**Las ocho capas del enunciado cumplen y corren en CI**, y las mejoras identificadas están cerradas: E2E con snapshots (TEST-8), accesibilidad (D-4) y responsive (TEST-9); Security con el cliente ZAP de token largo (TEST-10b). La pirámide de testing está completa.
 
 Trazabilidad completa de cada identificador en el [plan de ejecución](../PLAN_EJECUCION.md), §4.3.
