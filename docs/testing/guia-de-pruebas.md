@@ -215,25 +215,20 @@ Los charters no son decorativos: cada uno destapó un defecto real que las prueb
 
 ## 10. Defectos encontrados
 
-17 bugs registrados como issues, con reproducción en el cuerpo. **10 corregidos, 7 abiertos.** Los corregidos se registraron cerrados, cada uno enlazando el PR que lo arregló y declarando que la issue se abrió después del arreglo, para dejar el rastro (T-6, [informe](reportes/T-6-issues-de-bug.md)).
+17 bugs registrados como issues, con reproducción en el cuerpo. **15 corregidos, 2 abiertos.** Los corregidos se registraron cerrados, cada uno enlazando el PR que lo arregló y declarando que la issue se abrió después del arreglo, para dejar el rastro (T-6, [informe](reportes/T-6-issues-de-bug.md)). Los dos que siguen abiertos: **#48** (`user:manage` no protege nada, A-2, diferido a la Ola 8) y **#49** (Testcontainers no arranca sobre Docker Desktop en Windows, C-4, limitación de entorno; pasan en los runners Linux).
 
-### Abiertos
+### Abiertos (2)
 
 | # | Defecto | Severidad | Tarea |
 |---|---|---|---|
-| [#43](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/issues/43) | Keycloak emite cualquier scope a cualquier usuario autenticado | **Crítico** | G-8 (mitigado en backend) |
-| [#48](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/issues/48) | `user:manage` no protege ningún endpoint | Alto | A-2 |
-| [#44](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/issues/44) | `AuthContext.tsx` replica el bug de primer-rol-gana | Medio | G-3a |
-| [#46](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/issues/46) | El token de ZAP caduca a los 300 s y el resto del escaneo corre sin autenticar | Medio | TEST-10b |
-| [#47](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/issues/47) | `staging.yml` inyecta `JWT_SECRET` y `JWT_EXPIRATION_MS` que no lee nadie | Medio | S-4b |
-| [#45](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/issues/45) | `keycloak-init` no es idempotente | Bajo | P-2b |
-| [#49](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/issues/49) | Testcontainers no arranca sobre Docker Desktop en Windows | Bajo (entorno) | C-4 |
+| [#48](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/issues/48) | `user:manage` no protege ningún endpoint | Alto | A-2 — diferido a la Ola 8 |
+| [#49](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/issues/49) | Testcontainers no arranca sobre Docker Desktop en Windows | Bajo (entorno) | C-4 — pasan en los runners Linux |
 
-El #43 está en abierto a propósito: la escalada existe en el IdP y la corrección de raíz (G-8) sigue pendiente, aunque el backend la mitigue descartando los scopes no permitidos. Cerrarlo antes de G-8 falsearía el estado.
+Ninguno bloquea el pipeline: #48 es una capacidad diferida (el permiso se emite pero aún no protege un endpoint) y #49 es una limitación de Docker Desktop en Windows, no del código.
 
-### Corregidos (10)
+### Corregidos (15)
 
-Escalada por primer-rol-gana (#50) y fallback de scopes (#51), el check de CI que aprobaba en 12 s (#52), el badge de cobertura placeholder (#53), la cobertura de frontend que informaba 100 % midiendo 14 sentencias (#54), Spotless desactivado en 8 puntos (#55), el README que documentaba una API inexistente (#56) y el CORS de `staging` que bloqueaba la demo (#57). Los dos últimos salieron de montar los E2E en CI: el SPA no pedía scopes en el login (#69) y `check-sso` los perdía al refrescar (#70). Cada uno con su PR enlazado.
+De la sesión de exploración y arreglos: escalada por primer-rol-gana (#50), fallback de scopes (#51), el check de CI que aprobaba en 12 s (#52), el badge placeholder (#53), la cobertura de frontend que informaba 100 % midiendo 14 sentencias (#54), Spotless desactivado (#55), el README que documentaba una API inexistente (#56) y el CORS de `staging` (#57). De montar los E2E en CI: el SPA sin scopes en el login (#69) y `check-sso` que los perdía al refrescar (#70). Y la deuda de la Ola 7, cerrada al mergearse: la escalada de scopes de raíz en el IdP (#43, G-8), `AuthContext` primer-rol-gana (#44, G-3a), `keycloak-init` no idempotente (#45, P-2b), el `JWT_SECRET` muerto (#47, S-4b) y el token del escaneo ZAP (#46, TEST-10b). Cada uno con su PR enlazado.
 
 ---
 

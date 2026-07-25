@@ -45,7 +45,7 @@ El enunciado los lista de forma explícita. Sirve como checklist de cierre.
 | Jenkins pipeline | parcial — **11 etapas escritas** y Jenkins configurado como código, pero de `Integration Tests` en adelante nunca se ha ejecutado: hace falta un agente Linux (C-4) |
 | GitHub Actions pipeline | **listo** — security scan (ZAP autenticado) y quality gate (SonarCloud) añadidos en la Ola 4 |
 | Dashboards Grafana | listo — **4 de 4**; datasources de Prometheus, Tempo y Loki provisionados |
-| Reportes de pruebas | parcial — surefire, failsafe, JaCoCo, cobertura de frontend e informe de ZAP como artefactos; faltan k6 y Newman |
+| Reportes de pruebas | **cumple** — surefire, failsafe, JaCoCo, cobertura de frontend, ZAP, Playwright, JUnit de Newman, resumen de k6 y OWASP Dependency-Check, todos como artefactos de CI |
 | Evidencias QA | **cumple** — 12 informes en `docs/testing/reportes/`, 6 capturas en `docs/testing/capturas/` y 18 issues de bug y charter con reproducción |
 | Documentación completa | **cumple** — requisitos, arquitectura, manual de mantenimiento y guía de pruebas entregados |
 | **Presentación final funcional** | **en curso** — P-2 hecho; faltan guion (P-1) y ensayo (P-3) |
