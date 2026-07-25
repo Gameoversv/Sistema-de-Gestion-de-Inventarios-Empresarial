@@ -115,10 +115,11 @@ Esta etapa destapó **dos defectos reales de autenticación**, no fragilidad de 
 
 En producción, ambos habrían dejado la app inservible: el primero desde el arranque, el segundo tras cualquier F5.
 
-**Qué falta dentro de la capa:**
-- **TEST-8** — `toHaveScreenshot()` en dashboard, productos y stock (snapshots).
-- **TEST-9** — responsive a 375 / 768 / 1440 px.
-- **D-4** — `@axe-core/playwright` para accesibilidad automatizada.
+**Snapshots (TEST-8) y accesibilidad (D-4), también en CI:**
+- **Regresión visual (TEST-8)** — `visual.spec.ts` compara con `toHaveScreenshot()` regiones estables (sidebar y formulario de alta), con referencias versionadas generadas en CI; un cambio de UI por encima de la tolerancia tumba el job.
+- **Accesibilidad (D-4)** — `a11y.spec.ts` corre axe-core (WCAG 2 A/AA) sobre dashboard, productos y stock, gateando en violaciones critical/serious. Destapó fallos reales: selects e inputs sin nombre accesible, corregidos con `aria-label`. La regla de contraste queda excluida y anotada como ajuste de diseño pendiente.
+
+**Qué falta (mejora):** **TEST-9** — responsive a 375 / 768 / 1440 px.
 
 ---
 
@@ -195,7 +196,9 @@ Los charters no son decorativos: cada uno destapó un defecto real que las prueb
 | Integración (Testcontainers) | `cd backend && ./mvnw verify` | `ci.yml` → job `integration-test` (runner Linux) |
 | Frontend unit + cobertura | `cd frontend && npm test` | `ci.yml` → job `frontend` |
 | Contract (OpenAPI) | `cd backend && ./mvnw -Dtest=OpenApiContractTest test` | `ci.yml` → job `unit-tests` (TEST-2) |
-| E2E | `cd e2e && npx playwright test` | `e2e.yml` (C-1/TEST-7), contra el stack desplegado |
+| E2E | `cd e2e && npx playwright test --grep-invert @visual` | `e2e.yml` (C-1/TEST-7), contra el stack desplegado |
+| Accesibilidad (D-4) | incluida en el run de Playwright | `e2e.yml` — axe-core sobre las páginas |
+| Regresión visual (TEST-8) | `npx playwright test --grep @visual` | `e2e.yml` — snapshots de regiones estables |
 | API (Newman) | `newman run docs/postman/...json` | `e2e.yml` (TEST-3), contra el stack desplegado |
 | Performance (k6) | `k6 run scripts/k6/load-test.js` | `e2e.yml` (T-3), contra el stack desplegado |
 | Dependency scan | `cd frontend && npm audit` | `dependency-scan.yml` (T-5): npm audit + OWASP DC |
@@ -235,9 +238,9 @@ Escalada por primer-rol-gana (#50) y fallback de scopes (#51), el check de CI qu
 
 ## Estado de la pirámide
 
-**Las ocho capas del enunciado cumplen y corren en CI.** Lo que queda son mejoras dentro de capas que ya pasan, no capas abiertas:
+**Las ocho capas del enunciado cumplen y corren en CI**, con snapshots (TEST-8) y accesibilidad (D-4) ya añadidos a E2E. Lo que queda son mejoras menores:
 
-- **E2E**: TEST-8 (snapshots), TEST-9 (responsive 375/768/1440), D-4 (accesibilidad con axe).
+- **E2E**: TEST-9 (responsive 375/768/1440).
 - **Security**: TEST-10b (cliente de Keycloak dedicado al escaneo ZAP con `accessTokenLifespan` mayor, issue #46).
 
 Trazabilidad completa de cada identificador en el [plan de ejecución](../PLAN_EJECUCION.md), §4.3.
