@@ -19,6 +19,9 @@ import com.inventory.product.web.ProductController;
 import com.inventory.report.dto.StockSummaryResponse;
 import com.inventory.report.service.ReportService;
 import com.inventory.report.web.ReportController;
+import com.inventory.stock.dto.ProductStockResponse;
+import com.inventory.stock.service.StockService;
+import com.inventory.stock.web.StockController;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -41,7 +44,12 @@ import org.springframework.test.web.servlet.MockMvc;
  * de CI sin necesitar el stack. La auth la aporta el postprocessor {@code jwt()}; se ignora la
  * regla de "falta cabecera de seguridad" porque MockMvc no manda un Authorization real.
  */
-@WebMvcTest({ProductController.class, CategoryController.class, ReportController.class})
+@WebMvcTest({
+  ProductController.class,
+  CategoryController.class,
+  ReportController.class,
+  StockController.class
+})
 @Import(SecurityConfig.class)
 class OpenApiContractTest {
 
@@ -66,6 +74,7 @@ class OpenApiContractTest {
   @MockBean ProductService productService;
   @MockBean CategoryService categoryService;
   @MockBean ReportService reportService;
+  @MockBean StockService stockService;
 
   private static ProductResponse sampleProduct() {
     return new ProductResponse(
@@ -120,6 +129,22 @@ class OpenApiContractTest {
         .perform(
             get("/categories/{id}", 1L)
                 .with(jwt().authorities(new SimpleGrantedAuthority("SCOPE_product:view"))))
+        .andExpect(status().isOk())
+        .andExpect(openApi().isValid(VALIDATOR));
+  }
+
+  // El contrato de GET /api/stock/{productId} se escribió a mano al añadir el endpoint (M-2), sin
+  // regenerar el YAML con springdoc. Este test comprueba que lo escrito coincide con la respuesta
+  // real del controlador.
+  @Test
+  void productStock_matchesContract() throws Exception {
+    when(stockService.getProductStock(1L))
+        .thenReturn(new ProductStockResponse(1L, "SKU-001", "Laptop", 12, 5, false));
+
+    mockMvc
+        .perform(
+            get("/api/stock/{productId}", 1L)
+                .with(jwt().authorities(new SimpleGrantedAuthority("SCOPE_stock:view"))))
         .andExpect(status().isOk())
         .andExpect(openApi().isValid(VALIDATOR));
   }

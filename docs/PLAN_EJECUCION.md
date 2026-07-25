@@ -27,10 +27,10 @@ Salvo la cobertura, medida sobre el artefacto de CI, los porcentajes son estimac
 
 | Cobertura (artefacto JaCoCo en Actions) | Inicial | Actual | Umbral |
 |---|---|---|---|
-| BRANCH | 71,6 % | **85,0 %** | 80 % |
-| LINE | 84,9 % | **92,7 %** | 80 % |
+| BRANCH | 71,6 % | **85,7 %** | 80 % |
+| LINE | 84,9 % | **92,8 %** | 80 % |
 
-Cifras vigentes tras `KeycloakAuthIT` (TEST-1), que ejercita en integración `SecurityConfig` y los controladores con un token real y subió la cobertura desde 84,5/92,1. La medición original de la que parte esta tabla es el artefacto de `798e6b6`. El frontend se mide aparte y está en **9,3 %** de líneas: el test de scopes de G-3a lo subió desde 7,1 %. El informe daba 100 % hasta que se configuró `coverage.include` en vitest, que solo cubría las 14 sentencias que los tests importaban; con esa opción el número es el real.
+Cifras vigentes tras los tests de E-2, M-2 y D-3, que subieron la cobertura desde 85,0/92,7. El salto anterior lo dio `KeycloakAuthIT` (TEST-1), que ejercita en integración `SecurityConfig` y los controladores con un token real, desde 84,5/92,1. La medición original de la que parte esta tabla es el artefacto de `798e6b6`. El frontend se mide aparte y está en **9,3 %** de líneas: el test de scopes de G-3a lo subió desde 7,1 %. El informe daba 100 % hasta que se configuró `coverage.include` en vitest, que solo cubría las 14 sentencias que los tests importaban; con esa opción el número es el real.
 
 ---
 
@@ -188,7 +188,7 @@ Spotless estaba declarado en el POM y desactivado con `-Dspotless.check.skip=tru
 |---|---|
 | Repositorio público | cumple |
 | README profesional | cumple — rutas reales, matriz rol→scopes y el `scope` obligatorio del token |
-| **Issues** | **33 issues**: 13 épicas de fase, **17 bugs** (7 abiertos) y **3 charters**. Los dos últimos bugs (#69, #70) salieron de montar los E2E en CI. Las épicas 9, 10 y 11 se pusieron al día en la Ola 4 |
+| **Issues** | **33 issues**: 13 épicas de fase, **17 bugs** (solo 2 abiertos: #48 A-2 diferido y #49 C-4 de entorno) y **3 charters**. Los dos últimos bugs (#69, #70) salieron de montar los E2E en CI. Las épicas 9, 10 y 11 se pusieron al día en la Ola 4 |
 | Pull Requests | cumple — **33 PRs**, el último el #64 |
 | Branch strategy | cumple — `main` protegida; corren 4 checks y 2 son obligatorios |
 | Conventional Commits | cumple — commitlint activo |
@@ -282,7 +282,7 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 |---|---|---|---|
 | **P-1** | Guion de demo: alta de producto → movimiento de stock → alerta → auditoría → dashboard | 1 h | pendiente |
 | **P-2** | Capturas de los 4 dashboards con datos reales y de una alerta disparada | 1 h | **hecho** — 6 capturas, 34 paneles sin ninguno vacío, alerta verificada hasta Alertmanager, [informe](testing/reportes/P-2-capturas-de-evidencia.md) |
-| **P-3** | Ensayo con el stack levantado desde cero (`down -v && up`) | 1 h | pendiente — el CORS ya no bloquea, resuelto en P-2a. **Queda un bloqueo real: P-2b**, porque `keycloak-init` no es idempotente y el ensayo es precisamente un `up` repetido. Hacer P-2b antes |
+| **P-3** | Ensayo con el stack levantado desde cero (`down -v && up`) | 1 h | pendiente — **ya desbloqueado**: el CORS lo resolvió P-2a y la idempotencia de `keycloak-init` la resolvió P-2b. Solo falta correr el ensayo sobre un stack vivo |
 
 > **Dos avisos de P-2 que afectan al guion de P-1.** Los paneles de Negocio usan `increase()`: si en la demo se encadenan todos los movimientos seguidos saldrán en cero, porque Prometheus no puede medir el incremento del primer punto de una serie. Hay que espaciarlos o levantar el stack con antelación. Y la ventana temporal de los dashboards no debe abarcar un reinicio del backend con otro perfil, o cada panel duplica sus series.
 
@@ -293,7 +293,7 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 | ~~**G-3a**~~ | ~~Unión de scopes en `AuthContext.tsx`; hoy replica el bug de primer-rol-gana~~ — **hecho**: extraído a `lib/scopes.ts` (función pura, sin el init de Keycloak de por medio) y reescrito como unión espejando el backend. Rol desconocido no aporta nada; sin rol, deniega. 6 tests nuevos, incluido el multi-rol y la independencia del orden. Cierra #44 | — |
 | ~~**INF-1**~~ | ~~Redis desplegado, configurado y sin un solo uso en el código~~ — **hecho**: retirado del `docker-compose.yml` (14 servicios), del POM, de `application.yml`/`-dev`/`-smoke`, de `.env.example` y `staging.yml`. Quitadas también las exclusiones de autoconfig de Redis en los 4 IT, que ya no tienen sentido. Backend compila y los 289 unit tests siguen en verde. Aplicó la regla 3 | — |
 | ~~**G-8**~~ | ~~`scope-mappings` por rol en Keycloak: corrección de raíz de G-6~~ — **hecho y verificado en CI**. `init-users.sh` ata cada client scope a los roles autorizados. El paso "G-8" de `staging.yml` (run [30070253945](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/actions/runs/30070253945), verde) probó a nivel de token que un `inv_viewer` pidiendo scopes elevados recibe solo `product:view`. La sospecha de que los scope-mappings no gatearían el string resultó falsa: sí lo gatean. El mapa Java (ADR-002) se conserva como defensa en profundidad. Cierra #43 | — |
-| ~~**S-4b**~~ | ~~Quitar `JWT_SECRET` y `JWT_EXPIRATION_MS` de `staging.yml`~~ — **hecho**: ningún Java los leía (la firma la valida Keycloak). Retirados del workflow y de `GITHUB_SECRETS.md`. Queda borrar el secreto `STAGING_JWT_SECRET` en la config del repo, a mano. Cierra #47 | — |
+| ~~**S-4b**~~ | ~~Quitar `JWT_SECRET` y `JWT_EXPIRATION_MS` de `staging.yml`~~ — **hecho**: ningún Java los leía (la firma la valida Keycloak). Retirados del workflow y de `GITHUB_SECRETS.md`, y el secreto `STAGING_JWT_SECRET` borrado de la config del repo. Cierra #47 | — |
 | ~~**ADR-002**~~ | ~~Por qué el mapa rol→scopes vive en Java~~ — **hecho**: [`ADR-002`](decisions/ADR-002-mapa-rol-scopes-en-java.md) documenta la contención de G-6 en el backend, con `SecurityConfig` apuntando a él | — |
 | ~~**P-2a**~~ | ~~CORS de `staging` bloquea el frontend local y deja P-3 sin interfaz~~ — **hecho**: perfil `demo` propio, con CORS local y muestreo al 100 %. Se descartó añadir localhost a `staging`, que espeja producción. Verificado en vivo y fijado con `CorsProfilesTest` [informe](testing/reportes/P-2a-perfil-demo.md) | — |
 | ~~**P-2b**~~ | ~~`keycloak-init` no es idempotente: al reejecutarse sobre un realm existente lanza `duplicate key … uk_cli_scope`~~ — **hecho**: comprueba existencia antes de crear scopes y usuarios. Verificado con `sh -n` y lógica; sin doble `down -v && up` en vivo por C-4. Cierra #45 | — |
@@ -308,18 +308,18 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 | **A-2 / M-1** | `UserController` sobre la Admin API — daría uso a `user:manage` | 4 h | ADR delegando a la consola |
 | **A-1** | Unificar rutas bajo `/api/v1` | 3 h | **Riesgo alto** cerca de la entrega. El mínimo ya está hecho: el README documenta las rutas reales y declara la inconsistencia en vez de disimularla |
 
-### Mejoras funcionales (≈3,5 h restantes)
+### Mejoras funcionales · **COMPLETA**
 
 | # | Acción | Esfuerzo |
 |---|---|---|
 | ~~**D-1**~~ | ~~"Productos más vendidos"~~ — **hecho**: endpoint nuevo con agregación en BD. El panel anterior mostraba precio × stock, que mide lo guardado y no lo vendido. [Informe](testing/reportes/F-2-D-1-D-2-alcance-funcional.md) | — |
 | ~~**D-2**~~ | ~~Listar productos críticos~~ — **hecho**: el dashboard mostraba solo el contador. De paso, el tipo TS de `CriticalStockResponse` estaba mal y rompía las `key` de React | — |
 | ~~**F-2**~~ | ~~Ordenamiento en la tabla de productos~~ — **hecho**: el backend ya lo aceptaba, el hook lo fijaba a `name`. Destapó que un `sort` inválido daba **500**, ahora 400 | — |
-| D-3 | `topProducts` con query en BD | 45 min |
-| M-2 | `GET /api/stock/{productId}` con `stock:view` | 30 min |
-| F-1 | ADR-003 sobre el soft delete — renumerado desde 002, que queda para el mapa rol→scopes de la Ola 7 | 30 min |
+| ~~**D-3**~~ | ~~`topProducts` con query en BD~~ — **hecho**: el ranking se armaba con `findAll()` y se ordenaba en memoria para quedarse con diez filas, en un endpoint que el dashboard llama en cada carga. Ahora el orden, el filtro de activos y el recorte los hace Postgres, con `LEFT JOIN FETCH` de la categoría para no caer en un N+1 al pintar el nombre. Los tests de orden pasan a `ProductRepositoryIT` —un mock no ordena— y la unidad verifica delegación, límite empujado a la consulta y mapeo | — |
+| ~~**M-2**~~ | ~~`GET /api/stock/{productId}` con `stock:view`~~ — **hecho**: el permiso declara "ver existencia **e historial**", pero la existencia no tenía endpoint; un usuario con solo `stock:view` tenía que pedir además `product:view` para saber cuántas unidades hay. `StockService.currentStock()` ya existía sin exponerse. Nuevo endpoint con `ProductStockResponse` (stock, mínimo y `belowMinimum`), 3 tests de servicio, 4 de controlador —incluido que `/alerts` sigue ganando a la plantilla `/{productId}`— y contract test contra el OpenAPI | — |
+| ~~**F-1**~~ | ~~ADR-003 sobre el soft delete~~ — **hecho**: [`ADR-003`](decisions/ADR-003-soft-delete-de-productos.md). Escribirlo obligó a mirar el esquema y salió el motivo real, que no era estilístico: `stock_movements.product_id` tiene `ON DELETE CASCADE`, así que un borrado físico **se lleva el historial del producto sin avisar**. Documenta también las dos consecuencias que sorprenden: el SKU queda reservado para siempre (`UNIQUE` sin condición sobre `active`) y `GET /products` no oculta los inactivos salvo que el cliente filtre | — |
 | ~~D-4~~ | ~~`@axe-core/playwright` en E2E~~ — **hecho**: `a11y.spec.ts` (axe WCAG 2 A/AA) sobre dashboard, productos y stock; destapó selects/inputs sin nombre accesible, corregidos con `aria-label` | 1 h |
-| E-2 | Validación condicional de `quantity` | 45 min |
+| ~~**E-2**~~ | ~~Validación condicional de `quantity`~~ — **hecho**: `@Min(0)` aceptaba una entrada o una salida de **cero unidades**, que no mueve inventario pero sí escribe fila en el historial y suma al contador de movimientos. Regla condicional en el DTO (`@AssertTrue`): IN y OUT exigen > 0; ADJUSTMENT conserva el 0, que es un recuento a cero legítimo. 7 tests de validación + 2 de controlador | — |
 | ~~**SEC-2**~~ | ~~`onTokenExpired`~~ — **hecho**: renovación proactiva más cierre de sesión cuando el refresco falla. [Informe](testing/reportes/SEC-2-S-2-ciclo-de-vida-del-token.md) | — |
 | ~~**S-2**~~ | ~~Test con `grant_type=refresh_token`~~ — **hecho**: 5 comprobaciones, incluida la negativa (refresh inválido → 400) | — |
 | — | ~~**[criterio propio]** Métricas de login de Keycloak vía SPI~~ — **descartada**: Keycloak sí emite `LOGIN_ERROR` con usuario, IP y motivo al log, y Loki lo indexa. Ya visible en el dashboard de Seguridad ([informe](testing/reportes/OBS-dashboards.md)) | — |
@@ -332,16 +332,16 @@ Las cifras de abajo son el hueco que falta por cerrar en cada área, no su peso.
 
 | Bloque | Puntos en juego | Horas | Puntos/hora |
 |---|---|---|---|
-| Ola 7 — deuda de los hallazgos | — | 4,5 h | alta: S-4b es un secreto vivo y P-2b bloquea P-3 |
-| Mejoras funcionales restantes (D-3, M-2, F-1, D-4, E-2) | 0,50 | 3,5 h | 0,14 |
-| Ola 3 — Testing | 2,40 | 14 h | 0,17 |
+| **Ola 6 — Presentación** (P-1 guion, P-3 ensayo) | 3,00 | 2 h | **1,50** |
+| G-1 vía ADR — "Policies" está nombrado en el enunciado y es el RNF-05 pendiente | 0,30 | 30 min | 0,60 |
+| CI-2 + smoke post-release — cierra Deployment con una ejecución real | 0,50 | 1 h | 0,50 |
+| Ola 8 restante (G-2, A-2/M-1, A-1) por ADR | 0,20 | 1,5 h | 0,13 |
 
-**Ya hecho:** T-6, SEC-2, S-2, los 16 code smells, el alcance funcional (F-2, D-1, D-2) y **la Ola 5 completa** (requisitos, arquitectura, mantenimiento y guía de pruebas).
-Cerró dos obligatorios del enunciado, el único hueco de Calidad, la ausencia total de issues de tipo bug, los tres huecos de Funcionalidad y **el mayor déficit que quedaba: Documentación, de ~25 % a ~90 %**.
+**Cerradas:** Olas 2, 3, 5 y 7 completas, la Ola 4 salvo C-4 y CI-2, y **todas las mejoras funcionales** (D-1, D-2, D-3, D-4, E-2, F-1, F-2, M-2, S-2, SEC-2).
 
-**Con la Ola 5 cerrada, el siguiente mejor rendimiento es la Ola 7** (deuda barata de los hallazgos): S-4b es un secreto vivo de 10 min y P-2b (30 min) desbloquea el ensayo de la presentación.
+**La Ola 6 es, con diferencia, lo que más rinde por hora:** vale 5 % y está en ~30 %, así que las dos tareas que quedan (guion y ensayo) valen más que todo lo demás pendiente junto. Ya no hay nada que las bloquee: P-2a resolvió el CORS y P-2b la idempotencia de `keycloak-init`.
 
-**12 horas:** Ola 7 + C-1/TEST-7 (E2E en CI, la única etapa que falta en Actions) + TEST-1 (Testcontainers con Keycloak, obligatorio).
+**Lo que no se va a cerrar:** C-4 necesita un agente Linux (issue #49) y A-2 está diferido (#48). Ambos documentados como limitación, no como olvido.
 
 > **Reservar las últimas 2 horas para la Ola 6:** el guion (P-1) y el ensayo (P-3). Antes del ensayo hay que cerrar **P-2b** (30 min), o el `down -v && up` repetido revienta en `keycloak-init`.
 

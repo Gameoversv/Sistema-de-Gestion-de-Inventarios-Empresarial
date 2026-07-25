@@ -16,6 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -155,6 +156,65 @@ class ProductRepositoryIT {
 
     assertThat(lowStock).hasSize(1);
     assertThat(lowStock.get(0).getSku()).isEqualTo("REPO-IT-LOW");
+  }
+
+  // ── Rankings de topProducts, resueltos en la base desde D-3 ────────────────
+
+  @Test
+  @DisplayName("findTopByInventoryValue — orders by price × stock and applies the page size")
+  void findTopByInventoryValue_ordersByValueAndLimits() {
+    productRepository.save(buildProduct("RANK-A", "Barato", 10, BigDecimal.valueOf(1))); // 10
+    productRepository.save(buildProduct("RANK-B", "Caro", 5, BigDecimal.valueOf(100))); // 500
+    productRepository.save(buildProduct("RANK-C", "Medio", 20, BigDecimal.valueOf(5))); // 100
+
+    List<Product> top = productRepository.findTopByInventoryValue(PageRequest.of(0, 2));
+
+    assertThat(top).extracting(Product::getSku).containsExactly("RANK-B", "RANK-C");
+  }
+
+  @Test
+  @DisplayName("findTopByStock — orders by units in stock")
+  void findTopByStock_ordersByUnits() {
+    productRepository.save(buildProduct("RANK-A", "Pocas", 5, BigDecimal.valueOf(100)));
+    productRepository.save(buildProduct("RANK-B", "Muchas", 80, BigDecimal.valueOf(1)));
+    productRepository.save(buildProduct("RANK-C", "Medias", 30, BigDecimal.valueOf(1)));
+
+    List<Product> top = productRepository.findTopByStock(PageRequest.of(0, 3));
+
+    assertThat(top).extracting(Product::getSku).containsExactly("RANK-B", "RANK-C", "RANK-A");
+  }
+
+  @Test
+  @DisplayName("findTopByInventoryValue — excludes inactive products")
+  void findTopByInventoryValue_excludesInactive() {
+    Product inactive = buildProduct("RANK-OFF", "Retirado", 100, BigDecimal.valueOf(100));
+    inactive.setActive(false);
+    productRepository.save(inactive);
+    productRepository.save(buildProduct("RANK-ON", "Vigente", 1, BigDecimal.valueOf(1)));
+
+    List<Product> top = productRepository.findTopByInventoryValue(PageRequest.of(0, 10));
+
+    assertThat(top).extracting(Product::getSku).containsExactly("RANK-ON");
+  }
+
+  // El LEFT JOIN FETCH de la categoría existe para evitar el N+1 al pintar el ranking. Si alguien
+  // lo convierte en join interno, los productos sin categoría desaparecen del ranking en silencio.
+  @Test
+  @DisplayName("findTopByInventoryValue — keeps products without category")
+  void findTopByInventoryValue_keepsProductsWithoutCategory() {
+    Product orphan = buildProduct("RANK-NOCAT", "Sin categoría", 10, BigDecimal.valueOf(50));
+    orphan.setCategory(null);
+    productRepository.save(orphan);
+
+    List<Product> top = productRepository.findTopByInventoryValue(PageRequest.of(0, 10));
+
+    assertThat(top).extracting(Product::getSku).contains("RANK-NOCAT");
+  }
+
+  private Product buildProduct(String sku, String name, int stock, BigDecimal price) {
+    Product p = buildProduct(sku, name, stock);
+    p.setPrice(price);
+    return p;
   }
 
   private Product buildProduct(String sku, String name, int stock) {

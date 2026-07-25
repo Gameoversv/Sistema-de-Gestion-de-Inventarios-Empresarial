@@ -8,6 +8,7 @@ import com.inventory.product.mapper.ProductMapper;
 import com.inventory.product.repository.ProductRepository;
 import com.inventory.stock.domain.StockMovement;
 import com.inventory.stock.domain.StockMovement.MovementType;
+import com.inventory.stock.dto.ProductStockResponse;
 import com.inventory.stock.dto.StockMovementRequest;
 import com.inventory.stock.dto.StockMovementResponse;
 import com.inventory.stock.event.StockMovementRecordedEvent;
@@ -38,6 +39,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class StockServiceImpl implements StockService {
 
+  /** Prefijo del mensaje de "producto inexistente", compartido por las tres búsquedas por id. */
+  private static final String PRODUCT_NOT_FOUND = "Product not found: ";
+
   private final StockMovementRepository movementRepository;
   private final ProductRepository productRepository;
   private final StockMovementMapper movementMapper;
@@ -55,7 +59,7 @@ public class StockServiceImpl implements StockService {
         productRepository
             .findByIdForUpdate(request.productId())
             .orElseThrow(
-                () -> new ResourceNotFoundException("Product not found: " + request.productId()));
+                () -> new ResourceNotFoundException(PRODUCT_NOT_FOUND + request.productId()));
 
     int quantityBefore = product.getStock();
     int newStock = computeNewStock(request.type(), quantityBefore, request.quantity());
@@ -98,7 +102,23 @@ public class StockServiceImpl implements StockService {
     return productRepository
         .findById(productId)
         .map(Product::getStock)
-        .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + productId));
+        .orElseThrow(() -> new ResourceNotFoundException(PRODUCT_NOT_FOUND + productId));
+  }
+
+  @Override
+  public ProductStockResponse getProductStock(Long productId) {
+    return productRepository
+        .findById(productId)
+        .map(
+            p ->
+                new ProductStockResponse(
+                    p.getId(),
+                    p.getSku(),
+                    p.getName(),
+                    p.getStock(),
+                    p.getMinimumStock(),
+                    p.getStock() <= p.getMinimumStock()))
+        .orElseThrow(() -> new ResourceNotFoundException(PRODUCT_NOT_FOUND + productId));
   }
 
   @Override

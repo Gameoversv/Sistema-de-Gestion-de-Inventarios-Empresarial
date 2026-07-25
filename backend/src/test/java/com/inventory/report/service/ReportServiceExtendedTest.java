@@ -1,6 +1,7 @@
 package com.inventory.report.service;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.inventory.product.domain.Category;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -83,80 +85,83 @@ class ReportServiceExtendedTest {
   }
 
   // ── topProducts ───────────────────────────────────────────────────────────
+  //
+  // Desde D-3 el orden, el filtro de activos y el recorte los hace la base. Estos tests verifican
+  // la parte que sigue siendo del servicio —a qué consulta delega según la métrica, qué límite le
+  // pasa y cómo mapea el resultado—; que el ORDER BY y el WHERE hagan lo que dicen se comprueba
+  // contra Postgres en ProductRepositoryIT, porque un mock no puede ordenar.
 
-  // Verifica que con metric=value los productos se ordenan por precio×stock descendente.
+  // Verifica que con metric=value se delega en la consulta ordenada por precio×stock.
   @Test
-  @DisplayName("topProducts metric=value sorts by price*stock descending")
-  void topProducts_byValue_sortsByInventoryValueDescending() {
-    Product p1 = product("SKU-A", 10, 2, true, cat); // value = 100
-    Product p2 = product("SKU-B", 50, 2, true, cat); // value = 500 → first
-    Product p3 = product("SKU-C", 20, 2, true, cat); // value = 200
-    when(productRepository.findAll()).thenReturn(List.of(p1, p2, p3));
+  @DisplayName("topProducts metric=value delegates to the inventory-value query")
+  void topProducts_byValue_delegatesToValueQuery() {
+    Product p = product("SKU-B", 50, 2, true, cat); // value = 500
+    when(productRepository.findTopByInventoryValue(any(Pageable.class))).thenReturn(List.of(p));
 
     TopProductsResponse result = reportService.topProducts(10, "value");
 
     assertThat(result.metric()).isEqualTo("value");
-    assertThat(result.products())
-        .extracting(TopProductDto::sku)
-        .containsExactly("SKU-B", "SKU-C", "SKU-A");
+    assertThat(result.products()).extracting(TopProductDto::sku).containsExactly("SKU-B");
     assertThat(result.products().get(0).inventoryValue()).isEqualByComparingTo("500.00");
+    assertThat(result.products().get(0).categoryName()).isEqualTo("Electrónica");
+    verify(productRepository, never()).findTopByStock(any());
   }
 
-  // Verifica que con metric=quantity los productos se ordenan por unidades en stock descendente.
+  // Verifica que con metric=quantity se delega en la consulta ordenada por unidades.
   @Test
-  @DisplayName("topProducts metric=quantity sorts by stock units descending")
-  void topProducts_byQuantity_sortsByStockDescending() {
-    Product p1 = product("SKU-A", 5, 2, true, cat);
-    Product p2 = product("SKU-B", 100, 2, true, cat); // most units → first
-    Product p3 = product("SKU-C", 30, 2, true, cat);
-    when(productRepository.findAll()).thenReturn(List.of(p1, p2, p3));
+  @DisplayName("topProducts metric=quantity delegates to the stock-units query")
+  void topProducts_byQuantity_delegatesToStockQuery() {
+    Product p = product("SKU-B", 100, 2, true, cat);
+    when(productRepository.findTopByStock(any(Pageable.class))).thenReturn(List.of(p));
 
     TopProductsResponse result = reportService.topProducts(10, "quantity");
 
     assertThat(result.metric()).isEqualTo("quantity");
-    assertThat(result.products())
-        .extracting(TopProductDto::sku)
-        .containsExactly("SKU-B", "SKU-C", "SKU-A");
+    assertThat(result.products()).extracting(TopProductDto::sku).containsExactly("SKU-B");
+    verify(productRepository, never()).findTopByInventoryValue(any());
   }
 
-  // Verifica que el parámetro limit se respeta y solo se retornan N productos.
+  // Verifica que el límite viaja a la consulta como tamaño de página, y no se aplica después en
+  // memoria: es lo que impide traerse la tabla entera.
   @Test
-  @DisplayName("topProducts respects limit parameter")
-  void topProducts_limitsResults() {
-    Product p1 = product("SKU-A", 30, 2, true, cat);
-    Product p2 = product("SKU-B", 20, 2, true, cat);
-    Product p3 = product("SKU-C", 10, 2, true, cat);
-    when(productRepository.findAll()).thenReturn(List.of(p1, p2, p3));
+  @DisplayName("topProducts pushes the limit down to the query as page size")
+  void topProducts_limitTravelsToQuery() {
+    when(productRepository.findTopByInventoryValue(any(Pageable.class))).thenReturn(List.of());
 
     TopProductsResponse result = reportService.topProducts(2, "value");
 
+    ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+    verify(productRepository).findTopByInventoryValue(captor.capture());
+    assertThat(captor.getValue().getPageSize()).isEqualTo(2);
+    assertThat(captor.getValue().getPageNumber()).isZero();
     assertThat(result.limit()).isEqualTo(2);
-    assertThat(result.products()).hasSize(2);
   }
 
-  // Verifica que los productos inactivos se excluyen del ranking de top productos.
-  @Test
-  @DisplayName("topProducts excludes inactive products")
-  void topProducts_excludesInactiveProducts() {
-    Product active = product("SKU-A", 100, 2, true, cat);
-    Product inactive = product("SKU-I", 500, 2, false, cat);
-    when(productRepository.findAll()).thenReturn(List.of(active, inactive));
-
-    TopProductsResponse result = reportService.topProducts(10, "value");
-
-    assertThat(result.products()).hasSize(1);
-    assertThat(result.products().get(0).sku()).isEqualTo("SKU-A");
-  }
-
-  // Verifica que con limit<=0 se usa el valor por defecto de 10.
+  // Verifica que con limit<=0 se usa el valor por defecto de 10, también en la consulta.
   @Test
   @DisplayName("topProducts uses default limit=10 when limit<=0")
   void topProducts_zeroLimit_usesDefault10() {
-    when(productRepository.findAll()).thenReturn(List.of());
+    when(productRepository.findTopByInventoryValue(any(Pageable.class))).thenReturn(List.of());
 
     TopProductsResponse result = reportService.topProducts(0, "value");
 
+    ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+    verify(productRepository).findTopByInventoryValue(captor.capture());
+    assertThat(captor.getValue().getPageSize()).isEqualTo(10);
     assertThat(result.limit()).isEqualTo(10);
+  }
+
+  // Verifica que una métrica desconocida cae en el ranking por valor, el mismo que el defecto.
+  @Test
+  @DisplayName("topProducts falls back to the value ranking for an unknown metric")
+  void topProducts_unknownMetric_fallsBackToValue() {
+    when(productRepository.findTopByInventoryValue(any(Pageable.class))).thenReturn(List.of());
+
+    TopProductsResponse result = reportService.topProducts(5, "profit");
+
+    assertThat(result.metric()).isEqualTo("profit");
+    verify(productRepository).findTopByInventoryValue(any());
+    verify(productRepository, never()).findTopByStock(any());
   }
 
   // ── dashboardMetrics ──────────────────────────────────────────────────────

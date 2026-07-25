@@ -98,27 +98,13 @@ public class ReportServiceImpl implements ReportService {
     int effectiveLimit = limit > 0 ? limit : DEFAULT_LIMIT;
     String effectiveMetric = metric != null && !metric.isBlank() ? metric : "value";
 
-    List<Product> active =
-        productRepository.findAll().stream()
-            .filter(p -> Boolean.TRUE.equals(p.getActive()))
-            .toList();
+    PageRequest page = PageRequest.of(0, effectiveLimit);
+    List<Product> ranked =
+        "quantity".equalsIgnoreCase(effectiveMetric)
+            ? productRepository.findTopByStock(page)
+            : productRepository.findTopByInventoryValue(page);
 
-    Comparator<Product> comparator;
-    if ("quantity".equalsIgnoreCase(effectiveMetric)) {
-      comparator = Comparator.comparingInt(Product::getStock).reversed();
-    } else {
-      comparator =
-          Comparator.comparing(
-              (Product p) -> p.getPrice().multiply(BigDecimal.valueOf(p.getStock())),
-              Comparator.reverseOrder());
-    }
-
-    List<TopProductDto> items =
-        active.stream()
-            .sorted(comparator)
-            .limit(effectiveLimit)
-            .map(this::toTopProductDto)
-            .toList();
+    List<TopProductDto> items = ranked.stream().map(this::toTopProductDto).toList();
 
     return new TopProductsResponse(effectiveLimit, effectiveMetric, items);
   }
