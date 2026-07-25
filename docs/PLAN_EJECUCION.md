@@ -308,7 +308,7 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 | **A-2 / M-1** | `UserController` sobre la Admin API — daría uso a `user:manage` | 4 h | ADR delegando a la consola |
 | **A-1** | Unificar rutas bajo `/api/v1` | 3 h | **Riesgo alto** cerca de la entrega. El mínimo ya está hecho: el README documenta las rutas reales y declara la inconsistencia en vez de disimularla |
 
-### Mejoras funcionales (≈3,5 h restantes)
+### Mejoras funcionales · **COMPLETA**
 
 | # | Acción | Esfuerzo |
 |---|---|---|
@@ -317,7 +317,7 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 | ~~**F-2**~~ | ~~Ordenamiento en la tabla de productos~~ — **hecho**: el backend ya lo aceptaba, el hook lo fijaba a `name`. Destapó que un `sort` inválido daba **500**, ahora 400 | — |
 | ~~**D-3**~~ | ~~`topProducts` con query en BD~~ — **hecho**: el ranking se armaba con `findAll()` y se ordenaba en memoria para quedarse con diez filas, en un endpoint que el dashboard llama en cada carga. Ahora el orden, el filtro de activos y el recorte los hace Postgres, con `LEFT JOIN FETCH` de la categoría para no caer en un N+1 al pintar el nombre. Los tests de orden pasan a `ProductRepositoryIT` —un mock no ordena— y la unidad verifica delegación, límite empujado a la consulta y mapeo | — |
 | ~~**M-2**~~ | ~~`GET /api/stock/{productId}` con `stock:view`~~ — **hecho**: el permiso declara "ver existencia **e historial**", pero la existencia no tenía endpoint; un usuario con solo `stock:view` tenía que pedir además `product:view` para saber cuántas unidades hay. `StockService.currentStock()` ya existía sin exponerse. Nuevo endpoint con `ProductStockResponse` (stock, mínimo y `belowMinimum`), 3 tests de servicio, 4 de controlador —incluido que `/alerts` sigue ganando a la plantilla `/{productId}`— y contract test contra el OpenAPI | — |
-| F-1 | ADR-003 sobre el soft delete — renumerado desde 002, que queda para el mapa rol→scopes de la Ola 7 | 30 min |
+| ~~**F-1**~~ | ~~ADR-003 sobre el soft delete~~ — **hecho**: [`ADR-003`](decisions/ADR-003-soft-delete-de-productos.md). Escribirlo obligó a mirar el esquema y salió el motivo real, que no era estilístico: `stock_movements.product_id` tiene `ON DELETE CASCADE`, así que un borrado físico **se lleva el historial del producto sin avisar**. Documenta también las dos consecuencias que sorprenden: el SKU queda reservado para siempre (`UNIQUE` sin condición sobre `active`) y `GET /products` no oculta los inactivos salvo que el cliente filtre | — |
 | ~~D-4~~ | ~~`@axe-core/playwright` en E2E~~ — **hecho**: `a11y.spec.ts` (axe WCAG 2 A/AA) sobre dashboard, productos y stock; destapó selects/inputs sin nombre accesible, corregidos con `aria-label` | 1 h |
 | ~~**E-2**~~ | ~~Validación condicional de `quantity`~~ — **hecho**: `@Min(0)` aceptaba una entrada o una salida de **cero unidades**, que no mueve inventario pero sí escribe fila en el historial y suma al contador de movimientos. Regla condicional en el DTO (`@AssertTrue`): IN y OUT exigen > 0; ADJUSTMENT conserva el 0, que es un recuento a cero legítimo. 7 tests de validación + 2 de controlador | — |
 | ~~**SEC-2**~~ | ~~`onTokenExpired`~~ — **hecho**: renovación proactiva más cierre de sesión cuando el refresco falla. [Informe](testing/reportes/SEC-2-S-2-ciclo-de-vida-del-token.md) | — |
@@ -332,16 +332,16 @@ Las cifras de abajo son el hueco que falta por cerrar en cada área, no su peso.
 
 | Bloque | Puntos en juego | Horas | Puntos/hora |
 |---|---|---|---|
-| Ola 7 — deuda de los hallazgos | — | 4,5 h | alta: S-4b es un secreto vivo y P-2b bloquea P-3 |
-| Mejoras funcionales restantes (D-3, M-2, F-1, D-4, E-2) | 0,50 | 3,5 h | 0,14 |
-| Ola 3 — Testing | 2,40 | 14 h | 0,17 |
+| **Ola 6 — Presentación** (P-1 guion, P-3 ensayo) | 3,00 | 2 h | **1,50** |
+| G-1 vía ADR — "Policies" está nombrado en el enunciado y es el RNF-05 pendiente | 0,30 | 30 min | 0,60 |
+| CI-2 + smoke post-release — cierra Deployment con una ejecución real | 0,50 | 1 h | 0,50 |
+| Ola 8 restante (G-2, A-2/M-1, A-1) por ADR | 0,20 | 1,5 h | 0,13 |
 
-**Ya hecho:** T-6, SEC-2, S-2, los 16 code smells, el alcance funcional (F-2, D-1, D-2) y **la Ola 5 completa** (requisitos, arquitectura, mantenimiento y guía de pruebas).
-Cerró dos obligatorios del enunciado, el único hueco de Calidad, la ausencia total de issues de tipo bug, los tres huecos de Funcionalidad y **el mayor déficit que quedaba: Documentación, de ~25 % a ~90 %**.
+**Cerradas:** Olas 2, 3, 5 y 7 completas, la Ola 4 salvo C-4 y CI-2, y **todas las mejoras funcionales** (D-1, D-2, D-3, D-4, E-2, F-1, F-2, M-2, S-2, SEC-2).
 
-**Con la Ola 5 cerrada, el siguiente mejor rendimiento es la Ola 7** (deuda barata de los hallazgos): S-4b es un secreto vivo de 10 min y P-2b (30 min) desbloquea el ensayo de la presentación.
+**La Ola 6 es, con diferencia, lo que más rinde por hora:** vale 5 % y está en ~30 %, así que las dos tareas que quedan (guion y ensayo) valen más que todo lo demás pendiente junto. Ya no hay nada que las bloquee: P-2a resolvió el CORS y P-2b la idempotencia de `keycloak-init`.
 
-**12 horas:** Ola 7 + C-1/TEST-7 (E2E en CI, la única etapa que falta en Actions) + TEST-1 (Testcontainers con Keycloak, obligatorio).
+**Lo que no se va a cerrar:** C-4 necesita un agente Linux (issue #49) y A-2 está diferido (#48). Ambos documentados como limitación, no como olvido.
 
 > **Reservar las últimas 2 horas para la Ola 6:** el guion (P-1) y el ensayo (P-3). Antes del ensayo hay que cerrar **P-2b** (30 min), o el `down -v && up` repetido revienta en `keycloak-init`.
 
