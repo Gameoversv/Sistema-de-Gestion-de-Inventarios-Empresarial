@@ -47,6 +47,36 @@ public interface ProductRepository
   @Query("SELECT COUNT(p) FROM Product p WHERE p.active = true AND p.stock <= p.minimumStock")
   long countLowStockProducts();
 
+  /**
+   * Productos activos ordenados por valor inmovilizado (precio × stock), con el orden y el recorte
+   * resueltos en la base.
+   *
+   * <p>Antes el ranking se armaba trayendo la tabla entera con {@code findAll()} y ordenándola en
+   * memoria para quedarse con diez filas, en un endpoint que el dashboard llama en cada carga.
+   *
+   * <p>El {@code LEFT JOIN FETCH} de la categoría evita el N+1 al pintar el nombre de cada fila, y
+   * es un {@code LEFT} porque los productos sin categoría también entran en el ranking; un join
+   * interno los habría dejado fuera sin que se notara.
+   */
+  @Query(
+      """
+      SELECT p FROM Product p
+      LEFT JOIN FETCH p.category
+      WHERE p.active = true
+      ORDER BY p.price * p.stock DESC
+      """)
+  List<Product> findTopByInventoryValue(Pageable pageable);
+
+  /** Mismo ranking que {@link #findTopByInventoryValue}, ordenado por unidades en existencia. */
+  @Query(
+      """
+      SELECT p FROM Product p
+      LEFT JOIN FETCH p.category
+      WHERE p.active = true
+      ORDER BY p.stock DESC
+      """)
+  List<Product> findTopByStock(Pageable pageable);
+
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("SELECT p FROM Product p WHERE p.id = :id")
   Optional<Product> findByIdForUpdate(@Param("id") Long id);
