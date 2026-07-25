@@ -29,12 +29,14 @@ Rutas públicas, y **solo** estas: Swagger UI, `/v3/api-docs`, `/v3/api-docs.yam
 | **Criterio** | Ninguna decisión de acceso se toma por nombre de rol. Un usuario autenticado que pida un scope que su rol no permite **no** obtiene la capacidad. |
 | **Origen** | *"cada operación crítica deberá verificar el permiso correspondiente"* |
 | **Estado** | **Cumple** |
-| **Implementación** | `@PreAuthorize("hasAuthority('SCOPE_…')")` en los controladores; intersección scope↔rol en [`SecurityConfig.java:140`](../../backend/src/main/java/com/inventory/common/config/SecurityConfig.java#L140) |
-| **Verificación** | `SecurityIntegrationTest`, `KeycloakJwtConverterTest`; [informe G-6](../testing/reportes/G-6-escalada-de-scopes.md) |
+| **Implementación** | `@PreAuthorize("hasAuthority('SCOPE_…')")` en los controladores; `scope-mappings` por rol en el realm ([`init-users.sh`](../../scripts/keycloak/init-users.sh)) y confianza en el claim en [`SecurityConfig.java`](../../backend/src/main/java/com/inventory/common/config/SecurityConfig.java) |
+| **Verificación** | `SecurityIntegrationTest`, `KeycloakJwtConverterTest` y `KeycloakAuthIT#keycloakGatesScopeEscalation` contra Keycloak real; [informe G-6](../testing/reportes/G-6-escalada-de-scopes.md) |
 
-**Este control es el único que existe, y conviene entender por qué.** El escaneo exploratorio G-6 demostró en vivo que **Keycloak emite cualquier scope a cualquier usuario autenticado**: un `inv_viewer` obtuvo `product:manage`, `stock:manage`, `user:manage` y `audit:view` con solo pedirlos. El realm no comprueba el rol al emitir scopes opcionales.
+**Dónde vive el control, y por qué importa.** El escaneo exploratorio G-6 demostró en vivo que **Keycloak emitía cualquier scope a cualquier usuario autenticado**: un `inv_viewer` obtuvo `product:manage`, `stock:manage`, `user:manage` y `audit:view` con solo pedirlos. El realm no comprobaba el rol al emitir scopes opcionales.
 
-La consecuencia es que la tabla `SCOPES_BY_ROLE` de Java no es una duplicación cómoda del IdP: es **el techo efectivo de permisos**. Lo que no aparezca en ella se descarta del token aunque Keycloak lo haya firmado. Corregirlo en la raíz (`scopeMappings` en el realm) es **G-8**; documentar la decisión es **ADR-002**. Hasta entonces, tocar esa tabla es tocar el control de acceso del sistema.
+**G-8** lo corrigió en la raíz atando cada client scope a sus roles autorizados, y **G-2** retiró en consecuencia la tabla `SCOPES_BY_ROLE` que el backend usaba como contención ([ADR-004](../decisions/ADR-004-keycloak-autoridad-de-scopes.md), que sustituye a ADR-002). Hoy el mapa rol→scopes existe en **un solo sitio**: el realm.
+
+La consecuencia a asumir es que ese realm es ahora el único control de acceso. La red que lo sostiene es `KeycloakAuthIT#keycloakGatesScopeEscalation`, que levanta un Keycloak real y comprueba que un viewer pidiendo scopes elevados no los recibe. Corre en el check **obligatorio** `Integration Tests (Testcontainers)` de cada PR y **no debe relajarse**.
 
 ### RNF-03 — Refresh tokens
 

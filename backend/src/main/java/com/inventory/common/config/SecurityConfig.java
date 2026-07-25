@@ -3,10 +3,8 @@ package com.inventory.common.config;
 import com.inventory.common.observability.AuthenticatedUserMdcFilter;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.health.HealthEndpoint;
@@ -40,8 +38,12 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
  * Configuración central de Spring Security. Establece la política stateless con JWT de Keycloak,
- * CORS configurable, rutas públicas (Swagger, health, Prometheus) y extrae roles y scopes del token
- * intersectándolos con los permisos máximos que el rol del usuario puede tener.
+ * CORS configurable, rutas públicas (Swagger, health, Prometheus) y extrae del token los roles de
+ * realm y los scopes OAuth2 que Keycloak haya emitido.
+ *
+ * <p>La autoridad sobre qué permisos lleva un token es Keycloak, no este backend: los
+ * scope-mappings por rol del realm gatean la emisión (G-8) y aquí se confía en el claim resultante.
+ * Ver {@code docs/decisions/ADR-004-keycloak-autoridad-de-scopes.md}.
  */
 @Configuration
 @EnableWebSecurity
@@ -134,80 +136,39 @@ public class SecurityConfig {
     return converter;
   }
 
-  // Extracts realm roles (ROLE_ prefix) and effective OAuth2 scopes (SCOPE_ prefix) from the JWT.
-  // Scopes are intersected with the role-permitted set so that Keycloak optional scopes cannot
-  // grant capabilities beyond what the user's realm role allows.
+  // Extrae los roles de realm (prefijo ROLE_) y los scopes OAuth2 (prefijo SCOPE_) del JWT.
+  //
+  // Keycloak es la autoridad única sobre qué permisos lleva un token: los scope-mappings por rol
+  // del realm (G-8, scripts/keycloak/init-users.sh) deciden qué scopes se emiten, y este backend
+  // se limita a confiar en el claim resultante. Hasta G-8 existía aquí una tabla rol→scopes que
+  // reintersectaba el claim, porque Keycloak concedía cualquier scope a cualquier usuario
+  // autenticado (G-6, issue #43); esa contención dejó de ser necesaria y se retiró en G-2.
+  // El razonamiento completo está en docs/decisions/ADR-004-keycloak-autoridad-de-scopes.md.
+  //
+  // El control de que un viewer no reciba scopes elevados vive ahora en el realm, y lo verifica
+  // KeycloakAuthIT#keycloakGatesScopeEscalation contra un Keycloak real, dentro del check
+  // obligatorio "Integration Tests (Testcontainers)". Ese test es la red: no debe relajarse.
   private Collection<GrantedAuthority> extractAuthorities(Jwt jwt) {
     List<GrantedAuthority> authorities = new ArrayList<>();
 
-    Set<String> roles = new HashSet<>();
     Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
     if (realmAccess != null) {
       @SuppressWarnings("unchecked")
       List<String> roleList = (List<String>) realmAccess.get("roles");
       if (roleList != null) {
-        roleList.forEach(
-            role -> {
-              roles.add(role);
-              authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
-            });
+        roleList.forEach(role -> authorities.add(new SimpleGrantedAuthority("ROLE_" + role)));
       }
     }
 
-    Set<String> permitted = permittedScopesForRoles(roles);
     String scope = jwt.getClaimAsString("scope");
     if (scope != null && !scope.isBlank()) {
       for (String s : scope.split(" ")) {
-        if (!s.isBlank() && permitted.contains(s)) {
+        if (!s.isBlank()) {
           authorities.add(new SimpleGrantedAuthority("SCOPE_" + s));
         }
       }
     }
 
     return List.copyOf(authorities);
-  }
-
-  // Scopes OIDC estándar: no otorgan ninguna capacidad de negocio por sí solos, pero se
-  // conservan en el token de quien tenga al menos un rol reconocido.
-  private static final Set<String> BASE_SCOPES = Set.of("openid", "email", "profile");
-
-  // Techo de scopes por rol de realm. Keycloak emite scopes opcionales sin comprobar el rol
-  // (ver docs/testing/reportes/G-6-escalada-de-scopes.md), así que esta tabla es el control
-  // efectivo: lo que no aparezca aquí se descarta del token. La decisión y sus consecuencias
-  // están en docs/decisions/ADR-002-mapa-rol-scopes-en-java.md. No editar sin leerlo: es el
-  // único control de acceso hasta que G-8 restrinja la emisión en el propio IdP.
-  private static final Map<String, Set<String>> SCOPES_BY_ROLE =
-      Map.of(
-          "inventory-admin",
-              Set.of(
-                  "product:view",
-                  "product:manage",
-                  "stock:view",
-                  "stock:manage",
-                  "report:view",
-                  "user:manage",
-                  "audit:view"),
-          "warehouse-clerk",
-              Set.of("product:view", "product:manage", "stock:view", "stock:manage", "report:view"),
-          "auditor", Set.of("product:view", "stock:view", "report:view", "audit:view"),
-          "viewer", Set.of("product:view", "stock:view", "report:view"));
-
-  // Devuelve la UNIÓN de los scopes de todos los roles reconocidos del usuario.
-  // Sin ningún rol reconocido no se concede nada: denegar por defecto.
-  private Set<String> permittedScopesForRoles(Set<String> roles) {
-    Set<String> permitted = new HashSet<>();
-    for (String role : roles) {
-      Set<String> roleScopes = SCOPES_BY_ROLE.get(role);
-      if (roleScopes != null) {
-        permitted.addAll(roleScopes);
-      }
-    }
-
-    if (permitted.isEmpty()) {
-      return Set.of();
-    }
-
-    permitted.addAll(BASE_SCOPES);
-    return Set.copyOf(permitted);
   }
 }

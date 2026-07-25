@@ -241,8 +241,11 @@ podría pedir `product:manage` y obtenerlo.
 | `auditor` | `product:view`, `stock:view`, `report:view`, `audit:view` |
 | `viewer` | `product:view`, `stock:view`, `report:view` |
 
-La tabla vive en `SCOPES_BY_ROLE`, dentro de `SecurityConfig`. Si se toca ahí, hay que
-actualizarla aquí: es la referencia que consulta cualquiera antes de llamar a la API.
+La tabla vive en el realm de Keycloak: la aplica `assign_scope_roles` en
+[`scripts/keycloak/init-users.sh`](scripts/keycloak/init-users.sh), y es el **único** sitio donde
+se decide qué scopes puede pedir cada rol. El backend confía en el token que sale de ahí
+([ADR-004](docs/decisions/ADR-004-keycloak-autoridad-de-scopes.md)). Si se toca el script, hay que
+actualizar esta tabla: es la referencia que consulta cualquiera antes de llamar a la API.
 
 Los controllers autorizan por scope, no por rol:
 ```java
@@ -305,7 +308,9 @@ verificado por commitlint en un hook de Husky.
 - [Informes de QA](docs/testing/reportes/) — hallazgos con reproducción y evidencia
 - [Capturas de observabilidad](docs/testing/capturas/)
 - [ADR-001 — Elección de Stack](docs/decisions/ADR-001-stack-selection.md)
-- [ADR-002 — El mapa rol→scopes vive en el backend](docs/decisions/ADR-002-mapa-rol-scopes-en-java.md)
+- [ADR-002 — El mapa rol→scopes vive en el backend](docs/decisions/ADR-002-mapa-rol-scopes-en-java.md) — *sustituido por ADR-004*
+- [ADR-003 — Soft delete de productos](docs/decisions/ADR-003-soft-delete-de-productos.md)
+- [ADR-004 — Keycloak es la autoridad única sobre los scopes](docs/decisions/ADR-004-keycloak-autoridad-de-scopes.md)
 - [Guía de Contribución](CONTRIBUTING.md)
 
 ## Licencia

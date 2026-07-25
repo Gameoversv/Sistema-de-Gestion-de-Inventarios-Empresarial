@@ -1,7 +1,7 @@
 /** Authentication context that exposes Keycloak login state, user roles, permission scopes, and a logout action to the component tree. */
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import keycloak from '@/lib/keycloak'
-import { permittedScopesForRoles, LOGIN_SCOPE } from '@/lib/scopes'
+import { LOGIN_SCOPE } from '@/lib/scopes'
 
 interface AuthContextValue {
   authenticated: boolean
@@ -68,11 +68,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const realmRoles: string[] =
     (keycloak.tokenParsed?.realm_access as { roles?: string[] } | undefined)?.roles ?? []
 
-  const tokenScopes: string[] =
+  // Los scopes salen del token tal cual: Keycloak ya los recortó por rol (G-8). Aquí había un
+  // segundo filtro contra un mapa rol→scopes local, retirado en G-2 — espejar la decisión del
+  // backend en el cliente solo podía divergir de ella y hacer que la interfaz ocultara controles
+  // que el backend sí permite. Ver docs/decisions/ADR-004-keycloak-autoridad-de-scopes.md.
+  const scopes: string[] =
     (keycloak.tokenParsed?.scope as string | undefined)?.split(' ').filter(Boolean) ?? []
-
-  const permitted = permittedScopesForRoles(realmRoles)
-  const scopes = tokenScopes.filter((s) => permitted.has(s))
 
   const value: AuthContextValue = {
     authenticated: keycloak.authenticated ?? false,

@@ -57,9 +57,11 @@ class KeycloakJwtConverterTest {
     assertThat(token.getAuthorities()).isEmpty();
   }
 
-  // Verifica que un rol reconocido conserva los scopes OIDC estándar junto a los de negocio.
+  // Los scopes OIDC estándar del token se reflejan como autoridades junto a los de negocio.
+  // Ninguno protege un endpoint por sí solo; se conservan porque es el comportamiento estándar
+  // de un resource server y porque MeController los expone al frontend.
   @Test
-  void recognizedRole_keepsBaseOidcScopes() {
+  void tokenScopes_mappedWithScopePrefix() {
     Jwt jwt = buildJwt(List.of("viewer"), "openid profile email product:view");
 
     AbstractAuthenticationToken token = converter.convert(jwt);
@@ -71,42 +73,63 @@ class KeycloakJwtConverterTest {
             "ROLE_viewer", "SCOPE_openid", "SCOPE_profile", "SCOPE_email", "SCOPE_product:view");
   }
 
-  // G-5: un token sin ningún rol de realm no recibe scope alguno, ni siquiera los OIDC.
-  // Denegar por defecto: si no se reconoce el rol, no se concede nada.
+  // G-2: el backend confía en el claim scope y no lo reintersecta contra una tabla local.
+  // Que un viewer no llegue a tener product:manage EN EL TOKEN es responsabilidad de los
+  // scope-mappings del realm, y lo verifica KeycloakAuthIT contra un Keycloak real. Aquí se
+  // fija la otra mitad del contrato: lo que Keycloak emite, el backend lo respeta tal cual.
   @Test
-  void noRealmRoles_grantsNoScopes() {
-    Jwt jwt =
-        Jwt.withTokenValue("token")
-            .header("alg", "RS256")
-            .subject("user-123")
-            .issuedAt(Instant.now())
-            .expiresAt(Instant.now().plusSeconds(300))
-            .claim("scope", "openid profile email product:view")
-            .build();
-
-    AbstractAuthenticationToken token = converter.convert(jwt);
-
-    assertThat(token).isNotNull();
-    assertThat(token.getAuthorities()).isEmpty();
-  }
-
-  // G-5: un rol desconocido se refleja como ROLE_ pero no habilita ningún scope.
-  @Test
-  void unrecognizedRole_grantsRoleButNoScopes() {
-    Jwt jwt = buildJwt(List.of("manager"), "openid profile product:manage");
+  void scopeClaim_isTrustedVerbatim() {
+    Jwt jwt = buildJwt(List.of("warehouse-clerk"), "openid product:view product:manage");
 
     AbstractAuthenticationToken token = converter.convert(jwt);
 
     assertThat(token).isNotNull();
     assertThat(token.getAuthorities())
         .extracting(GrantedAuthority::getAuthority)
-        .containsExactly("ROLE_manager");
+        .containsExactlyInAnyOrder(
+            "ROLE_warehouse-clerk", "SCOPE_openid", "SCOPE_product:view", "SCOPE_product:manage");
   }
 
-  // G-4: con varios roles se concede la UNIÓN de sus scopes, no los del primero que coincida.
-  // Un warehouse-clerk que además sea auditor debe conservar audit:view y stock:manage.
+  // Un token sin roles de realm solo aporta sus scopes. Keycloak no emite scopes de negocio a
+  // quien no tiene rol —los scope-mappings los atan a un rol—, así que en la práctica un token
+  // así llega solo con los OIDC, que no autorizan nada.
   @Test
-  void multipleRoles_grantUnionOfScopes() {
+  void noRealmRoles_grantsOnlyTokenScopes() {
+    Jwt jwt =
+        Jwt.withTokenValue("token")
+            .header("alg", "RS256")
+            .subject("user-123")
+            .issuedAt(Instant.now())
+            .expiresAt(Instant.now().plusSeconds(300))
+            .claim("scope", "openid profile email")
+            .build();
+
+    AbstractAuthenticationToken token = converter.convert(jwt);
+
+    assertThat(token).isNotNull();
+    assertThat(token.getAuthorities())
+        .extracting(GrantedAuthority::getAuthority)
+        .containsExactlyInAnyOrder("SCOPE_openid", "SCOPE_profile", "SCOPE_email");
+  }
+
+  // Un rol que el backend no conoce ya no cambia nada: los roles no autorizan, autorizan los
+  // scopes. El enunciado prohíbe validar acceso por nombre de rol y esto lo hace estructural.
+  @Test
+  void unknownRole_doesNotAffectScopes() {
+    Jwt jwt = buildJwt(List.of("manager"), "openid product:view");
+
+    AbstractAuthenticationToken token = converter.convert(jwt);
+
+    assertThat(token).isNotNull();
+    assertThat(token.getAuthorities())
+        .extracting(GrantedAuthority::getAuthority)
+        .containsExactlyInAnyOrder("ROLE_manager", "SCOPE_openid", "SCOPE_product:view");
+  }
+
+  // Un usuario con varios roles recibe el token que Keycloak componga para la unión de sus
+  // scope-mappings. El backend no recalcula esa unión: la lee.
+  @Test
+  void multipleRoles_scopesComeFromToken() {
     Jwt jwt =
         buildJwt(
             List.of("warehouse-clerk", "auditor"),
@@ -117,28 +140,12 @@ class KeycloakJwtConverterTest {
     assertThat(token).isNotNull();
     assertThat(token.getAuthorities())
         .extracting(GrantedAuthority::getAuthority)
-        .contains("SCOPE_audit:view", "SCOPE_stock:manage", "SCOPE_product:manage");
-  }
-
-  // G-6: un viewer que solicite scopes de escritura a Keycloak no los obtiene como autoridades.
-  // Keycloak los emite sin comprobar el rol; el techo por rol es lo que los descarta.
-  @Test
-  void viewerRequestingWriteScopes_getsOnlyReadScopes() {
-    Jwt jwt =
-        buildJwt(
-            List.of("viewer"),
-            "openid product:view product:manage stock:manage user:manage audit:view");
-
-    AbstractAuthenticationToken token = converter.convert(jwt);
-
-    assertThat(token).isNotNull();
-    assertThat(token.getAuthorities())
-        .extracting(GrantedAuthority::getAuthority)
-        .containsExactlyInAnyOrder("ROLE_viewer", "SCOPE_openid", "SCOPE_product:view");
-    assertThat(token.getAuthorities())
-        .extracting(GrantedAuthority::getAuthority)
-        .doesNotContain(
-            "SCOPE_product:manage", "SCOPE_stock:manage", "SCOPE_user:manage", "SCOPE_audit:view");
+        .contains(
+            "ROLE_warehouse-clerk",
+            "ROLE_auditor",
+            "SCOPE_audit:view",
+            "SCOPE_stock:manage",
+            "SCOPE_product:manage");
   }
 
   // Verifica que el administrador conserva todos los scopes de negocio que solicite.

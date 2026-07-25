@@ -2,7 +2,7 @@
 
 **Fuente de verdad:** `Proyecto_Final_V3.pdf` (revisado íntegro el 2026-07-22)
 **Base de hallazgos:** [ANALISIS_BRECHAS.md](ANALISIS_BRECHAS.md)
-**Actualizado:** 2026-07-24, sobre `main` en `4243945`, tras cerrar la Ola 2, la Ola 4 salvo C-4 y CI-2, **la Ola 5 completa** (requisitos, arquitectura, mantenimiento, guía de pruebas, T-6 y D-1…D-4), P-2 de la Ola 6, P-2a de la Ola 7, los dos obligatorios de sesión (SEC-2, S-2), los 16 code smells (Q-5) y el alcance funcional pendiente (F-2, D-1, D-2), que se mergeó en el PR #64. La documentación de la Ola 5 está en rama, sin mergear aún.
+**Actualizado:** 2026-07-25 con **G-2** (Keycloak como autoridad única de scopes, [ADR-004](decisions/ADR-004-keycloak-autoridad-de-scopes.md)). Antes, 2026-07-24, sobre `main` en `4243945`, tras cerrar la Ola 2, la Ola 4 salvo C-4 y CI-2, **la Ola 5 completa** (requisitos, arquitectura, mantenimiento, guía de pruebas, T-6 y D-1…D-4), P-2 de la Ola 6, P-2a de la Ola 7, los dos obligatorios de sesión (SEC-2, S-2), los 16 code smells (Q-5) y el alcance funcional pendiente (F-2, D-1, D-2), que se mergeó en el PR #64. La documentación de la Ola 5 está en rama, sin mergear aún.
 
 > **Aviso de método.** La versión anterior de este plan tomaba como requisito el desglose del análisis de brechas, que en algunos puntos era interpretación propia y no texto del enunciado. Cada requisito de este documento está contrastado con el PDF. Cuando algo es criterio nuestro y no del enunciado, se marca como **[criterio propio]**.
 
@@ -56,11 +56,13 @@ El enunciado los lista de forma explícita. Sirve como checklist de cierre.
 
 Siete hallazgos de la ejecución alteran prioridades.
 
-### 3.1 El mapa rol→scopes de Java es el único control de seguridad
+### 3.1 El mapa rol→scopes de Java fue el único control de seguridad — y ya no existe
 
-Verificado en vivo ([informe](testing/reportes/G-6-escalada-de-scopes.md)): Keycloak emite **cualquier scope a cualquier usuario autenticado**. `inv_viewer` obtuvo `product:manage`, `stock:manage`, `user:manage` y `audit:view`.
+Verificado en vivo ([informe](testing/reportes/G-6-escalada-de-scopes.md)): Keycloak emitía **cualquier scope a cualquier usuario autenticado**. `inv_viewer` obtuvo `product:manage`, `stock:manage`, `user:manage` y `audit:view`.
 
-**Consecuencia:** G-2 ("mover rol→permisos a Keycloak y eliminar la duplicación") no puede ejecutarse en el orden previsto. Primero hay que restringir los scopes en el IdP (**G-8**), y solo después simplificar el backend.
+**Consecuencia en su momento:** G-2 ("mover rol→permisos a Keycloak y eliminar la duplicación") no podía ejecutarse en el orden previsto. Primero había que restringir los scopes en el IdP (**G-8**), y solo después simplificar el backend.
+
+**Cerrado.** G-8 ató los `scope-mappings` por rol y G-2 retiró el mapa de Java y su espejo en el frontend. El orden se respetó: la contención no se soltó hasta que la corrección de raíz estuvo verificada contra un Keycloak real en un check obligatorio. Ver [ADR-004](decisions/ADR-004-keycloak-autoridad-de-scopes.md).
 
 ### 3.2 La cobertura ya pasa el umbral
 
@@ -304,7 +306,7 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 | # | Acción | Esfuerzo | Alternativa |
 |---|---|---|---|
 | **G-1** | Authorization Services: Resources, Policies, Permissions — **"Policies" está nombrado en el enunciado** | 5 h | ADR argumentando que scopes + roles cubren el modelo |
-| **G-2** | Mover rol→permisos a Keycloak (depende de G-8) | 4 h | ADR-002 |
+| ~~**G-2**~~ | ~~Mover rol→permisos a Keycloak (depende de G-8)~~ — **hecho**: retirados `SCOPES_BY_ROLE`, `permittedScopesForRoles` y `BASE_SCOPES` de `SecurityConfig`, más el espejo del frontend en `lib/scopes.ts`. El backend confía en el claim `scope`, que G-8 ya gatea por rol en el realm. El mapa pasa de vivir en tres sitios —realm, backend y cliente— a vivir solo en el realm. [ADR-004](decisions/ADR-004-keycloak-autoridad-de-scopes.md) sustituye a ADR-002 y razona por qué **no** se conservó como defensa en profundidad: las dos capas derivaban de la misma fuente y fallaban a la vez, el único fallo que cubría ya lo detecta `KeycloakAuthIT` en un check obligatorio, y el mapa lo **enmascaraba** en runtime en vez de exponerlo | 1 h | — |
 | **A-2 / M-1** | `UserController` sobre la Admin API — daría uso a `user:manage` | 4 h | ADR delegando a la consola |
 | **A-1** | Unificar rutas bajo `/api/v1` | 3 h | **Riesgo alto** cerca de la entrega. El mínimo ya está hecho: el README documenta las rutas reales y declara la inconsistencia en vez de disimularla |
 
@@ -335,7 +337,7 @@ Las cifras de abajo son el hueco que falta por cerrar en cada área, no su peso.
 | **Ola 6 — Presentación** (P-1 guion, P-3 ensayo) | 3,00 | 2 h | **1,50** |
 | G-1 vía ADR — "Policies" está nombrado en el enunciado y es el RNF-05 pendiente | 0,30 | 30 min | 0,60 |
 | CI-2 + smoke post-release — cierra Deployment con una ejecución real | 0,50 | 1 h | 0,50 |
-| Ola 8 restante (G-2, A-2/M-1, A-1) por ADR | 0,20 | 1,5 h | 0,13 |
+| Ola 8 restante (A-2/M-1, A-1) por ADR | 0,15 | 1 h | 0,15 |
 
 **Cerradas:** Olas 2, 3, 5 y 7 completas, la Ola 4 salvo C-4 y CI-2, y **todas las mejoras funcionales** (D-1, D-2, D-3, D-4, E-2, F-1, F-2, M-2, S-2, SEC-2).
 
