@@ -58,6 +58,7 @@ export function ProductsPage() {
           <input
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
+            aria-label="Buscar productos por nombre o SKU"
             placeholder="Buscar por nombre o SKU..."
             className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
@@ -65,6 +66,7 @@ export function ProductsPage() {
 
         <select
           value={categoryId ?? ''}
+          aria-label="Filtrar por categoría"
           onChange={(e) => {
             setCategoryId(e.target.value ? Number(e.target.value) : undefined)
             setPage(0)
@@ -79,6 +81,7 @@ export function ProductsPage() {
 
         <select
           value={active == null ? '' : String(active)}
+          aria-label="Filtrar por estado"
           onChange={(e) => {
             setActive(e.target.value === '' ? undefined : e.target.value === 'true')
             setPage(0)
