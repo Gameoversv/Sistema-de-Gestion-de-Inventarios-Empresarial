@@ -188,7 +188,7 @@ Spotless estaba declarado en el POM y desactivado con `-Dspotless.check.skip=tru
 |---|---|
 | Repositorio público | cumple |
 | README profesional | cumple — rutas reales, matriz rol→scopes y el `scope` obligatorio del token |
-| **Issues** | **33 issues**: 13 épicas de fase, **17 bugs** (7 abiertos) y **3 charters**. Los dos últimos bugs (#69, #70) salieron de montar los E2E en CI. Las épicas 9, 10 y 11 se pusieron al día en la Ola 4 |
+| **Issues** | **33 issues**: 13 épicas de fase, **17 bugs** (solo 2 abiertos: #48 A-2 diferido y #49 C-4 de entorno) y **3 charters**. Los dos últimos bugs (#69, #70) salieron de montar los E2E en CI. Las épicas 9, 10 y 11 se pusieron al día en la Ola 4 |
 | Pull Requests | cumple — **33 PRs**, el último el #64 |
 | Branch strategy | cumple — `main` protegida; corren 4 checks y 2 son obligatorios |
 | Conventional Commits | cumple — commitlint activo |
@@ -282,7 +282,7 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 |---|---|---|---|
 | **P-1** | Guion de demo: alta de producto → movimiento de stock → alerta → auditoría → dashboard | 1 h | pendiente |
 | **P-2** | Capturas de los 4 dashboards con datos reales y de una alerta disparada | 1 h | **hecho** — 6 capturas, 34 paneles sin ninguno vacío, alerta verificada hasta Alertmanager, [informe](testing/reportes/P-2-capturas-de-evidencia.md) |
-| **P-3** | Ensayo con el stack levantado desde cero (`down -v && up`) | 1 h | pendiente — el CORS ya no bloquea, resuelto en P-2a. **Queda un bloqueo real: P-2b**, porque `keycloak-init` no es idempotente y el ensayo es precisamente un `up` repetido. Hacer P-2b antes |
+| **P-3** | Ensayo con el stack levantado desde cero (`down -v && up`) | 1 h | pendiente — **ya desbloqueado**: el CORS lo resolvió P-2a y la idempotencia de `keycloak-init` la resolvió P-2b. Solo falta correr el ensayo sobre un stack vivo |
 
 > **Dos avisos de P-2 que afectan al guion de P-1.** Los paneles de Negocio usan `increase()`: si en la demo se encadenan todos los movimientos seguidos saldrán en cero, porque Prometheus no puede medir el incremento del primer punto de una serie. Hay que espaciarlos o levantar el stack con antelación. Y la ventana temporal de los dashboards no debe abarcar un reinicio del backend con otro perfil, o cada panel duplica sus series.
 
@@ -293,7 +293,7 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 | ~~**G-3a**~~ | ~~Unión de scopes en `AuthContext.tsx`; hoy replica el bug de primer-rol-gana~~ — **hecho**: extraído a `lib/scopes.ts` (función pura, sin el init de Keycloak de por medio) y reescrito como unión espejando el backend. Rol desconocido no aporta nada; sin rol, deniega. 6 tests nuevos, incluido el multi-rol y la independencia del orden. Cierra #44 | — |
 | ~~**INF-1**~~ | ~~Redis desplegado, configurado y sin un solo uso en el código~~ — **hecho**: retirado del `docker-compose.yml` (14 servicios), del POM, de `application.yml`/`-dev`/`-smoke`, de `.env.example` y `staging.yml`. Quitadas también las exclusiones de autoconfig de Redis en los 4 IT, que ya no tienen sentido. Backend compila y los 289 unit tests siguen en verde. Aplicó la regla 3 | — |
 | ~~**G-8**~~ | ~~`scope-mappings` por rol en Keycloak: corrección de raíz de G-6~~ — **hecho y verificado en CI**. `init-users.sh` ata cada client scope a los roles autorizados. El paso "G-8" de `staging.yml` (run [30070253945](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/actions/runs/30070253945), verde) probó a nivel de token que un `inv_viewer` pidiendo scopes elevados recibe solo `product:view`. La sospecha de que los scope-mappings no gatearían el string resultó falsa: sí lo gatean. El mapa Java (ADR-002) se conserva como defensa en profundidad. Cierra #43 | — |
-| ~~**S-4b**~~ | ~~Quitar `JWT_SECRET` y `JWT_EXPIRATION_MS` de `staging.yml`~~ — **hecho**: ningún Java los leía (la firma la valida Keycloak). Retirados del workflow y de `GITHUB_SECRETS.md`. Queda borrar el secreto `STAGING_JWT_SECRET` en la config del repo, a mano. Cierra #47 | — |
+| ~~**S-4b**~~ | ~~Quitar `JWT_SECRET` y `JWT_EXPIRATION_MS` de `staging.yml`~~ — **hecho**: ningún Java los leía (la firma la valida Keycloak). Retirados del workflow y de `GITHUB_SECRETS.md`, y el secreto `STAGING_JWT_SECRET` borrado de la config del repo. Cierra #47 | — |
 | ~~**ADR-002**~~ | ~~Por qué el mapa rol→scopes vive en Java~~ — **hecho**: [`ADR-002`](decisions/ADR-002-mapa-rol-scopes-en-java.md) documenta la contención de G-6 en el backend, con `SecurityConfig` apuntando a él | — |
 | ~~**P-2a**~~ | ~~CORS de `staging` bloquea el frontend local y deja P-3 sin interfaz~~ — **hecho**: perfil `demo` propio, con CORS local y muestreo al 100 %. Se descartó añadir localhost a `staging`, que espeja producción. Verificado en vivo y fijado con `CorsProfilesTest` [informe](testing/reportes/P-2a-perfil-demo.md) | — |
 | ~~**P-2b**~~ | ~~`keycloak-init` no es idempotente: al reejecutarse sobre un realm existente lanza `duplicate key … uk_cli_scope`~~ — **hecho**: comprueba existencia antes de crear scopes y usuarios. Verificado con `sh -n` y lógica; sin doble `down -v && up` en vivo por C-4. Cierra #45 | — |
