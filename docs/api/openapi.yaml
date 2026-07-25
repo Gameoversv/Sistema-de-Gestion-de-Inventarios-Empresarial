@@ -1263,7 +1263,8 @@ components:
         quantity:
           minimum: 0
           type: integer
-          description: Cantidad de unidades
+          description: "Cantidad de unidades. Debe ser mayor que cero en IN y OUT;\
+            \ en ADJUSTMENT se acepta 0, que fija el stock del producto en cero."
           format: int32
           example: 50
         reason:

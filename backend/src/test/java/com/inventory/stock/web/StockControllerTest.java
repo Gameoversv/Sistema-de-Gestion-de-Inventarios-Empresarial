@@ -143,6 +143,59 @@ class StockControllerTest {
         .andExpect(status().isBadRequest());
   }
 
+  // Verifica que una entrada de cero unidades retorna 400 (E-2): no mueve inventario y ensuciaría
+  // el historial y el contador de movimientos.
+  @Test
+  void registerMovement_zeroQuantityOnIn_returns400() throws Exception {
+    var invalidRequest = new StockMovementRequest(1L, MovementType.IN, 0, null, null);
+
+    mockMvc
+        .perform(
+            post("/api/stock/movements")
+                .with(
+                    jwt()
+                        .jwt(j -> j.subject("manager"))
+                        .authorities(new SimpleGrantedAuthority("SCOPE_stock:manage")))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(invalidRequest)))
+        .andExpect(status().isBadRequest());
+  }
+
+  // Verifica que un ajuste a cero sí se acepta: fija el stock del producto en cero.
+  @Test
+  void registerMovement_zeroQuantityOnAdjustment_returns201() throws Exception {
+    var request = new StockMovementRequest(1L, MovementType.ADJUSTMENT, 0, "recuento", null);
+    var response =
+        new StockMovementResponse(
+            43L,
+            1L,
+            "SKU-001",
+            "Widget",
+            MovementType.ADJUSTMENT,
+            0,
+            7,
+            0,
+            "recuento",
+            null,
+            "manager",
+            Instant.now());
+
+    when(stockService.registerMovement(any(StockMovementRequest.class), any(Authentication.class)))
+        .thenReturn(response);
+
+    mockMvc
+        .perform(
+            post("/api/stock/movements")
+                .with(
+                    jwt()
+                        .jwt(j -> j.subject("manager").claim("preferred_username", "manager"))
+                        .authorities(new SimpleGrantedAuthority("SCOPE_stock:manage")))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.quantityAfter").value(0));
+  }
+
   // ── GET /api/stock/movements ──────────────────────────────────────────────
 
   // Verifica que listar movimientos sin autenticación retorna 401.

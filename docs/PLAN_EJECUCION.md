@@ -319,7 +319,7 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 | M-2 | `GET /api/stock/{productId}` con `stock:view` | 30 min |
 | F-1 | ADR-003 sobre el soft delete — renumerado desde 002, que queda para el mapa rol→scopes de la Ola 7 | 30 min |
 | ~~D-4~~ | ~~`@axe-core/playwright` en E2E~~ — **hecho**: `a11y.spec.ts` (axe WCAG 2 A/AA) sobre dashboard, productos y stock; destapó selects/inputs sin nombre accesible, corregidos con `aria-label` | 1 h |
-| E-2 | Validación condicional de `quantity` | 45 min |
+| ~~**E-2**~~ | ~~Validación condicional de `quantity`~~ — **hecho**: `@Min(0)` aceptaba una entrada o una salida de **cero unidades**, que no mueve inventario pero sí escribe fila en el historial y suma al contador de movimientos. Regla condicional en el DTO (`@AssertTrue`): IN y OUT exigen > 0; ADJUSTMENT conserva el 0, que es un recuento a cero legítimo. 7 tests de validación + 2 de controlador | — |
 | ~~**SEC-2**~~ | ~~`onTokenExpired`~~ — **hecho**: renovación proactiva más cierre de sesión cuando el refresco falla. [Informe](testing/reportes/SEC-2-S-2-ciclo-de-vida-del-token.md) | — |
 | ~~**S-2**~~ | ~~Test con `grant_type=refresh_token`~~ — **hecho**: 5 comprobaciones, incluida la negativa (refresh inválido → 400) | — |
 | — | ~~**[criterio propio]** Métricas de login de Keycloak vía SPI~~ — **descartada**: Keycloak sí emite `LOGIN_ERROR` con usuario, IP y motivo al log, y Loki lo indexa. Ya visible en el dashboard de Seguridad ([informe](testing/reportes/OBS-dashboards.md)) | — |
