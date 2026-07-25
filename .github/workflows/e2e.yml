@@ -86,6 +86,28 @@ jobs:
           done
           echo "Backend no arranco"; docker compose logs backend | tail -80; exit 1
 
+      # TEST-10b — el cliente inventory-zap debe emitir un token de vida larga
+      # (~3600 s) para que el escaneo ZAP de staging.yml no caduque a mitad. Se
+      # verifica aquí, contra el mismo realm, porque staging.yml solo corre en main.
+      - name: TEST-10b — token de vida larga del cliente ZAP
+        run: |
+          KC=http://localhost:8180/realms/inventory/protocol/openid-connect/token
+          TOK=$(curl -s "$KC" -d client_id=inventory-zap -d grant_type=password \
+            -d username=inv_admin -d password=Admin123 \
+            -d 'scope=openid product:view' | jq -r .access_token)
+          if [ -z "$TOK" ] || [ "$TOK" = "null" ]; then
+            echo "El cliente inventory-zap no emitio token"; exit 1
+          fi
+          P=$(echo "$TOK" | cut -d. -f2)
+          case $((${#P} % 4)) in 2) P="$P==" ;; 3) P="$P=" ;; esac
+          DEC=$(echo "$P" | tr '_-' '/+' | base64 -d 2>/dev/null)
+          LIFE=$(( $(echo "$DEC" | jq -r .exp) - $(echo "$DEC" | jq -r .iat) ))
+          echo "Lifespan del token de inventory-zap: ${LIFE}s"
+          if [ "$LIFE" -lt 3000 ]; then
+            echo "Esperado ~3600 s; el override access.token.lifespan no se aplico"; exit 1
+          fi
+          echo "OK: inventory-zap emite token de vida larga"
+
       - name: Wait — Frontend serving
         run: |
           for i in $(seq 1 30); do

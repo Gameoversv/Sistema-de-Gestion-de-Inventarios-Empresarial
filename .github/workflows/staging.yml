@@ -322,9 +322,11 @@ jobs:
       # comando que se valido en local contra el stack.
       - name: Obtain JWT for the authenticated scan
         run: |
+          # Cliente inventory-zap: token de 3600 s (TEST-10b) para que no caduque
+          # a mitad del escaneo activo, en vez de los 300 s del realm.
           TOKEN=$(curl -sf \
             "http://localhost:8180/realms/inventory/protocol/openid-connect/token" \
-            -d "client_id=inventory-frontend" \
+            -d "client_id=inventory-zap" \
             -d "username=inv_admin" \
             -d "password=${{ secrets.STAGING_KC_USER_ADMIN_PASSWORD }}" \
             -d "grant_type=password" \

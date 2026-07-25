@@ -26,7 +26,7 @@ El enunciado exige **ocho capas** de testing. Esta guía dice, capa por capa, qu
 
 **307 `@Test` en 33 ficheros** (más los 4 de `KeycloakAuthIT`). Cobertura del backend: **85,0 % de ramas, 92,7 % de líneas** (JaCoCo en CI, umbral 80 %). Frontend: **9,3 %** de líneas — el hueco de calidad conocido.
 
-**Las ocho capas cumplen** y se ejecutan en CI. Lo que queda son mejoras dentro de capas que ya pasan (snapshots y responsive en E2E, TEST-10b en Security), no capas abiertas.
+**Las ocho capas cumplen** y se ejecutan en CI, con las mejoras de E2E (snapshots, accesibilidad, responsive) y de Security (TEST-10b) también cerradas.
 
 ---
 
@@ -138,7 +138,7 @@ La capa cubre además, toda en CI, lo que el enunciado nombra —snapshots, role
 
 El escaneo de dependencias no fue un trámite: `npm audit` encontró CVEs altas reales (brace-expansion DoS, js-yaml, postcss path traversal), que se corrigieron actualizando el lockfile. Las que quedan son de react-router 7.x sin fix publicado (open redirect en `<Link>` y su modo RSC, que la app no usa); se gatea en critical y se documenta.
 
-**Qué queda (mejora):** **TEST-10b** — el token del escaneo ZAP caduca a los 300 s; si el escaneo activo dura más, el resto de la API se recorre sin autenticar. Hay un paso que lo detecta y falla; falta un cliente de Keycloak dedicado con `accessTokenLifespan` mayor (issue #46).
+**TEST-10b — cerrado.** El token del escaneo ZAP caducaba a los 300 s; si el escaneo activo duraba más, el resto de la API se recorría sin autenticar. Ahora `staging.yml` obtiene el token de un cliente dedicado `inventory-zap` con `access.token.lifespan=3600`. Un paso de `e2e.yml` verifica, contra el mismo realm, que ese cliente emite un token de ~3600 s (issue #46).
 
 ---
 
@@ -239,8 +239,6 @@ Escalada por primer-rol-gana (#50) y fallback de scopes (#51), el check de CI qu
 
 ## Estado de la pirámide
 
-**Las ocho capas del enunciado cumplen y corren en CI.** La capa E2E incluye ya snapshots (TEST-8), accesibilidad (D-4) y responsive (TEST-9). La única mejora pendiente es de Security:
-
-- **TEST-10b** — cliente de Keycloak dedicado al escaneo ZAP con `accessTokenLifespan` mayor, para que el token no caduque a mitad del escaneo activo (issue #46).
+**Las ocho capas del enunciado cumplen y corren en CI**, y las mejoras identificadas están cerradas: E2E con snapshots (TEST-8), accesibilidad (D-4) y responsive (TEST-9); Security con el cliente ZAP de token largo (TEST-10b). La pirámide de testing está completa.
 
 Trazabilidad completa de cada identificador en el [plan de ejecución](../PLAN_EJECUCION.md), §4.3.

@@ -15,7 +15,7 @@ El enunciado define **ocho** áreas. La versión anterior omitía la última.
 | Área | Peso | Inicial | Actual | Alcanzable |
 |---|---|---|---|---|
 | Funcionalidad | 15% | ~85% | ~97% | ~98% |
-| Testing | 20% | ~60% | ~97% | ~97% |
+| Testing | 20% | ~60% | ~98% | ~98% |
 | Seguridad | 10% | ~70% | ~90% | ~90% |
 | Observabilidad | 15% | ~30% | ~90% | ~90% |
 | CI/CD | 15% | ~60% | ~85% | ~90% |
@@ -297,7 +297,7 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 | ~~**ADR-002**~~ | ~~Por qué el mapa rol→scopes vive en Java~~ — **hecho**: [`ADR-002`](decisions/ADR-002-mapa-rol-scopes-en-java.md) documenta la contención de G-6 en el backend, con `SecurityConfig` apuntando a él | — |
 | ~~**P-2a**~~ | ~~CORS de `staging` bloquea el frontend local y deja P-3 sin interfaz~~ — **hecho**: perfil `demo` propio, con CORS local y muestreo al 100 %. Se descartó añadir localhost a `staging`, que espeja producción. Verificado en vivo y fijado con `CorsProfilesTest` [informe](testing/reportes/P-2a-perfil-demo.md) | — |
 | ~~**P-2b**~~ | ~~`keycloak-init` no es idempotente: al reejecutarse sobre un realm existente lanza `duplicate key … uk_cli_scope`~~ — **hecho**: comprueba existencia antes de crear scopes y usuarios. Verificado con `sh -n` y lógica; sin doble `down -v && up` en vivo por C-4. Cierra #45 | — |
-| **TEST-10b** | El realm emite tokens de 300 s y el escaneo activo de ZAP puede durar más. Al caducar, el resto de la API se recorre sin autenticar y el escaneo aprueba precisamente por no encontrar nada. Ya hay un paso que lo detecta y falla; falta la corrección de raíz: un cliente de Keycloak dedicado al escaneo con `accessTokenLifespan` mayor | 45 min |
+| ~~**TEST-10b**~~ | ~~El realm emite tokens de 300 s y el escaneo activo de ZAP puede durar más~~ — **hecho**: cliente `inventory-zap` en el realm con `access.token.lifespan=3600`; `staging.yml` obtiene el token del escaneo de ese cliente en vez de `inventory-frontend`. Verificado en `e2e.yml` (mismo realm): un paso comprueba que el token de `inventory-zap` vive ~3600 s. Cierra #46 | 45 min |
 
 ### Ola 8 — Alto coste, decidir explícitamente
 
