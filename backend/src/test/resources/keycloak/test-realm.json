@@ -25,6 +25,28 @@
   },
   "clientScopes": [
     {
+      "name": "roles",
+      "description": "Roles de realm del usuario. Necesario para que las Policies de rol de Authorization Services vean realm_access.",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "false",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "access.token.claim": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String",
+            "multivalued": "true"
+          }
+        }
+      ]
+    },
+    {
       "name": "product:view",
       "description": "View product catalog",
       "protocol": "openid-connect",
@@ -109,18 +131,9 @@
       "name": "Inventory Backend API",
       "protocol": "openid-connect",
       "defaultClientScopes": [
-        "web-origins",
-        "acr",
-        "roles",
-        "profile",
-        "email"
+        "roles"
       ],
-      "optionalClientScopes": [
-        "address",
-        "phone",
-        "offline_access",
-        "microprofile-jwt"
-      ],
+      "optionalClientScopes": [],
       "nodeReRegistrationTimeout": -1,
       "fullScopeAllowed": true,
       "description": "Spring Boot resource server. Valida bearer tokens y declara el modelo de Authorization Services (Resources, Policies, Permissions) del sistema.",
