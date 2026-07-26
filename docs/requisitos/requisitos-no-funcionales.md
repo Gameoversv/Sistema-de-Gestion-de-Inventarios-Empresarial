@@ -64,8 +64,17 @@ La consecuencia a asumir es que ese realm es ahora el único control de acceso. 
 |---|---|
 | **Criterio** | O se implementan Authorization Services de Keycloak (Resources, Policies, Permissions), o existe un ADR que argumente por qué roles + scopes cubren el modelo exigido. |
 | **Origen** | *"modelo de seguridad completamente granular basado en: Keycloak, OAuth2, JWT, Roles, Permisos, Scopes y **Policies**"* |
-| **Estado** | **Pendiente** |
-| **Qué falta** | **G-1** en el plan: implementar (≈5 h) o justificar por ADR. "Policies" aparece nombrado literalmente en el enunciado, así que la opción de ignorarlo en silencio no existe |
+| **Estado** | **Cumple** — implementado, no justificado por ADR |
+| **Implementación** | Authorization Services sobre el cliente `inventory-backend` en [`keycloak/realm-export.json`](../../keycloak/realm-export.json): **5 Resources** (Product, Stock, Report, Audit, User), **7 authorization scopes**, **4 Policies** de tipo `role` y **7 Permissions** de tipo `scope` con `decisionStrategy` AFFIRMATIVE |
+| **Verificación** | `AuthorizationServicesIT` — 3 tests de declaración y 4 de decisión (PERMIT/DENY) contra un Keycloak real |
+
+El modelo expresa la **misma matriz** que los `scope-mappings` de [RNF-02](#rnf-02--autorización-por-permiso-no-por-rol), en el lenguaje que el enunciado nombra. `AuthorizationServicesIT` evalúa **la matriz completa: 4 roles × 7 permisos = 28 decisiones**, no una muestra representativa. Se enumeran las 28 a propósito: un modelo de autorización se rompe por el cruce que nadie miró, y así un `applyPolicies` mal editado deja de ser una afirmación de este documento para ser un test en rojo con nombre y fila.
+
+**Cambio de superficie de ataque que esto introduce.** Authorization Services exige que el cliente sea confidencial con service account, así que `inventory-backend` deja de ser `bearerOnly` y aparece el usuario `service-account-inventory-backend`. Antes ese cliente **no podía obtener tokens en absoluto**; ahora sí, con su secreto.
+
+Comprobado en vivo en lugar de asumirlo: un `client_credentials` sobre ese cliente pidiendo `user:manage` recibe solo `openid email profile` — los `scope-mappings` de G-8 gatean la emisión **pese a `fullScopeAllowed: true`**, porque el service account no tiene ningún rol de realm. Obtiene, eso sí, un token válido que satisface el `.authenticated()` de `/me` y `/ping`, que no exigen permiso. Riesgo aceptado: requiere el secreto del cliente, que Keycloak genera y **no está en el repositorio**. Si alguna vez se usa ese secreto para algo, entra por variable de entorno.
+
+**Alcance honesto de lo implementado.** El modelo está declarado y **decide**, pero el *enforcement* en la ruta de petición sigue siendo `@PreAuthorize` sobre los scopes del token, no una evaluación de RPT por petición. Es una decisión deliberada, no una carencia: pedir un RPT a Keycloak en cada petición añade un round-trip que compromete el umbral `p(95)<500ms` que k6 verifica en CI ([RNF-08](#rnf-08--tiempo-de-respuesta-bajo-carga)), y ambas capas derivan de la misma matriz. Queda anotado como fase 2 de **G-1** en el plan.
 
 ### RNF-06 — Superficie HTTP endurecida
 

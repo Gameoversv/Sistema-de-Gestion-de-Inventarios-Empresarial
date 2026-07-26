@@ -303,9 +303,11 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 
 ### Ola 8 — Alto coste, decidir explícitamente
 
+> **Por qué G-1 se quedó en la fase 1.** Declarar el modelo y evaluarlo no necesita secreto de cliente: la evaluación va por Admin API. El *enforcement* en runtime sí lo necesitaría —el backend tendría que autenticarse para pedir un RPT—, y además añade un round-trip a Keycloak en cada petición, con el umbral `p(95)<500ms` de k6 corriendo en CI. Como ambas capas derivan de la misma matriz, la segunda añadiría latencia y superficie sin añadir una decisión distinta. Se declara el modelo, se prueba que decide, y se documenta el límite en vez de disimularlo.
+
 | # | Acción | Esfuerzo | Alternativa |
 |---|---|---|---|
-| **G-1** | Authorization Services: Resources, Policies, Permissions — **"Policies" está nombrado en el enunciado** | 5 h | ADR argumentando que scopes + roles cubren el modelo |
+| ~~**G-1**~~ | ~~Authorization Services: Resources, Policies, Permissions~~ — **hecho (fase 1)**: 5 Resources, 7 authorization scopes, 4 Policies de rol y 7 Permissions de scope declarados en el realm sobre `inventory-backend`, que pasa de `bearerOnly` decorativo a cliente confidencial con service account. Verificado en vivo: el realm importa y `AuthorizationServicesIT` fija el modelo con 3 tests de declaración y **la matriz entera parametrizada — 4 roles × 7 permisos = 28 decisiones**, no una muestra. Cierra **RNF-05**. **Fase 2 no hecha y deliberada:** el enforcement sigue siendo `@PreAuthorize` sobre los scopes del token, no un RPT por petición — ver el aviso de abajo | 2 h | — |
 | ~~**G-2**~~ | ~~Mover rol→permisos a Keycloak (depende de G-8)~~ — **hecho**: retirados `SCOPES_BY_ROLE`, `permittedScopesForRoles` y `BASE_SCOPES` de `SecurityConfig`, más el espejo del frontend en `lib/scopes.ts`. El backend confía en el claim `scope`, que G-8 ya gatea por rol en el realm. El mapa pasa de vivir en tres sitios —realm, backend y cliente— a vivir solo en el realm. [ADR-004](decisions/ADR-004-keycloak-autoridad-de-scopes.md) sustituye a ADR-002 y razona por qué **no** se conservó como defensa en profundidad: las dos capas derivaban de la misma fuente y fallaban a la vez, el único fallo que cubría ya lo detecta `KeycloakAuthIT` en un check obligatorio, y el mapa lo **enmascaraba** en runtime en vez de exponerlo | 1 h | — |
 | **A-2 / M-1** | `UserController` sobre la Admin API — daría uso a `user:manage` | 4 h | ADR delegando a la consola |
 | **A-1** | Unificar rutas bajo `/api/v1` | 3 h | **Riesgo alto** cerca de la entrega. El mínimo ya está hecho: el README documenta las rutas reales y declara la inconsistencia en vez de disimularla |
@@ -335,7 +337,6 @@ Las cifras de abajo son el hueco que falta por cerrar en cada área, no su peso.
 | Bloque | Puntos en juego | Horas | Puntos/hora |
 |---|---|---|---|
 | **Ola 6 — Presentación** (P-1 guion, P-3 ensayo) | 3,00 | 2 h | **1,50** |
-| G-1 vía ADR — "Policies" está nombrado en el enunciado y es el RNF-05 pendiente | 0,30 | 30 min | 0,60 |
 | CI-2 + smoke post-release — cierra Deployment con una ejecución real | 0,50 | 1 h | 0,50 |
 | Ola 8 restante (A-2/M-1, A-1) por ADR | 0,15 | 1 h | 0,15 |
 
