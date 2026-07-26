@@ -38,6 +38,11 @@ public class UserService {
   private static final Set<String> MANAGED_ROLES =
       Set.of("inventory-admin", "warehouse-clerk", "auditor", "viewer");
 
+  private static final String EMAIL = "email";
+  private static final String FIRST_NAME = "firstName";
+  private static final String LAST_NAME = "lastName";
+  private static final String ENABLED = "enabled";
+
   private final KeycloakAdminClient keycloak;
 
   public UserService(KeycloakAdminClient keycloak) {
@@ -70,17 +75,18 @@ public class UserService {
 
     Map<String, Object> representation = new HashMap<>();
     representation.put("username", request.username().trim());
-    representation.put("email", request.email().trim());
-    representation.put("firstName", nullSafe(request.firstName()));
-    representation.put("lastName", nullSafe(request.lastName()));
-    representation.put("enabled", true);
+    representation.put(EMAIL, request.email().trim());
+    representation.put(FIRST_NAME, nullSafe(request.firstName()));
+    representation.put(LAST_NAME, nullSafe(request.lastName()));
+    representation.put(ENABLED, true);
     representation.put("emailVerified", true);
 
     String id = keycloak.createUser(representation);
     keycloak.resetPassword(id, request.password());
     replaceRoles(id, request.roles() == null ? List.of() : request.roles());
 
-    log.info("Usuario creado en el realm: username={} id={}", request.username(), id);
+    log.info(
+        "Usuario creado en el realm: username={} id={}", forLog(request.username()), forLog(id));
     return findById(id);
   }
 
@@ -89,27 +95,27 @@ public class UserService {
 
     Map<String, Object> representation = new HashMap<>();
     representation.put(
-        "email", request.email() != null ? request.email().trim() : current.get("email"));
-    representation.put("firstName", nullSafe(request.firstName()));
-    representation.put("lastName", nullSafe(request.lastName()));
-    representation.put("enabled", request.enabled());
+        "email", request.email() != null ? request.email().trim() : current.get(EMAIL));
+    representation.put(FIRST_NAME, nullSafe(request.firstName()));
+    representation.put(LAST_NAME, nullSafe(request.lastName()));
+    representation.put(ENABLED, request.enabled());
 
     keycloak.updateUser(id, representation);
-    log.info("Usuario actualizado: id={} enabled={}", id, request.enabled());
+    log.info("Usuario actualizado: id={} enabled={}", forLog(id), request.enabled());
     return findById(id);
   }
 
   public UserResponse replaceRoles(String id, UserRolesRequest request) {
     validateRoles(request.roles());
     replaceRoles(id, request.roles());
-    log.info("Roles reemplazados: id={} roles={}", id, request.roles());
+    log.info("Roles reemplazados: id={} roles={}", forLog(id), request.roles());
     return findById(id);
   }
 
   public void delete(String id) {
     keycloak.findUser(id);
     keycloak.deleteUser(id);
-    log.info("Usuario eliminado del realm: id={}", id);
+    log.info("Usuario eliminado del realm: id={}", forLog(id));
   }
 
   // ── Interno ────────────────────────────────────────────────────────────────
@@ -175,11 +181,19 @@ public class UserService {
     return new UserResponse(
         id,
         (String) user.get("username"),
-        (String) user.get("email"),
-        (String) user.get("firstName"),
-        (String) user.get("lastName"),
-        Boolean.TRUE.equals(user.get("enabled")),
+        (String) user.get(EMAIL),
+        (String) user.get(FIRST_NAME),
+        (String) user.get(LAST_NAME),
+        Boolean.TRUE.equals(user.get(ENABLED)),
         roles);
+  }
+
+  /**
+   * Quita saltos de linea antes de registrar valores que vienen del cliente. Sin esto, un nombre de
+   * usuario con CR/LF puede fabricar lineas de log falsas y ensuciar la pista de auditoria.
+   */
+  private static String forLog(String value) {
+    return value == null ? "" : value.replaceAll("[\r\n]", "_");
   }
 
   private String nullSafe(String value) {

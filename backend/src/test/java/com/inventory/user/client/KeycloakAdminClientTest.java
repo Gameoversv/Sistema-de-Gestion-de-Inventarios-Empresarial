@@ -39,6 +39,8 @@ class KeycloakAdminClientTest {
   private static final String BASE = "http://kc:8080";
   private static final String TOKEN_URI = BASE + "/realms/inventory/protocol/openid-connect/token";
   private static final String USERS_URI = BASE + "/admin/realms/inventory/users";
+  private static final String REALM_MAPPINGS = "/role-mappings/realm";
+  private static final String UID = "11111111-2222-3333-4444-555555555555";
 
   private MockRestServiceServer server;
   private KeycloakAdminClient client;
@@ -106,11 +108,11 @@ class KeycloakAdminClientTest {
   @DisplayName("un usuario inexistente se traduce a ResourceNotFoundException")
   void findUser_notFound_throwsResourceNotFound() {
     expectTokenRequest();
-    server.expect(requestTo(USERS_URI + "/u404")).andRespond(withStatus(HttpStatus.NOT_FOUND));
+    server.expect(requestTo(USERS_URI + "/" + UID)).andRespond(withStatus(HttpStatus.NOT_FOUND));
 
-    assertThatThrownBy(() -> client.findUser("u404"))
+    assertThatThrownBy(() -> client.findUser(UID))
         .isInstanceOf(ResourceNotFoundException.class)
-        .hasMessageContaining("u404");
+        .hasMessageContaining(UID);
   }
 
   @Test
@@ -175,21 +177,21 @@ class KeycloakAdminClientTest {
   void writeOperations_hitTheirEndpoints() {
     expectTokenRequest();
     server
-        .expect(requestTo(USERS_URI + "/u1"))
+        .expect(requestTo(USERS_URI + "/" + UID))
         .andExpect(method(HttpMethod.PUT))
         .andRespond(withSuccess());
     server
-        .expect(requestTo(USERS_URI + "/u1/reset-password"))
+        .expect(requestTo(USERS_URI + "/" + UID + "/reset-password"))
         .andExpect(method(HttpMethod.PUT))
         .andRespond(withSuccess());
     server
-        .expect(requestTo(USERS_URI + "/u1"))
+        .expect(requestTo(USERS_URI + "/" + UID))
         .andExpect(method(HttpMethod.DELETE))
         .andRespond(withStatus(HttpStatus.NO_CONTENT));
 
-    client.updateUser("u1", Map.of("enabled", false));
-    client.resetPassword("u1", "Secreta123");
-    client.deleteUser("u1");
+    client.updateUser(UID, Map.of("enabled", false));
+    client.resetPassword(UID, "Secreta123");
+    client.deleteUser(UID);
 
     server.verify();
   }
@@ -198,8 +200,8 @@ class KeycloakAdminClientTest {
   @DisplayName("una lista de roles vacía no genera ninguna llamada")
   void emptyRoleLists_produceNoRequests() {
     // Sin expectTokenRequest: si intentara llamar, ni siquiera habria token que pedir.
-    client.addRealmRoles("u1", List.of());
-    client.removeRealmRoles("u1", List.of());
+    client.addRealmRoles(UID, List.of());
+    client.removeRealmRoles(UID, List.of());
 
     server.verify();
   }
@@ -208,13 +210,24 @@ class KeycloakAdminClientTest {
   @DisplayName("asignar y revocar roles usan POST y DELETE sobre el mismo recurso")
   void roleAssignment_usesPostAndDelete() {
     expectTokenRequest();
-    String uri = USERS_URI + "/u1/role-mappings/realm";
+    String uri = USERS_URI + "/" + UID + REALM_MAPPINGS;
     server.expect(requestTo(uri)).andExpect(method(HttpMethod.POST)).andRespond(withSuccess());
     server.expect(requestTo(uri)).andExpect(method(HttpMethod.DELETE)).andRespond(withSuccess());
 
     List<Map<String, Object>> roles = List.of(Map.of("id", "r1", "name", "auditor"));
-    client.addRealmRoles("u1", roles);
-    client.removeRealmRoles("u1", roles);
+    client.addRealmRoles(UID, roles);
+    client.removeRealmRoles(UID, roles);
+
+    server.verify();
+  }
+
+  @Test
+  @DisplayName("un identificador que no es UUID se rechaza sin llegar a Keycloak")
+  void nonUuidId_isRejectedBeforeHittingKeycloak() {
+    // Prueba de seguridad, no de validacion: sin esto un id como "../../realms" haria que el
+    // backend construyera una peticion contra otro recurso usando el token de servicio.
+    assertThatThrownBy(() -> client.findUser("../../realms/master"))
+        .isInstanceOf(ResourceNotFoundException.class);
 
     server.verify();
   }
@@ -224,10 +237,10 @@ class KeycloakAdminClientTest {
   void userRealmRoles_readsRoleMappings() {
     expectTokenRequest();
     server
-        .expect(requestTo(USERS_URI + "/u1/role-mappings/realm"))
+        .expect(requestTo(USERS_URI + "/" + UID + REALM_MAPPINGS))
         .andRespond(withSuccess("[{\"name\":\"auditor\"}]", MediaType.APPLICATION_JSON));
 
-    assertThat(client.userRealmRoles("u1"))
+    assertThat(client.userRealmRoles(UID))
         .extracting(r -> r.get("name"))
         .containsExactly("auditor");
   }

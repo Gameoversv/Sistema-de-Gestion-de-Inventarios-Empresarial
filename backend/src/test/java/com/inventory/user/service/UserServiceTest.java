@@ -24,6 +24,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
+  private static final String UID = "11111111-2222-3333-4444-555555555555";
+  private static final String NEW_UID = "99999999-8888-7777-6666-555555555555";
+
   @Mock KeycloakAdminClient keycloak;
 
   private UserService service;
@@ -59,8 +62,7 @@ class UserServiceTest {
   @Test
   @DisplayName("un rol desconocido se rechaza antes de llamar a Keycloak")
   void replaceRoles_unknownRole_isRejected() {
-    assertThatThrownBy(
-            () -> service.replaceRoles("u1", new UserRolesRequest(List.of("superadmin"))))
+    assertThatThrownBy(() -> service.replaceRoles(UID, new UserRolesRequest(List.of("superadmin"))))
         .isInstanceOf(BusinessException.class)
         .hasMessageContaining("superadmin");
 
@@ -71,11 +73,11 @@ class UserServiceTest {
   @Test
   @DisplayName("el reemplazo calcula el delta: asigna lo que falta y revoca lo que sobra")
   void replaceRoles_computesDelta() {
-    when(keycloak.userRealmRoles("u1")).thenReturn(List.of(role("viewer"), role("offline_access")));
+    when(keycloak.userRealmRoles(UID)).thenReturn(List.of(role("viewer"), role("offline_access")));
     when(keycloak.realmRoles()).thenReturn(ALL_ROLES);
-    when(keycloak.findUser("u1")).thenReturn(Map.of("id", "u1", "username", "u", "enabled", true));
+    when(keycloak.findUser(UID)).thenReturn(Map.of("id", UID, "username", "u", "enabled", true));
 
-    service.replaceRoles("u1", new UserRolesRequest(List.of("auditor")));
+    service.replaceRoles(UID, new UserRolesRequest(List.of("auditor")));
 
     ArgumentCaptor<List<Map<String, Object>>> add = ArgumentCaptor.forClass(List.class);
     ArgumentCaptor<List<Map<String, Object>>> remove = ArgumentCaptor.forClass(List.class);
@@ -89,12 +91,12 @@ class UserServiceTest {
   @Test
   @DisplayName("los roles internos de Keycloak nunca se revocan aunque no se pidan")
   void replaceRoles_neverTouchesKeycloakInternalRoles() {
-    when(keycloak.userRealmRoles("u1"))
+    when(keycloak.userRealmRoles(UID))
         .thenReturn(List.of(role("offline_access"), role("default-roles-inventory")));
     when(keycloak.realmRoles()).thenReturn(ALL_ROLES);
-    when(keycloak.findUser("u1")).thenReturn(Map.of("id", "u1", "username", "u", "enabled", true));
+    when(keycloak.findUser(UID)).thenReturn(Map.of("id", UID, "username", "u", "enabled", true));
 
-    service.replaceRoles("u1", new UserRolesRequest(List.of()));
+    service.replaceRoles(UID, new UserRolesRequest(List.of()));
 
     ArgumentCaptor<List<Map<String, Object>>> remove = ArgumentCaptor.forClass(List.class);
     verify(keycloak).removeRealmRoles(anyString(), remove.capture());
@@ -104,11 +106,11 @@ class UserServiceTest {
   @Test
   @DisplayName("editar sin correo conserva el que ya tenia el usuario")
   void update_withoutEmail_keepsCurrent() {
-    when(keycloak.findUser("u1"))
-        .thenReturn(Map.of("id", "u1", "username", "ana", "email", "previo@b.c", "enabled", true));
-    when(keycloak.userRealmRoles("u1")).thenReturn(List.of());
+    when(keycloak.findUser(UID))
+        .thenReturn(Map.of("id", UID, "username", "ana", "email", "previo@b.c", "enabled", true));
+    when(keycloak.userRealmRoles(UID)).thenReturn(List.of());
 
-    service.update("u1", new com.inventory.user.dto.UserUpdateRequest(null, null, null, false));
+    service.update(UID, new com.inventory.user.dto.UserUpdateRequest(null, null, null, false));
 
     ArgumentCaptor<Map<String, Object>> rep = ArgumentCaptor.forClass(Map.class);
     verify(keycloak).updateUser(anyString(), rep.capture());
@@ -121,17 +123,17 @@ class UserServiceTest {
   @Test
   @DisplayName("el alta fija la contrasena y aplica los roles pedidos")
   void create_setsPasswordAndRoles() {
-    when(keycloak.createUser(any())).thenReturn("nuevo");
-    when(keycloak.userRealmRoles("nuevo")).thenReturn(List.of());
+    when(keycloak.createUser(any())).thenReturn(NEW_UID);
+    when(keycloak.userRealmRoles(NEW_UID)).thenReturn(List.of());
     when(keycloak.realmRoles()).thenReturn(ALL_ROLES);
-    when(keycloak.findUser("nuevo"))
-        .thenReturn(Map.of("id", "nuevo", "username", "ana", "enabled", true));
+    when(keycloak.findUser(NEW_UID))
+        .thenReturn(Map.of("id", NEW_UID, "username", "ana", "enabled", true));
 
     service.create(
         new com.inventory.user.dto.UserCreateRequest(
             " ana ", " a@b.c ", null, null, "Secreta123", List.of("viewer")));
 
-    verify(keycloak).resetPassword("nuevo", "Secreta123");
+    verify(keycloak).resetPassword(NEW_UID, "Secreta123");
     ArgumentCaptor<Map<String, Object>> rep = ArgumentCaptor.forClass(Map.class);
     verify(keycloak).createUser(rep.capture());
     // Los espacios sobrantes se recortan antes de llegar al IdP.
@@ -142,11 +144,11 @@ class UserServiceTest {
   @Test
   @DisplayName("un alta sin roles no intenta asignar ninguno")
   void create_withNullRoles_assignsNone() {
-    when(keycloak.createUser(any())).thenReturn("nuevo");
-    when(keycloak.userRealmRoles("nuevo")).thenReturn(List.of());
+    when(keycloak.createUser(any())).thenReturn(NEW_UID);
+    when(keycloak.userRealmRoles(NEW_UID)).thenReturn(List.of());
     when(keycloak.realmRoles()).thenReturn(ALL_ROLES);
-    when(keycloak.findUser("nuevo"))
-        .thenReturn(Map.of("id", "nuevo", "username", "ana", "enabled", true));
+    when(keycloak.findUser(NEW_UID))
+        .thenReturn(Map.of("id", NEW_UID, "username", "ana", "enabled", true));
 
     service.create(
         new com.inventory.user.dto.UserCreateRequest(
@@ -160,19 +162,19 @@ class UserServiceTest {
   @Test
   @DisplayName("el borrado comprueba que el usuario existe antes de pedirlo")
   void delete_verifiesExistenceFirst() {
-    when(keycloak.findUser("u1")).thenReturn(Map.of("id", "u1"));
+    when(keycloak.findUser(UID)).thenReturn(Map.of("id", UID));
 
-    service.delete("u1");
+    service.delete(UID);
 
-    verify(keycloak).findUser("u1");
-    verify(keycloak).deleteUser("u1");
+    verify(keycloak).findUser(UID);
+    verify(keycloak).deleteUser(UID);
   }
 
   @Test
   @DisplayName("el listado pagina traduciendo pagina y tamano a first/max")
   void list_translatesPaging() {
-    when(keycloak.listUsers("ana", 40, 20)).thenReturn(List.of(Map.of("id", "u1")));
-    when(keycloak.userRealmRoles("u1")).thenReturn(List.of());
+    when(keycloak.listUsers("ana", 40, 20)).thenReturn(List.of(Map.of("id", UID)));
+    when(keycloak.userRealmRoles(UID)).thenReturn(List.of());
 
     assertThat(service.list("ana", 2, 20)).hasSize(1);
     verify(keycloak).listUsers("ana", 40, 20);
@@ -181,12 +183,11 @@ class UserServiceTest {
   @Test
   @DisplayName("la vista de usuario solo expone los roles de negocio")
   void findById_filtersInternalRoles() {
-    when(keycloak.findUser("u1"))
-        .thenReturn(Map.of("id", "u1", "username", "ana", "email", "a@b.c", "enabled", true));
-    when(keycloak.userRealmRoles("u1"))
-        .thenReturn(List.of(role("auditor"), role("offline_access")));
+    when(keycloak.findUser(UID))
+        .thenReturn(Map.of("id", UID, "username", "ana", "email", "a@b.c", "enabled", true));
+    when(keycloak.userRealmRoles(UID)).thenReturn(List.of(role("auditor"), role("offline_access")));
 
-    var response = service.findById("u1");
+    var response = service.findById(UID);
 
     assertThat(response.username()).isEqualTo("ana");
     assertThat(response.roles()).containsExactly("auditor");

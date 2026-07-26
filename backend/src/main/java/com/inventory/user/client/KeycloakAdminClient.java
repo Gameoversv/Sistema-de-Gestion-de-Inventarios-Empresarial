@@ -5,6 +5,7 @@ import com.inventory.common.exception.ResourceNotFoundException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -90,8 +91,30 @@ public class KeycloakAdminClient {
         "No se pudo autenticar contra Keycloak para gestionar usuarios (" + status + ")");
   }
 
+  private static final String AUTH_HEADER = "Authorization";
+  private static final String BEARER = "Bearer ";
+  private static final String USERS = "/users/";
+  private static final String REALM_ROLE_MAPPINGS = "/role-mappings/realm";
+
+  /**
+   * Los identificadores de Keycloak son UUID. Se valida antes de meterlos en la ruta de la Admin
+   * API porque llegan del cliente HTTP: sin esta comprobacion, un id como {@code ../../realms} deja
+   * al backend construyendo una peticion contra un recurso distinto del que cree, usando el token
+   * de servicio, que tiene mas permisos que el usuario que la origina.
+   */
+  private static String requireUserId(String id) {
+    if (id == null || !UUID_PATTERN.matcher(id).matches()) {
+      throw new ResourceNotFoundException("Usuario no encontrado: " + id);
+    }
+    return id;
+  }
+
+  private static final Pattern UUID_PATTERN =
+      Pattern.compile(
+          "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
+
   private RestClient.RequestHeadersSpec<?> get(String path) {
-    return http.get().uri(adminUri(path)).header("Authorization", "Bearer " + serviceToken());
+    return http.get().uri(adminUri(path)).header(AUTH_HEADER, BEARER + serviceToken());
   }
 
   private String adminUri(String path) {
@@ -108,7 +131,7 @@ public class KeycloakAdminClient {
     }
     return http.get()
         .uri(uri)
-        .header("Authorization", "Bearer " + serviceToken())
+        .header(AUTH_HEADER, BEARER + serviceToken())
         .retrieve()
         .onStatus(
             HttpStatusCode::isError, (req, res) -> fail("listar usuarios", res.getStatusCode()))
@@ -118,7 +141,7 @@ public class KeycloakAdminClient {
   @SuppressWarnings("unchecked")
   public Map<String, Object> findUser(String id) {
     Map<String, Object> user =
-        get("/users/" + id)
+        get(USERS + requireUserId(id))
             .retrieve()
             .onStatus(
                 s -> s.value() == 404,
@@ -140,7 +163,7 @@ public class KeycloakAdminClient {
     var response =
         http.post()
             .uri(adminUri("/users"))
-            .header("Authorization", "Bearer " + serviceToken())
+            .header(AUTH_HEADER, BEARER + serviceToken())
             .contentType(MediaType.APPLICATION_JSON)
             .body(representation)
             .retrieve()
@@ -164,8 +187,8 @@ public class KeycloakAdminClient {
 
   public void updateUser(String id, Map<String, Object> representation) {
     http.put()
-        .uri(adminUri("/users/" + id))
-        .header("Authorization", "Bearer " + serviceToken())
+        .uri(adminUri(USERS + requireUserId(id)))
+        .header(AUTH_HEADER, BEARER + serviceToken())
         .contentType(MediaType.APPLICATION_JSON)
         .body(representation)
         .retrieve()
@@ -176,8 +199,8 @@ public class KeycloakAdminClient {
 
   public void deleteUser(String id) {
     http.delete()
-        .uri(adminUri("/users/" + id))
-        .header("Authorization", "Bearer " + serviceToken())
+        .uri(adminUri(USERS + requireUserId(id)))
+        .header(AUTH_HEADER, BEARER + serviceToken())
         .retrieve()
         .onStatus(
             HttpStatusCode::isError, (req, res) -> fail("eliminar usuario", res.getStatusCode()))
@@ -186,8 +209,8 @@ public class KeycloakAdminClient {
 
   public void resetPassword(String id, String password) {
     http.put()
-        .uri(adminUri("/users/" + id + "/reset-password"))
-        .header("Authorization", "Bearer " + serviceToken())
+        .uri(adminUri(USERS + requireUserId(id) + "/reset-password"))
+        .header(AUTH_HEADER, BEARER + serviceToken())
         .contentType(MediaType.APPLICATION_JSON)
         .body(Map.of("type", "password", "value", password, "temporary", false))
         .retrieve()
@@ -202,7 +225,7 @@ public class KeycloakAdminClient {
   public List<Map<String, Object>> realmRoles() {
     return http.get()
         .uri(adminUri("/roles"))
-        .header("Authorization", "Bearer " + serviceToken())
+        .header(AUTH_HEADER, BEARER + serviceToken())
         .retrieve()
         .onStatus(HttpStatusCode::isError, (req, res) -> fail("listar roles", res.getStatusCode()))
         .body(List.class);
@@ -211,8 +234,8 @@ public class KeycloakAdminClient {
   @SuppressWarnings("unchecked")
   public List<Map<String, Object>> userRealmRoles(String id) {
     return http.get()
-        .uri(adminUri("/users/" + id + "/role-mappings/realm"))
-        .header("Authorization", "Bearer " + serviceToken())
+        .uri(adminUri(USERS + requireUserId(id) + REALM_ROLE_MAPPINGS))
+        .header(AUTH_HEADER, BEARER + serviceToken())
         .retrieve()
         .onStatus(
             HttpStatusCode::isError, (req, res) -> fail("consultar roles", res.getStatusCode()))
@@ -224,8 +247,8 @@ public class KeycloakAdminClient {
       return;
     }
     http.post()
-        .uri(adminUri("/users/" + id + "/role-mappings/realm"))
-        .header("Authorization", "Bearer " + serviceToken())
+        .uri(adminUri(USERS + requireUserId(id) + REALM_ROLE_MAPPINGS))
+        .header(AUTH_HEADER, BEARER + serviceToken())
         .contentType(MediaType.APPLICATION_JSON)
         .body(roles)
         .retrieve()
@@ -238,8 +261,8 @@ public class KeycloakAdminClient {
       return;
     }
     http.method(org.springframework.http.HttpMethod.DELETE)
-        .uri(adminUri("/users/" + id + "/role-mappings/realm"))
-        .header("Authorization", "Bearer " + serviceToken())
+        .uri(adminUri(USERS + requireUserId(id) + REALM_ROLE_MAPPINGS))
+        .header(AUTH_HEADER, BEARER + serviceToken())
         .contentType(MediaType.APPLICATION_JSON)
         .body(roles)
         .retrieve()
