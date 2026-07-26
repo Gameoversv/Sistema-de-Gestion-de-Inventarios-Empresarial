@@ -66,7 +66,7 @@ La consecuencia a asumir es que ese realm es ahora el único control de acceso. 
 | **Origen** | *"modelo de seguridad completamente granular basado en: Keycloak, OAuth2, JWT, Roles, Permisos, Scopes y **Policies**"* |
 | **Estado** | **Cumple** — implementado, no justificado por ADR |
 | **Implementación** | Authorization Services sobre el cliente `inventory-backend` en [`keycloak/realm-export.json`](../../keycloak/realm-export.json): **5 Resources** (Product, Stock, Report, Audit, User), **7 authorization scopes**, **4 Policies** de tipo `role` y **7 Permissions** de tipo `scope` con `decisionStrategy` AFFIRMATIVE |
-| **Verificación** | `AuthorizationServicesIT` — 3 tests de declaración y 4 de decisión (PERMIT/DENY) contra un Keycloak real |
+| **Verificación** | `AuthorizationServicesIT` contra un Keycloak real — 3 tests de declaración y **28 de decisión**: la matriz completa (PERMIT/DENY) |
 
 El modelo expresa la **misma matriz** que los `scope-mappings` de [RNF-02](#rnf-02--autorización-por-permiso-no-por-rol), en el lenguaje que el enunciado nombra. `AuthorizationServicesIT` evalúa **la matriz completa: 4 roles × 7 permisos = 28 decisiones**, no una muestra representativa. Se enumeran las 28 a propósito: un modelo de autorización se rompe por el cruce que nadie miró, y así un `applyPolicies` mal editado deja de ser una afirmación de este documento para ser un test en rojo con nombre y fila.
 
