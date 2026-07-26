@@ -7,8 +7,11 @@ import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.restassured.http.ContentType;
 import java.time.Duration;
 import java.util.List;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -44,45 +47,50 @@ class AuthorizationServicesIT {
           .withRealmImportFile("keycloak/test-realm.json")
           .withStartupTimeout(Duration.ofMinutes(3));
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  // Resueltos una vez: el token de admin y el UUID del cliente no cambian entre casos, y
+  // la matriz parametrizada de abajo son 28 evaluaciones.
+  private static String adminToken;
+  private static String clientUuid;
 
-  private String adminToken() {
-    return given()
-        .contentType(ContentType.URLENC)
-        .formParam("client_id", "admin-cli")
-        .formParam("grant_type", "password")
-        .formParam("username", keycloak.getAdminUsername())
-        .formParam("password", keycloak.getAdminPassword())
-        .when()
-        .post(keycloak.getAuthServerUrl() + "/realms/master/protocol/openid-connect/token")
-        .then()
-        .statusCode(200)
-        .extract()
-        .path("access_token");
+  @BeforeAll
+  static void resolveFixtures() {
+    adminToken =
+        given()
+            .contentType(ContentType.URLENC)
+            .formParam("client_id", "admin-cli")
+            .formParam("grant_type", "password")
+            .formParam("username", keycloak.getAdminUsername())
+            .formParam("password", keycloak.getAdminPassword())
+            .when()
+            .post(keycloak.getAuthServerUrl() + "/realms/master/protocol/openid-connect/token")
+            .then()
+            .statusCode(200)
+            .extract()
+            .path("access_token");
+
+    clientUuid =
+        given()
+            .auth()
+            .oauth2(adminToken)
+            .queryParam("clientId", CLIENT_ID)
+            .when()
+            .get(admin("/clients"))
+            .then()
+            .statusCode(200)
+            .extract()
+            .path("[0].id");
   }
 
-  private String admin(String path) {
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  private static String admin(String path) {
     return keycloak.getAuthServerUrl() + "/admin/realms/" + REALM + path;
   }
 
-  /** UUID interno del cliente que hospeda el authorization server. */
-  private String clientUuid(String token) {
+  private static String userId(String username) {
     return given()
         .auth()
-        .oauth2(token)
-        .queryParam("clientId", CLIENT_ID)
-        .when()
-        .get(admin("/clients"))
-        .then()
-        .statusCode(200)
-        .extract()
-        .path("[0].id");
-  }
-
-  private String userId(String token, String username) {
-    return given()
-        .auth()
-        .oauth2(token)
+        .oauth2(adminToken)
         .queryParam("username", username)
         .queryParam("exact", true)
         .when()
@@ -93,13 +101,13 @@ class AuthorizationServicesIT {
         .path("[0].id");
   }
 
-  private List<String> names(String token, String uuid, String collection) {
+  private static List<String> names(String collection) {
     return given()
         .auth()
-        .oauth2(token)
+        .oauth2(adminToken)
         .queryParam("max", 100)
         .when()
-        .get(admin("/clients/" + uuid + "/authz/resource-server/" + collection))
+        .get(admin("/clients/" + clientUuid + "/authz/resource-server/" + collection))
         .then()
         .statusCode(200)
         .extract()
@@ -110,28 +118,24 @@ class AuthorizationServicesIT {
    * Pide al motor de políticas una decisión sobre {@code resource#scope} para un usuario concreto.
    * Devuelve PERMIT o DENY.
    */
-  private String decisionFor(
-      String token, String uuid, String username, String resource, String scope) {
+  private static String decisionFor(String username, String resource, String scope) {
     String body =
         "{\"userId\":\""
-            + userId(token, username)
-            + "\","
-            + "\"entitlements\":false,"
-            + "\"context\":{\"attributes\":{}},"
+            + userId(username)
+            + "\",\"entitlements\":false,\"context\":{\"attributes\":{}},"
             + "\"resources\":[{\"name\":\""
             + resource
-            + "\","
-            + "\"scopes\":[{\"name\":\""
+            + "\",\"scopes\":[{\"name\":\""
             + scope
             + "\"}]}]}";
 
     return given()
         .auth()
-        .oauth2(token)
+        .oauth2(adminToken)
         .contentType(ContentType.JSON)
         .body(body)
         .when()
-        .post(admin("/clients/" + uuid + "/authz/resource-server/policy/evaluate"))
+        .post(admin("/clients/" + clientUuid + "/authz/resource-server/policy/evaluate"))
         .then()
         .statusCode(200)
         .extract()
@@ -143,21 +147,16 @@ class AuthorizationServicesIT {
   @Test
   @DisplayName("el realm declara los 5 Resources del dominio")
   void resourcesAreDeclared() {
-    String token = adminToken();
-
-    List<String> resources = names(token, clientUuid(token), "resource");
-
-    assertThat(resources).contains("Product", "Stock", "Report", "Audit", "User");
+    // `contains` y no exactitud: si Keycloak añadiera su Default Resource, el modelo
+    // propio seguiría siendo correcto. Hoy no lo hace — declarar `resources` en el import
+    // suprime los que crea por defecto—, pero eso es detalle de la versión, no contrato.
+    assertThat(names("resource")).contains("Product", "Stock", "Report", "Audit", "User");
   }
 
   @Test
   @DisplayName("el realm declara los 7 authorization scopes de la matriz de permisos")
   void scopesAreDeclared() {
-    String token = adminToken();
-
-    List<String> scopes = names(token, clientUuid(token), "scope");
-
-    assertThat(scopes)
+    assertThat(names("scope"))
         .containsExactlyInAnyOrder(
             "product:view",
             "product:manage",
@@ -171,65 +170,64 @@ class AuthorizationServicesIT {
   @Test
   @DisplayName("el realm declara una Policy por rol y un Permission por scope")
   void policiesAndPermissionsAreDeclared() {
-    String token = adminToken();
-    String uuid = clientUuid(token);
-
-    List<String> policies = names(token, uuid, "policy/role");
-    List<String> permissions = names(token, uuid, "permission/scope");
-
-    assertThat(policies)
+    assertThat(names("policy/role"))
         .containsExactlyInAnyOrder(
             "Es Administrador de inventario",
             "Es Encargado de almacen",
             "Es Auditor",
             "Es Consultor");
-    assertThat(permissions).hasSize(7).contains("Permite product:manage", "Permite user:manage");
+    assertThat(names("permission/scope"))
+        .hasSize(7)
+        .contains("Permite product:manage", "Permite user:manage");
   }
 
   // ── El modelo decide ───────────────────────────────────────────────────────
-  // Lo que separa un modelo real de uno decorativo: que evaluarlo devuelva PERMIT y DENY
-  // donde corresponde. Si estos tests pasaran solos los de arriba, el modelo podría estar
-  // declarado y no gobernar nada.
 
-  @Test
-  @DisplayName("PERMIT: el administrador puede gestionar productos")
-  void adminIsPermittedToManageProducts() {
-    String token = adminToken();
-
-    String decision =
-        decisionFor(token, clientUuid(token), "it-admin", "Product", "product:manage");
-
-    assertThat(decision).isEqualTo("PERMIT");
-  }
-
-  @Test
-  @DisplayName("DENY: el consultor no puede gestionar productos")
-  void viewerIsDeniedProductManagement() {
-    String token = adminToken();
-
-    String decision =
-        decisionFor(token, clientUuid(token), "it-viewer", "Product", "product:manage");
-
-    assertThat(decision).isEqualTo("DENY");
-  }
-
-  @Test
-  @DisplayName("PERMIT: el consultor sí puede ver productos")
-  void viewerIsPermittedToViewProducts() {
-    String token = adminToken();
-
-    String decision = decisionFor(token, clientUuid(token), "it-viewer", "Product", "product:view");
-
-    assertThat(decision).isEqualTo("PERMIT");
-  }
-
-  @Test
-  @DisplayName("DENY: user:manage está reservado al administrador")
-  void viewerIsDeniedUserManagement() {
-    String token = adminToken();
-
-    String decision = decisionFor(token, clientUuid(token), "it-viewer", "User", "user:manage");
-
-    assertThat(decision).isEqualTo("DENY");
+  /**
+   * La matriz entera: 4 roles × 7 permisos = 28 decisiones, espejo de {@code assign_scope_roles} en
+   * {@code scripts/keycloak/init-users.sh} y de la tabla del README.
+   *
+   * <p>Se enumeran las 28 y no una muestra a propósito. Un modelo de autorización se rompe por el
+   * cruce que nadie miró, y aquí un {@code applyPolicies} mal editado deja de ser una afirmación de
+   * la documentación para ser un test en rojo con nombre y fila.
+   */
+  @ParameterizedTest(name = "{0} → {1}#{2} = {3}")
+  @CsvSource({
+    // inventory-admin: los siete
+    "it-admin,    Product, product:view,   PERMIT",
+    "it-admin,    Product, product:manage, PERMIT",
+    "it-admin,    Stock,   stock:view,     PERMIT",
+    "it-admin,    Stock,   stock:manage,   PERMIT",
+    "it-admin,    Report,  report:view,    PERMIT",
+    "it-admin,    Audit,   audit:view,     PERMIT",
+    "it-admin,    User,    user:manage,    PERMIT",
+    // warehouse-clerk: gestiona catálogo y stock, sin auditoría ni usuarios
+    "it-clerk,    Product, product:view,   PERMIT",
+    "it-clerk,    Product, product:manage, PERMIT",
+    "it-clerk,    Stock,   stock:view,     PERMIT",
+    "it-clerk,    Stock,   stock:manage,   PERMIT",
+    "it-clerk,    Report,  report:view,    PERMIT",
+    "it-clerk,    Audit,   audit:view,     DENY",
+    "it-clerk,    User,    user:manage,    DENY",
+    // auditor: lectura amplia más la pista de auditoría, cero escritura
+    "it-auditor,  Product, product:view,   PERMIT",
+    "it-auditor,  Product, product:manage, DENY",
+    "it-auditor,  Stock,   stock:view,     PERMIT",
+    "it-auditor,  Stock,   stock:manage,   DENY",
+    "it-auditor,  Report,  report:view,    PERMIT",
+    "it-auditor,  Audit,   audit:view,     PERMIT",
+    "it-auditor,  User,    user:manage,    DENY",
+    // viewer: solo lectura, y sin auditoría
+    "it-viewer,   Product, product:view,   PERMIT",
+    "it-viewer,   Product, product:manage, DENY",
+    "it-viewer,   Stock,   stock:view,     PERMIT",
+    "it-viewer,   Stock,   stock:manage,   DENY",
+    "it-viewer,   Report,  report:view,    PERMIT",
+    "it-viewer,   Audit,   audit:view,     DENY",
+    "it-viewer,   User,    user:manage,    DENY",
+  })
+  void policyEngineDecidesTheWholeMatrix(
+      String username, String resource, String scope, String expected) {
+    assertThat(decisionFor(username, resource, scope)).isEqualTo(expected);
   }
 }

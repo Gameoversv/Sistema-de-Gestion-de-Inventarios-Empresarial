@@ -121,6 +121,12 @@ scopes— sitúa la autoridad en Keycloak.
 - **La configuración del realm gana peso como artefacto crítico.** `init-users.sh` deja de ser
   utilería de arranque y pasa a ser código de seguridad. Cualquier cambio en sus
   `assign_scope_roles` merece la misma revisión que un cambio en `SecurityConfig.java`.
+- **Interacción con G-1.** Declarar Authorization Services obligó a convertir `inventory-backend`
+  en cliente confidencial con service account, lo que crea una identidad que puede pedir tokens
+  donde antes no existía ninguna. Importa precisamente por esta decisión: como el backend ya
+  confía en el claim `scope`, un token con scopes de más sería concedido tal cual. Verificado que
+  no ocurre —los `scope-mappings` gatean también al service account, que no tiene rol de realm—,
+  con el detalle en [RNF-05](../requisitos/requisitos-no-funcionales.md#rnf-05--policies).
 
 ---
 

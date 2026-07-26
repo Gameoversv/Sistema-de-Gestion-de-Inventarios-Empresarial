@@ -68,7 +68,7 @@
       "id": "b1b2c3d4-e5f6-4000-b002-000000000001",
       "clientId": "inventory-backend",
       "name": "Inventory Backend API",
-      "description": "Spring Boot resource server. Valida bearer tokens y declara el modelo de Authorization Services (Resources, Policies, Permissions) del sistema.",
+      "description": "Spring Boot resource server. Declara Resources, Policies y Permissions. AVISO: policyEnforcementMode=ENFORCING describe la postura del modelo, no la ruta de peticion: el enforcement real es @PreAuthorize sobre los scopes. Ver RNF-05.",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
