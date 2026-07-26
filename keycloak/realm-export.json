@@ -27,7 +27,6 @@
   "defaultSignatureAlgorithm": "RS256",
   "revokeRefreshToken": false,
   "refreshTokenMaxReuse": 0,
-
   "roles": {
     "realm": [
       {
@@ -64,30 +63,248 @@
       }
     ]
   },
-
   "clients": [
     {
       "id": "b1b2c3d4-e5f6-4000-b002-000000000001",
       "clientId": "inventory-backend",
       "name": "Inventory Backend API",
-      "description": "Spring Boot resource server — validates bearer tokens only",
+      "description": "Spring Boot resource server. Valida bearer tokens y declara el modelo de Authorization Services (Resources, Policies, Permissions) del sistema.",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
-      "bearerOnly": true,
+      "bearerOnly": false,
       "standardFlowEnabled": false,
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": false,
-      "authorizationServicesEnabled": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": true,
       "fullScopeAllowed": true,
       "nodeReRegistrationTimeout": -1,
       "defaultClientScopes": [
-        "web-origins", "acr", "roles", "profile", "email"
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "email"
       ],
       "optionalClientScopes": [
-        "address", "phone", "offline_access", "microprofile-jwt"
-      ]
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ],
+      "authorizationSettings": {
+        "allowRemoteResourceManagement": false,
+        "policyEnforcementMode": "ENFORCING",
+        "decisionStrategy": "UNANIMOUS",
+        "resources": [
+          {
+            "name": "Product",
+            "type": "urn:inventory:resources:product",
+            "ownerManagedAccess": false,
+            "scopes": [
+              {
+                "name": "product:view"
+              },
+              {
+                "name": "product:manage"
+              }
+            ]
+          },
+          {
+            "name": "Stock",
+            "type": "urn:inventory:resources:stock",
+            "ownerManagedAccess": false,
+            "scopes": [
+              {
+                "name": "stock:view"
+              },
+              {
+                "name": "stock:manage"
+              }
+            ]
+          },
+          {
+            "name": "Report",
+            "type": "urn:inventory:resources:report",
+            "ownerManagedAccess": false,
+            "scopes": [
+              {
+                "name": "report:view"
+              }
+            ]
+          },
+          {
+            "name": "Audit",
+            "type": "urn:inventory:resources:audit",
+            "ownerManagedAccess": false,
+            "scopes": [
+              {
+                "name": "audit:view"
+              }
+            ]
+          },
+          {
+            "name": "User",
+            "type": "urn:inventory:resources:user",
+            "ownerManagedAccess": false,
+            "scopes": [
+              {
+                "name": "user:manage"
+              }
+            ]
+          }
+        ],
+        "scopes": [
+          {
+            "name": "product:view"
+          },
+          {
+            "name": "product:manage"
+          },
+          {
+            "name": "stock:view"
+          },
+          {
+            "name": "stock:manage"
+          },
+          {
+            "name": "report:view"
+          },
+          {
+            "name": "audit:view"
+          },
+          {
+            "name": "user:manage"
+          }
+        ],
+        "policies": [
+          {
+            "name": "Es Administrador de inventario",
+            "description": "El usuario tiene el rol de realm 'inventory-admin'",
+            "type": "role",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "roles": "[{\"id\": \"inventory-admin\", \"required\": false}]"
+            }
+          },
+          {
+            "name": "Es Encargado de almacen",
+            "description": "El usuario tiene el rol de realm 'warehouse-clerk'",
+            "type": "role",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "roles": "[{\"id\": \"warehouse-clerk\", \"required\": false}]"
+            }
+          },
+          {
+            "name": "Es Auditor",
+            "description": "El usuario tiene el rol de realm 'auditor'",
+            "type": "role",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "roles": "[{\"id\": \"auditor\", \"required\": false}]"
+            }
+          },
+          {
+            "name": "Es Consultor",
+            "description": "El usuario tiene el rol de realm 'viewer'",
+            "type": "role",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "roles": "[{\"id\": \"viewer\", \"required\": false}]"
+            }
+          },
+          {
+            "name": "Permite product:view",
+            "description": "Concede 'product:view' sobre Product a: inventory-admin, warehouse-clerk, auditor, viewer",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"Product\"]",
+              "scopes": "[\"product:view\"]",
+              "applyPolicies": "[\"Es Administrador de inventario\", \"Es Encargado de almacen\", \"Es Auditor\", \"Es Consultor\"]"
+            }
+          },
+          {
+            "name": "Permite product:manage",
+            "description": "Concede 'product:manage' sobre Product a: inventory-admin, warehouse-clerk",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"Product\"]",
+              "scopes": "[\"product:manage\"]",
+              "applyPolicies": "[\"Es Administrador de inventario\", \"Es Encargado de almacen\"]"
+            }
+          },
+          {
+            "name": "Permite stock:view",
+            "description": "Concede 'stock:view' sobre Stock a: inventory-admin, warehouse-clerk, auditor, viewer",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"Stock\"]",
+              "scopes": "[\"stock:view\"]",
+              "applyPolicies": "[\"Es Administrador de inventario\", \"Es Encargado de almacen\", \"Es Auditor\", \"Es Consultor\"]"
+            }
+          },
+          {
+            "name": "Permite stock:manage",
+            "description": "Concede 'stock:manage' sobre Stock a: inventory-admin, warehouse-clerk",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"Stock\"]",
+              "scopes": "[\"stock:manage\"]",
+              "applyPolicies": "[\"Es Administrador de inventario\", \"Es Encargado de almacen\"]"
+            }
+          },
+          {
+            "name": "Permite report:view",
+            "description": "Concede 'report:view' sobre Report a: inventory-admin, warehouse-clerk, auditor, viewer",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"Report\"]",
+              "scopes": "[\"report:view\"]",
+              "applyPolicies": "[\"Es Administrador de inventario\", \"Es Encargado de almacen\", \"Es Auditor\", \"Es Consultor\"]"
+            }
+          },
+          {
+            "name": "Permite audit:view",
+            "description": "Concede 'audit:view' sobre Audit a: inventory-admin, auditor",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"Audit\"]",
+              "scopes": "[\"audit:view\"]",
+              "applyPolicies": "[\"Es Administrador de inventario\", \"Es Auditor\"]"
+            }
+          },
+          {
+            "name": "Permite user:manage",
+            "description": "Concede 'user:manage' sobre User a: inventory-admin",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "resources": "[\"User\"]",
+              "scopes": "[\"user:manage\"]",
+              "applyPolicies": "[\"Es Administrador de inventario\"]"
+            }
+          }
+        ]
+      }
     },
     {
       "id": "b1b2c3d4-e5f6-4000-b002-000000000002",
@@ -120,13 +337,24 @@
         "post.logout.redirect.uris": "http://localhost:3000/*"
       },
       "defaultClientScopes": [
-        "web-origins", "acr", "roles", "profile", "email"
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "email"
       ],
       "optionalClientScopes": [
-        "address", "phone", "offline_access", "microprofile-jwt",
-        "product:view", "product:manage",
-        "stock:view", "stock:manage",
-        "report:view", "user:manage", "audit:view"
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt",
+        "product:view",
+        "product:manage",
+        "stock:view",
+        "stock:manage",
+        "report:view",
+        "user:manage",
+        "audit:view"
       ]
     },
     {
@@ -149,13 +377,24 @@
         "access.token.lifespan": "3600"
       },
       "defaultClientScopes": [
-        "web-origins", "acr", "roles", "profile", "email"
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "email"
       ],
       "optionalClientScopes": [
-        "address", "phone", "offline_access", "microprofile-jwt",
-        "product:view", "product:manage",
-        "stock:view", "stock:manage",
-        "report:view", "user:manage", "audit:view"
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt",
+        "product:view",
+        "product:manage",
+        "stock:view",
+        "stock:manage",
+        "report:view",
+        "user:manage",
+        "audit:view"
       ]
     }
   ]
