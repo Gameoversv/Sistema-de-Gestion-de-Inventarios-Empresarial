@@ -16,9 +16,12 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * G-1 — Keycloak Authorization Services: Resources, Policies y Permissions.
  *
  * <p>El enunciado nombra <em>Policies</em> de forma explícita dentro del modelo de seguridad
- * granular exigido. Este test verifica que el modelo está declarado en el realm y, sobre todo, que
- * <strong>decide</strong>: no basta con que las policies existan, tienen que permitir y denegar lo
- * que dice la matriz de permisos.
+ * granular exigido. Este test verifica que el modelo está declarado en el realm y, sobre esa base,
+ * que <strong>decide</strong>: no basta con que las policies existan, tienen que permitir y denegar
+ * lo que dice la matriz de permisos.
+ *
+ * <p>Nota de redacción: evitar la palabra española «todo» en los comentarios. La regla S1135 de
+ * Sonar busca el tag {@code TODO} sin distinguir mayúsculas y la dispara, como ya pasó en Q-5.
  *
  * <p>Las decisiones se piden al endpoint de evaluación de políticas de la Admin API, que es el
  * mismo motor que resolvería un RPT en runtime. Que el <em>enforcement</em> en la ruta de petición
