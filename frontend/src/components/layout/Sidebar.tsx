@@ -5,6 +5,7 @@ import {
   Package,
   ArrowLeftRight,
   ClipboardList,
+  Users,
   BarChart3,
   LogOut,
   BoxIcon,
@@ -18,6 +19,7 @@ const NAV = [
   { to: '/stock', icon: ArrowLeftRight, label: 'Stock', scope: 'stock:view' },
   { to: '/reports', icon: BarChart3, label: 'Reportes', scope: 'report:view' },
   { to: '/audit', icon: ClipboardList, label: 'Auditoría', scope: 'audit:view' },
+  { to: '/users', icon: Users, label: 'Usuarios', scope: 'user:manage' },
 ]
 
 export function Sidebar() {

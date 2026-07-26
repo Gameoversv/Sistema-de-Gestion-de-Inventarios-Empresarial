@@ -106,6 +106,7 @@ services:
       - .env
     environment:
       KC_URL: http://keycloak:8080
+      KC_BACKEND_CLIENT_SECRET: ${KC_BACKEND_CLIENT_SECRET:-}
       KC_REALM: ${KC_REALM:-inventory}
     volumes:
       - ./scripts/keycloak/init-users.sh:/init-users.sh:ro
@@ -137,6 +138,8 @@ services:
       # issuer-uri: external URL that Keycloak embeds in "iss" claim
       KC_ISSUER_URI: http://localhost:${KEYCLOAK_PORT:-8180}/realms/${KC_REALM:-inventory}
       # jwk-set-uri: internal Docker URL to fetch signing keys without leaving the network
+      KC_BACKEND_CLIENT_SECRET: ${KC_BACKEND_CLIENT_SECRET:-}
+      KC_ADMIN_BASE_URL: http://keycloak:8080
       KC_JWK_SET_URI: http://keycloak:8080/realms/${KC_REALM:-inventory}/protocol/openid-connect/certs
       KC_REALM: ${KC_REALM:-inventory}
     ports:

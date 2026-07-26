@@ -40,6 +40,8 @@ test.describe('Roles — la interfaz se restringe por permiso', () => {
 
     const links = await navLinks(page)
     expect(links.join(' ')).toContain('Auditoría')
+    // user:manage solo lo tiene el admin: la sección de usuarios es su marca distintiva.
+    expect(links.join(' ')).toContain('Usuarios')
 
     await page.goto('/products')
     await expect(page.getByRole('button', { name: 'Nuevo producto' })).toBeVisible()
@@ -60,6 +62,7 @@ test.describe('Roles — la interfaz se restringe por permiso', () => {
 
     const links = await navLinks(page)
     expect(links.join(' ')).not.toContain('Auditoría')
+    expect(links.join(' ')).not.toContain('Usuarios')
   })
 
   test('auditor consulta auditoría pero no gestiona nada', async ({ page }) => {
@@ -67,6 +70,7 @@ test.describe('Roles — la interfaz se restringe por permiso', () => {
 
     const links = await navLinks(page)
     expect(links.join(' ')).toContain('Auditoría')
+    expect(links.join(' ')).not.toContain('Usuarios')
 
     await page.goto('/products')
     await expect(page.getByRole('button', { name: 'Nuevo producto' })).toHaveCount(0)
@@ -85,6 +89,7 @@ test.describe('Roles — la interfaz se restringe por permiso', () => {
 
     // ...y nada más.
     expect(links.join(' ')).not.toContain('Auditoría')
+    expect(links.join(' ')).not.toContain('Usuarios')
 
     await page.goto('/products')
     await expect(page.getByRole('button', { name: 'Nuevo producto' })).toHaveCount(0)

@@ -130,6 +130,64 @@ assign_scope_roles "report:view"    inventory-admin warehouse-clerk auditor view
 assign_scope_roles "user:manage"    inventory-admin
 assign_scope_roles "audit:view"     inventory-admin auditor
 
+
+# -- Service account del backend para la Admin API (user:manage) --------------
+# El modulo de usuarios necesita que inventory-backend pueda hablar con la Admin API.
+# Dos cosas: un secreto conocido -Keycloak genera uno aleatorio al importar el realm, y
+# nadie mas lo sabria- y los roles de realm-management que autorizan la operacion.
+#
+# El secreto NO vive en el repositorio: entra por KC_BACKEND_CLIENT_SECRET. Si no se
+# define, se salta este paso y el modulo de usuarios responde error de negocio en vez de
+# dejar el arranque roto; el resto del sistema no depende de el.
+echo "==> Configurando service account de inventory-backend..."
+
+if [ -z "$KC_BACKEND_CLIENT_SECRET" ]; then
+  echo "  KC_BACKEND_CLIENT_SECRET no definido — se omite la gestion de usuarios"
+else
+  BE_ID=$(kc_get "/clients?clientId=inventory-backend" | jq -r '.[0].id // empty')
+  if [ -z "$BE_ID" ]; then
+    echo "  WARNING: cliente inventory-backend no encontrado"
+  else
+    # Fijar el secreto Y forzar los flags de cliente confidencial con service account.
+    #
+    # No basta con declararlos en realm-export.json: el import usa IGNORE_EXISTING, asi
+    # que sobre un volumen de Keycloak preexistente el realm NO se actualiza y el cliente
+    # se queda como estaba (bearerOnly, sin service account). Eso deja el modulo de
+    # usuarios muerto en cualquier entorno que no arranque de cero, sin ningun error
+    # visible. Se fuerza aqui para que el script sea autosuficiente.
+    REP=$(kc_get "/clients/$BE_ID" | jq --arg s "$KC_BACKEND_CLIENT_SECRET" '
+      .secret = $s
+      | .bearerOnly = false
+      | .publicClient = false
+      | .serviceAccountsEnabled = true')
+    kc_put "/clients/$BE_ID" "$REP" > /dev/null
+    echo "  secreto y flags de inventory-backend fijados"
+
+    # Roles de realm-management sobre la service account. Solo los tres necesarios:
+    # view-users y query-users para listar, manage-users para crear, editar y borrar.
+    # Tras habilitar serviceAccounts, Keycloak crea el usuario de servicio. Se consulta
+    # por nombre y no por /service-account-user, que responde 400 si el flag acaba de
+    # activarse en la misma ejecucion.
+    SA_ID=$(kc_get "/users?username=service-account-inventory-backend&exact=true" | jq -r '.[0].id // empty')
+    if [ -z "$SA_ID" ]; then
+      SA_ID=$(kc_get "/clients/$BE_ID/service-account-user" | jq -r '.id // empty')
+    fi
+    RM_ID=$(kc_get "/clients?clientId=realm-management" | jq -r '.[0].id // empty')
+    if [ -n "$SA_ID" ] && [ -n "$RM_ID" ]; then
+      reps="[]"
+      for r in view-users query-users manage-users; do
+        rep=$(kc_get "/clients/$RM_ID/roles/$r" 2>/dev/null)
+        if [ -n "$rep" ] && [ "$rep" != "null" ]; then
+          reps=$(echo "$reps" | jq --argjson x "$rep" '. + [$x]')
+        fi
+      done
+      kc_post "/users/$SA_ID/role-mappings/clients/$RM_ID" "$reps" > /dev/null 2>&1         && echo "  roles realm-management asignados a la service account"         || echo "  roles realm-management ya asignados — saltando"
+    else
+      echo "  WARNING: no se pudo resolver la service account o realm-management"
+    fi
+  fi
+fi
+
 # ── Test users ──────────────────────────────────────────────────────────────
 echo "==> Creating test users..."
 
