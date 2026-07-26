@@ -31,16 +31,23 @@ La columna *Estado* no se rellena de memoria. Cada fila apunta al código que la
 | Bloque | Requisitos | Cumple | Parcial | Pendiente |
 |---|---|---|---|---|
 | **Funcionales** — productos, stock, auditoría, API, dashboard, permisos | RF-01…RF-22 | 20 | 2 | 0 |
-| No funcionales — seguridad | RNF-01…RNF-07 | 5 | 1 | 1 |
-| No funcionales — rendimiento y capacidad | RNF-08…RNF-10 | 1 | 1 | 1 |
-| No funcionales — observabilidad | RNF-11…RNF-16 | 5 | 1 | 0 |
-| No funcionales — calidad, CI/CD y entornos | RNF-17…RNF-21 | 2 | 3 | 0 |
+| No funcionales — seguridad | RNF-01…RNF-07 | 7 | 0 | 0 |
+| No funcionales — rendimiento y capacidad | RNF-08…RNF-10 | 3 | 0 | 0 |
+| No funcionales — observabilidad | RNF-11…RNF-16 | 6 | 0 | 0 |
+| No funcionales — calidad, CI/CD y entornos | RNF-17…RNF-21 | 3 | 2 | 0 |
 | No funcionales — datos, operación y repositorio | RNF-22…RNF-24 | 2 | 1 | 0 |
-| **Total** | **46** | **35** | **9** | **2** |
+| **Total** | **46** | **41** | **5** | **0** |
 
-Los dos pendientes son **Policies de Keycloak** (RNF-05, decisión explícita de la Ola 8) y el **tiempo de respuesta bajo carga** (RNF-08): no hay ni una prueba de rendimiento, la única de las ocho capas de testing que está a cero.
+**Ningún requisito queda pendiente.** Los dos que lo estaban se cerraron: **Policies de Keycloak** (RNF-05) se implementó en G-1 —5 Resources, 4 Policies y 7 Permissions, con la matriz de 28 decisiones verificada contra un Keycloak real— y el **tiempo de respuesta bajo carga** (RNF-08) resultó ser documentación desfasada: T-3 llevaba tiempo verde con `p(95) = 7,92 ms`.
 
-Los parciales se concentran en el pipeline: capas de testing escritas que **el CI no ejecuta** (E2E), Testcontainers sin Keycloak y las etapas de Jenkins que no arrancan sobre Docker Desktop en Windows.
+Los cinco parciales que quedan **no son trabajo olvidado, son límites conocidos**:
+
+| Requisito | Qué falta | Por qué |
+|---|---|---|
+| RF-21, RF-22 | Gestión de usuarios por API | A-2 diferido (issue #48): `user:manage` no protege ningún endpoint |
+| RNF-19 | Etapas de Jenkins más allá de `Integration Tests` | Testcontainers no arranca sobre Docker Desktop en Windows; hace falta un agente Linux (issue #49). En Actions las 10 etapas corren |
+| RNF-21 | Ejecutar `production.yml` | CI-2: disparar un release `v1.0.0` es una decisión explícita |
+| RNF-24 | Revisión cruzada en todos los PR | Evaluable; depende de los dos integrantes, no del código |
 
 ---
 
