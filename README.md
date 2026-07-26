@@ -1,9 +1,9 @@
 # Sistema de Gestión de Inventarios Empresarial
 
 ![CI](https://img.shields.io/github/actions/workflow/status/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/ci.yml?label=CI&style=flat-square)
-![Backend coverage](https://img.shields.io/badge/backend%20coverage-92.8%25%20lineas-brightgreen?style=flat-square)
-![Backend branches](https://img.shields.io/badge/backend%20branches-85.7%25-brightgreen?style=flat-square)
-![Frontend coverage](https://img.shields.io/badge/frontend%20coverage-9.3%25-critical?style=flat-square)
+![Backend coverage](https://img.shields.io/badge/backend%20coverage-92.6%25%20lineas-brightgreen?style=flat-square)
+![Backend branches](https://img.shields.io/badge/backend%20branches-85.1%25-brightgreen?style=flat-square)
+![Frontend coverage](https://img.shields.io/badge/frontend%20coverage-7.4%25-critical?style=flat-square)
 
 Las cinco métricas de calidad exigidas, medidas por SonarCloud en cada ejecución de CI:
 
@@ -241,8 +241,11 @@ podría pedir `product:manage` y obtenerlo.
 | `auditor` | `product:view`, `stock:view`, `report:view`, `audit:view` |
 | `viewer` | `product:view`, `stock:view`, `report:view` |
 
-La tabla vive en `SCOPES_BY_ROLE`, dentro de `SecurityConfig`. Si se toca ahí, hay que
-actualizarla aquí: es la referencia que consulta cualquiera antes de llamar a la API.
+La tabla vive en el realm de Keycloak: la aplica `assign_scope_roles` en
+[`scripts/keycloak/init-users.sh`](scripts/keycloak/init-users.sh), y es el **único** sitio donde
+se decide qué scopes puede pedir cada rol. El backend confía en el token que sale de ahí
+([ADR-004](docs/decisions/ADR-004-keycloak-autoridad-de-scopes.md)). Si se toca el script, hay que
+actualizar esta tabla: es la referencia que consulta cualquiera antes de llamar a la API.
 
 Los controllers autorizan por scope, no por rol:
 ```java
@@ -305,7 +308,9 @@ verificado por commitlint en un hook de Husky.
 - [Informes de QA](docs/testing/reportes/) — hallazgos con reproducción y evidencia
 - [Capturas de observabilidad](docs/testing/capturas/)
 - [ADR-001 — Elección de Stack](docs/decisions/ADR-001-stack-selection.md)
-- [ADR-002 — El mapa rol→scopes vive en el backend](docs/decisions/ADR-002-mapa-rol-scopes-en-java.md)
+- [ADR-002 — El mapa rol→scopes vive en el backend](docs/decisions/ADR-002-mapa-rol-scopes-en-java.md) — *sustituido por ADR-004*
+- [ADR-003 — Soft delete de productos](docs/decisions/ADR-003-soft-delete-de-productos.md)
+- [ADR-004 — Keycloak es la autoridad única sobre los scopes](docs/decisions/ADR-004-keycloak-autoridad-de-scopes.md)
 - [Guía de Contribución](CONTRIBUTING.md)
 
 ## Licencia

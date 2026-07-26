@@ -46,11 +46,11 @@ Las cinco que explican por qué el sistema tiene la forma que tiene. Las que ade
 
 El enunciado admite Docker Compose y el proyecto se evalúa levantándolo en clase. Kubernetes añadiría una capa que nadie va a operar. La contrapartida está asumida: no hay alta disponibilidad ni escalado horizontal, y **una sola instancia del backend**.
 
-### 2. Autorización por scope, con el techo en el backend
+### 2. Autorización por scope, con Keycloak como autoridad
 
-Keycloak emite los tokens, pero **no es la autoridad efectiva de permisos**: la tabla `SCOPES_BY_ROLE` de `SecurityConfig` descarta cualquier scope que el rol del usuario no permita.
+Keycloak es la autoridad efectiva de permisos: los `scope-mappings` por rol del realm deciden qué scopes lleva cada token, y el backend confía en el claim resultante para construir las autoridades `SCOPE_*` que comprueban los `@PreAuthorize`.
 
-No es una decisión de diseño elegante, es una defensa. El escaneo exploratorio G-6 demostró que el realm entrega **cualquier scope a cualquier usuario autenticado** ([informe](../testing/reportes/G-6-escalada-de-scopes.md)). Corregirlo en la raíz es **G-8**; documentar la decisión es **ADR-002**. Detalle en [RNF-02](../requisitos/requisitos-no-funcionales.md#rnf-02--autorización-por-permiso-no-por-rol).
+No siempre fue así. El escaneo exploratorio G-6 demostró que el realm entregaba **cualquier scope a cualquier usuario autenticado** ([informe](../testing/reportes/G-6-escalada-de-scopes.md)), y hasta corregirlo el techo efectivo era una tabla `SCOPES_BY_ROLE` en el backend (**ADR-002**). **G-8** lo corrigió en la raíz y **G-2** retiró la tabla: hoy el mapa rol→scopes vive en un solo sitio, el realm. La decisión y sus riesgos están en **[ADR-004](../decisions/ADR-004-keycloak-autoridad-de-scopes.md)**; el detalle del control, en [RNF-02](../requisitos/requisitos-no-funcionales.md#rnf-02--autorización-por-permiso-no-por-rol).
 
 ### 3. Backend sin estado
 

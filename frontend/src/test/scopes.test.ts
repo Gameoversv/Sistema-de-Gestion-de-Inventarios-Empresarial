@@ -1,51 +1,48 @@
 import { describe, it, expect } from 'vitest'
-import { permittedScopesForRoles } from '@/lib/scopes'
+import { LOGIN_SCOPE } from '@/lib/scopes'
 
-describe('permittedScopesForRoles', () => {
-  it('devuelve los siete scopes para inventory-admin', () => {
+/**
+ * El mapa rol→scopes que este fichero probaba se retiró en G-2: el token ya llega recortado por
+ * rol desde Keycloak y el cliente confía en él (ADR-004). Lo que queda por proteger es
+ * `LOGIN_SCOPE`, que sigue siendo frágil por una razón concreta: los scopes de negocio son
+ * *optional client scopes*, así que uno que no se pida no llega al token, y `PermissionGuard`
+ * oculta su sección sin ningún error visible. Ese fue exactamente el bug #69.
+ */
+describe('LOGIN_SCOPE', () => {
+  const requested = LOGIN_SCOPE.split(' ').filter(Boolean)
+
+  it('pide los seis scopes de negocio que protegen la interfaz', () => {
     // Arrange
-    const roles = ['inventory-admin']
+    const expected = [
+      'product:view',
+      'product:manage',
+      'stock:view',
+      'stock:manage',
+      'report:view',
+      'audit:view',
+    ]
 
     // Act
-    const scopes = permittedScopesForRoles(roles)
+    const missing = expected.filter((scope) => !requested.includes(scope))
 
     // Assert
-    expect(scopes.size).toBe(7)
-    expect(scopes.has('user:manage')).toBe(true)
-    expect(scopes.has('audit:view')).toBe(true)
+    expect(missing).toEqual([])
   })
 
-  it('devuelve solo lectura para viewer', () => {
-    const scopes = permittedScopesForRoles(['viewer'])
-
-    expect([...scopes].sort()).toEqual(['product:view', 'report:view', 'stock:view'])
+  // user:manage existe en el realm pero no protege ningún endpoint (A-2, issue #48). Pedirlo
+  // solo añadiría una línea a la pantalla de consentimiento sin habilitar nada.
+  it('no pide user:manage, que hoy no protege ningún endpoint', () => {
+    expect(requested).not.toContain('user:manage')
   })
 
-  // El corazón de G-3a: un usuario con dos roles debe recibir la UNIÓN, no el primero.
-  it('une los scopes de todos los roles reconocidos', () => {
-    // warehouse-clerk aporta manage; auditor aporta audit:view. Ninguno solo los tiene ambos.
-    const scopes = permittedScopesForRoles(['warehouse-clerk', 'auditor'])
-
-    expect(scopes.has('stock:manage')).toBe(true) // de warehouse-clerk
-    expect(scopes.has('audit:view')).toBe(true) // de auditor
+  // keycloak-js añade openid por su cuenta; duplicarlo aquí no rompe, pero delata que alguien
+  // copió la cadena sin entender de dónde sale.
+  it('no repite openid, que lo añade keycloak-js', () => {
+    expect(requested).not.toContain('openid')
   })
 
-  it('no depende del orden de los roles', () => {
-    const a = permittedScopesForRoles(['auditor', 'warehouse-clerk'])
-    const b = permittedScopesForRoles(['warehouse-clerk', 'auditor'])
-
-    expect([...a].sort()).toEqual([...b].sort())
-  })
-
-  it('ignora los roles no reconocidos sin conceder nada por ellos', () => {
-    const scopes = permittedScopesForRoles(['algún-rol-desconocido'])
-
-    expect(scopes.size).toBe(0)
-  })
-
-  it('deniega por defecto cuando no hay ningún rol', () => {
-    const scopes = permittedScopesForRoles([])
-
-    expect(scopes.size).toBe(0)
+  it('no trae entradas vacías ni duplicadas', () => {
+    expect(new Set(requested).size).toBe(requested.length)
+    expect(requested.every((scope) => scope.trim().length > 0)).toBe(true)
   })
 })
