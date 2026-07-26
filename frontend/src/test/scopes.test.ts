@@ -11,7 +11,7 @@ import { LOGIN_SCOPE } from '@/lib/scopes'
 describe('LOGIN_SCOPE', () => {
   const requested = LOGIN_SCOPE.split(' ').filter(Boolean)
 
-  it('pide los seis scopes de negocio que protegen la interfaz', () => {
+  it('pide los siete scopes de negocio que protegen la interfaz', () => {
     // Arrange
     const expected = [
       'product:view',
@@ -20,6 +20,7 @@ describe('LOGIN_SCOPE', () => {
       'stock:manage',
       'report:view',
       'audit:view',
+      'user:manage',
     ]
 
     // Act
@@ -29,10 +30,11 @@ describe('LOGIN_SCOPE', () => {
     expect(missing).toEqual([])
   })
 
-  // user:manage existe en el realm pero no protege ningún endpoint (A-2, issue #48). Pedirlo
-  // solo añadiría una línea a la pantalla de consentimiento sin habilitar nada.
-  it('no pide user:manage, que hoy no protege ningún endpoint', () => {
-    expect(requested).not.toContain('user:manage')
+  // Sin user:manage la sección de Usuarios desaparece incluso para el administrador:
+  // PermissionGuard mira el scope del token, no el rol. Los scope-mappings del realm ya
+  // impiden que nadie más lo obtenga, así que pedirlo siempre es seguro.
+  it('pide user:manage, sin el cual la gestión de usuarios es invisible', () => {
+    expect(requested).toContain('user:manage')
   })
 
   // keycloak-js añade openid por su cuenta; duplicarlo aquí no rompe, pero delata que alguien

@@ -86,7 +86,7 @@ Comprobado en vivo en lugar de asumirlo: un `client_credentials` sobre ese clien
 | **Implementación** | `SessionCreationPolicy.STATELESS`; CORS en [`SecurityConfig.java:101`](../../backend/src/main/java/com/inventory/common/config/SecurityConfig.java#L101) con orígenes por perfil; `server.error.include-message: never` e `include-stacktrace: never` |
 | **Verificación** | `CorsProfilesTest`, `GlobalExceptionHandlerTest`; [informe P-2a](../testing/reportes/P-2a-perfil-demo.md) |
 
-CSRF está deshabilitado, y es correcto: la autenticación viaja en la cabecera `Authorization`, no en cookie, así que no hay vector de envío automático de credenciales que proteger. `CorsProfilesTest` existe para que nadie "arregle" un problema de desarrollo local metiendo `localhost` en los perfiles `staging` o `prod`. Falta un test de CORS extremo a extremo por perfil (**TEST-11**).
+CSRF está deshabilitado, y es correcto: la autenticación viaja en la cabecera `Authorization`, no en cookie, así que no hay vector de envío automático de credenciales que proteger. `CorsProfilesTest` existe para que nadie "arregle" un problema de desarrollo local metiendo `localhost` en los perfiles `staging` o `prod`, y **TEST-11** añadió `CorsHttpTest`, que ejercita el filtro de verdad: un preflight desde un origen permitido recibe `Access-Control-Allow-Origin` y uno no permitido no. Config y comportamiento quedan cubiertos por separado.
 
 ### RNF-07 — Gestión de secretos
 
@@ -94,9 +94,11 @@ CSRF está deshabilitado, y es correcto: la autenticación viaja en la cabecera 
 |---|---|
 | **Criterio** | Cero credenciales en el código. Todo secreto entra por variable de entorno o por el gestor de secretos del CI. |
 | **Origen** | Buenas Prácticas — *"Secrets management"*, *"No hardcoded credentials"* |
-| **Estado** | **Parcial** |
+| **Estado** | **Cumple** |
 | **Implementación** | Variables en `.env.example` y secretos de repositorio; corregido en BP-2 |
-| **Qué falta** | **S-4b** (issue #47): `.github/workflows/staging.yml` sigue inyectando `JWT_SECRET` y `JWT_EXPIRATION_MS`, restos de un esquema de autenticación que ya no se usa. Es un secreto de repositorio **vivo que no protege nada**: coste 10 minutos, y mientras siga ahí el criterio no se cumple |
+| **Verificación** | `dependency-scan.yml` y la revisión de BP-2; issue #47 cerrada |
+
+**S-4b cerró el último resto.** `staging.yml` inyectaba `JWT_SECRET` y `JWT_EXPIRATION_MS`, sobras de un esquema de autenticación abandonado: ningún Java los leía —la firma la valida Keycloak— pero el secreto de repositorio `STAGING_JWT_SECRET` seguía vivo. Retirados del workflow y de `GITHUB_SECRETS.md`, y el secreto borrado de la configuración del repositorio. Un secreto que no protege nada es peor que ninguno: invita a confiar en él.
 
 ---
 
@@ -141,9 +143,11 @@ Los tres umbrales son bloqueantes: k6 devuelve código distinto de cero si algun
 |---|---|
 | **Criterio** | Ninguna respuesta de colección es ilimitada; las respuestas grandes viajan comprimidas; las escrituras masivas van por lotes. |
 | **Origen** | **[criterio propio]** |
-| **Estado** | **Parcial** |
+| **Estado** | **Cumple** |
 | **Implementación** | Paginación obligatoria con `size = 20` por defecto (RF-04); compresión activa a partir de 1 KB (`application.yml:80`); `hibernate.jdbc.batch_size: 20` con `order_inserts` y `order_updates` |
-| **Qué falta** | Está implementado pero **no medido**: sin T-3 no hay evidencia de que estos ajustes sirvan de algo bajo carga real |
+| **Verificación** | T-3: k6 sobre 7 endpoints de lectura con pico de 25 VUs concurrentes, 0 % de error en 5 251 peticiones ([RNF-08](#rnf-08--tiempo-de-respuesta)) |
+
+Estaba implementado pero sin medir, que es lo mismo que no saber si sirve. T-3 lo midió: bajo carga sostenida no aparece degradación ni error, así que la paginación y el batching cumplen su función. La salvedad de RNF-08 aplica igual — la carga se genera en el mismo runner que el stack.
 
 ---
 
@@ -193,9 +197,13 @@ Se añaden **4 series de negocio** **[criterio propio]** — movimientos, unidad
 |---|---|
 | **Criterio** | Request tracing, database tracing, external calls y errores distribuidos. |
 | **Origen** | Requisitos Obligatorios de Observabilidad |
-| **Estado** | **Parcial** — 3 de 4 |
-| **Implementación** | Bridge OTel + exportador OTLP + instrumentación JDBC: **12 spans por petición**, servicio `inventory-api` |
-| **Qué falta** | Verificar el caso de **errores distribuidos**: que un fallo propague su traza a través de los servicios y sea consultable en Tempo |
+| **Estado** | **Cumple** — 4 de 4 |
+| **Implementación** | Bridge OTel + exportador OTLP + instrumentación JDBC: **12 spans por petición**, servicio `inventory-api`. Los 5xx marcan el span con `recordException` y `setStatus(ERROR)` en `GlobalExceptionHandler` |
+| **Verificación** | `GlobalExceptionHandlerTracingTest`; y en vivo contra el stack desplegado, parando Postgres |
+
+**Los errores distribuidos no era una verificación pendiente, era un defecto.** `GlobalExceptionHandler` captura la excepción y devuelve un `ResponseEntity`, así que para la instrumentación automática la petición terminaba con normalidad: el span quedaba en `UNSET`, sin evento `exception`. Un 500 estaba en los logs y era **invisible** en Tempo.
+
+Verificado en vivo tras corregirlo: con Postgres parado, `GET /products` produce un span `secured request` con `status.code = STATUS_CODE_ERROR` y evento `exception`, y el span JDBC `connection` también en ERROR — el fallo se ve propagándose entre capas, que es lo que la señal significa. Solo se marca el 5xx: los 4xx son errores del cliente y marcarlos inflaría la tasa de error con ruido.
 
 ### RNF-15 — Dashboards
 
@@ -254,8 +262,8 @@ Spotless corre en fase `validate`, así que el formato se comprueba en cada `com
 | **Criterio** | Checkout, Build, Unit tests, Integration tests, API tests, E2E tests, Security scan, Quality gates, Docker build y Deployment, en GitHub Actions **y** en Jenkins. |
 | **Origen** | DevSecOps y CI/CD — Pipeline Obligatorio |
 | **Estado** | **Parcial** |
-| **Implementación** | GitHub Actions cubre **9 de 10**; Jenkins tiene **11 etapas escritas** y configuración como código en `docker/jenkins/` |
-| **Qué falta** | Actions: falta **E2E** (**C-1**). Jenkins: solo las **4 primeras etapas** se han llegado a ejecutar. `Integration Tests` no arranca sobre Docker Desktop en Windows — el proxy del socket responde `400` incluso con el socket montado dentro del contenedor — y bloquea todo lo que va detrás. En los runners Linux de Actions esos mismos IT pasan en cada PR (issue #49): hace falta un agente Linux (**C-4**) |
+| **Implementación** | GitHub Actions cubre **las 10**; Jenkins tiene **11 etapas escritas** y configuración como código en `docker/jenkins/` |
+| **Qué falta** | Solo Jenkins. La última etapa que faltaba en Actions, **E2E**, corre en `e2e.yml` (C-1/TEST-7) con 12 casos verdes contra el stack desplegado. En Jenkins solo las **4 primeras etapas** se han llegado a ejecutar. `Integration Tests` no arranca sobre Docker Desktop en Windows — el proxy del socket responde `400` incluso con el socket montado dentro del contenedor — y bloquea todo lo que va detrás. En los runners Linux de Actions esos mismos IT pasan en cada PR (issue #49): hace falta un agente Linux (**C-4**) |
 
 ### RNF-20 — Las ocho capas de testing
 
@@ -263,18 +271,18 @@ Spotless corre en fase `validate`, así que el formato se comprueba en cada `com
 |---|---|
 | **Criterio** | Unit, Integration, API/Contract, E2E, Security, Performance, Data y Exploratory, todas con evidencia. |
 | **Origen** | Full Stack Testing (Obligatorio) |
-| **Estado** | **Parcial** — 2 capas completas, 5 parciales, 1 a cero |
+| **Estado** | **Cumple** — las 8 capas con evidencia |
 
 | Capa | Estado |
 |---|---|
-| 1. Unit | **Cumple** — 307 `@Test` en 33 ficheros |
-| 2. Integration | Parcial — Testcontainers con base real sí; **Keycloak no** (**TEST-1**, obligatorio literal) |
-| 3. API / Contract | Parcial — Postman sin CI (TEST-3), RestAssured sin uso (TEST-2) |
-| 4. E2E | Parcial — 3 specs de Playwright escritos, **el pipeline no los ejecuta** (C-1, TEST-7/8/9) |
-| 5. Security | Parcial — ZAP autenticado y sembrado con el OpenAPI, con umbral; faltan Dependency Check/Snyk (T-5) y CORS (TEST-11) |
-| 6. Performance | **Cero** — T-3 |
-| 7. Data | Parcial — migraciones y seeds sí; duplicados y constraints por cubrir (DATA-1/2) |
-| 8. Exploratory | **Cumple** — 3 charters y 15 bugs como issues, con reproducción |
+| 1. Unit | **Cumple** — 320 `@Test`, contando los de trazas y tipo de parámetro |
+| 2. Integration | **Cumple** — Testcontainers con base real y **Keycloak real** (`KeycloakAuthIT`, TEST-1), verificado en CI |
+| 3. API / Contract | **Cumple** — `OpenApiContractTest` contra `openapi.yaml` (TEST-2) y Newman en CI con 39 aserciones (TEST-3) |
+| 4. E2E | **Cumple** — `e2e.yml`: 12 flujos, snapshots (TEST-8), accesibilidad axe (D-4) y responsive 375/768/1440 (TEST-9) |
+| 5. Security | **Cumple** — ZAP autenticado con umbral (TEST-10), `CorsHttpTest` (TEST-11) y `dependency-scan.yml` con npm audit + OWASP Dependency-Check (T-5) |
+| 6. Performance | **Cumple** — k6 load + stress, `p(95) < 500 ms` verde en CI (T-3) |
+| 7. Data | **Cumple** — Flyway, seeds verificados y `DataIntegrityIT`: SKU duplicado rechazado por la restricción y `NOT NULL` aplicado por el esquema (DATA-1/2) |
+| 8. Exploratory | **Cumple** — 3 charters y 17 bugs como issues, con reproducción |
 
 ### RNF-21 — Tres entornos y pruebas contra el sistema desplegado
 
@@ -284,7 +292,7 @@ Spotless corre en fase `validate`, así que el formato se comprueba en cada `com
 | **Origen** | Entornos Obligatorios |
 | **Estado** | **Parcial** |
 | **Implementación** | Seis perfiles: `dev`, `demo`, `staging`, `prod`, `test` y `smoke`. `staging.yml` despliega y después lanza API tests y el escaneo ZAP **contra el despliegue vivo**; `LiveDatabaseIT` corre contra la base desplegada y **falla si no la encuentra**, en vez de saltarse |
-| **Qué falta** | De las cuatro familias que el enunciado exige sobre el entorno desplegado, faltan los **E2E** (C-1). Y **CI-2**: `production.yml` nunca se ha ejecutado, porque disparar un release `v1.0.0` es una decisión explícita, no un descuido |
+| **Qué falta** | Solo **CI-2**: `production.yml` nunca se ha ejecutado, porque disparar un release `v1.0.0` es una decisión explícita, no un descuido. Las cuatro familias que el enunciado exige sobre el entorno desplegado ya corren: integration (`LiveDatabaseIT`), API (Newman), **E2E** (`e2e.yml`, C-1) y security (ZAP) |
 
 El perfil `demo` existe porque la presentación necesita a la vez log JSON estructurado —sin él los paneles no filtran por usuario ni endpoint— y CORS hacia `localhost:3000`, y ningún perfil daba ambas cosas. Se descartó añadir `localhost` a `staging`, que declara espejar producción.
 

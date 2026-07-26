@@ -117,6 +117,18 @@ app:
   cors:
     allowed-origins: http://localhost:3000
 
+  # ── Admin API de Keycloak ─────────────────────────────────────────────────────
+  # Sostiene el módulo de usuarios (user:manage). El backend se autentica como service
+  # account de inventory-backend, cliente confidencial desde G-1. Si el secreto falta, el
+  # módulo responde con error de negocio en vez de dejar la aplicación sin arrancar: la
+  # gestión de usuarios es prescindible para el resto del sistema.
+  keycloak:
+    admin:
+      base-url: ${KC_ADMIN_BASE_URL:http://keycloak:8080}
+      realm: ${KC_REALM:inventory}
+      client-id: ${KC_ADMIN_CLIENT_ID:inventory-backend}
+      client-secret: ${KC_BACKEND_CLIENT_SECRET:}
+
 # ── SpringDoc / Swagger UI ───────────────────────────────────────────────────────
 springdoc:
   api-docs:

@@ -271,10 +271,9 @@ El panel anterior ordenaba por precio × stock, que mide **lo guardado, no lo ve
 |---|---|
 | **Descripción** | *"interfaz intuitiva y fácil de usar, con una navegación clara y accesible"*. |
 | **Origen** | Alcance Funcional 4.b |
-| **Estado** | **Parcial** |
+| **Estado** | **Cumple** |
 | **Implementación** | Cinco vistas bajo un `Layout` común — [`App.tsx:26-30`](../../frontend/src/App.tsx#L26): dashboard (`/`), `products`, `stock`, `reports`, `audit`. Los controles de ordenación exponen `aria-sort`; los elementos que el usuario no puede usar se ocultan con `PermissionGuard` en vez de fallar con un 403 |
-| **Verificación** | `PermissionGuard.test.tsx`, `Badge.test.tsx`; E2E en `e2e/tests/` (`auth`, `products`, `stock`) |
-| **Qué falta** | La accesibilidad no se comprueba de forma automatizada: **D-4** añade `@axe-core/playwright`. Y los tres specs de Playwright existen pero **no los ejecuta el pipeline** (**C-1 / TEST-7**), así que hoy no hay verificación continua de la navegación |
+| **Verificación** | `PermissionGuard.test.tsx`, `Badge.test.tsx` y **27 casos E2E** en `e2e/tests/` que el pipeline ejecuta contra el stack desplegado: flujos, navegación, accesibilidad axe (D-4), responsive y **roles** |
 
 ---
 
@@ -288,10 +287,11 @@ El panel anterior ordenaba por precio × stock, que mide **lo guardado, no lo ve
 |---|---|
 | **Descripción** | Los siete permisos de la matriz mínima existen y **protegen endpoints concretos**, comprobando el permiso y no el nombre del rol. |
 | **Origen** | Roles y Niveles de Acceso — Matriz mínima de permisos |
-| **Estado** | **Parcial** |
-| **Implementación** | `@PreAuthorize("hasAuthority('SCOPE_…')")` en los cuatro controladores de negocio |
-| **Verificación** | `SecurityIntegrationTest`, `KeycloakJwtConverterTest`, `AuditControllerTest` |
-| **Qué falta** | **`user:manage` no protege ningún endpoint** (**A-2**, issue #48): el permiso se emite y se reconoce, pero la gestión de usuarios se delega hoy en la consola de Keycloak. Seis de siete permisos están aplicados |
+| **Estado** | **Cumple** — **7 de 7** |
+| **Implementación** | `@PreAuthorize("hasAuthority('SCOPE_…')")` en los cinco controladores |
+| **Verificación** | `SecurityIntegrationTest`, `KeycloakJwtConverterTest`, `AuditControllerTest`, `UserControllerTest` y el spec E2E `roles.spec.ts` |
+
+`user:manage` fue el último en aplicarse. Existía en el realm y en esta tabla, pero **no protegía ningún endpoint**: la gestión de usuarios se delegaba en la consola de Keycloak, así que el permiso era configuración decorativa. A-2 lo cerró con `/api/users` sobre la Admin API —listar, crear, editar, activar/desactivar, reemplazar roles y eliminar—, más la sección **Usuarios** del frontend, oculta para quien no tiene el permiso.
 
 | Permiso | Módulo | Dónde se exige |
 |---|---|---|

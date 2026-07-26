@@ -52,7 +52,13 @@ jobs:
           KC_USER_VIEWER_USERNAME=inv_viewer
           KC_USER_VIEWER_PASSWORD=Viewer123
           FRONTEND_PORT=3000
-          VITE_API_BASE_URL=
+          # Apunta al backend directo, como .env.example. Estaba vacio, lo que hacia que el
+          # frontend usara rutas relativas y dependiera de unos proxies de nginx sobre
+          # /products y /categories. Esos proxies convertian /products en ruta de la API y
+          # no del SPA, asi que entrar directo o recargar daba pagina en blanco. La
+          # colision de fondo es A-1: la API expone rutas sin prefijo.
+          VITE_API_BASE_URL=http://localhost:8080
+          KC_BACKEND_CLIENT_SECRET=e2e-backend-secret
           GRAFANA_ADMIN_PASSWORD=e2e_grafana
           PROMETHEUS_PORT=9090
           GRAFANA_PORT=3001

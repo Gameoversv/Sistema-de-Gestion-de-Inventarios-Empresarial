@@ -27,10 +27,10 @@ Salvo la cobertura, medida sobre el artefacto de CI, los porcentajes son estimac
 
 | Cobertura (artefacto JaCoCo en Actions) | Inicial | Actual | Umbral |
 |---|---|---|---|
-| BRANCH | 71,6 % | **84,8 %** | 80 % |
-| LINE | 84,9 % | **92,7 %** | 80 % |
+| BRANCH | 71,6 % | **81,6 %** | 80 % |
+| LINE | 84,9 % | **92,9 %** | 80 % |
 
-Cifras vigentes tras G-2, que las bajó desde 85,7/92,8 sin que se perdiera ninguna prueba: al retirar `permittedScopesForRoles` desaparecieron líneas y ramas que estaban **bien** cubiertas, así que el ratio cae aunque el código restante siga igual de probado. Es el efecto normal de borrar código con tests. Antes de eso, los tests de E-2, M-2 y D-3 las habían subido desde 85,0/92,7. El salto anterior lo dio `KeycloakAuthIT` (TEST-1), que ejercita en integración `SecurityConfig` y los controladores con un token real, desde 84,5/92,1. La medición original de la que parte esta tabla es el artefacto de `798e6b6`. El frontend se mide aparte y está en **7,4 %** de líneas: G-3a lo había subido de 7,1 % a 9,3 % con el test del mapa de scopes, y G-2 lo devuelve a 7,4 % al borrar ese mapa. Los 4 tests que lo sustituyen cubren `LOGIN_SCOPE`, que son 2 líneas en vez de 20. El informe daba 100 % hasta que se configuró `coverage.include` en vitest, que solo cubría las 14 sentencias que los tests importaban; con esa opción el número es el real.
+Cifras vigentes tras G-2, que las bajó desde 85,7/92,8 sin que se perdiera ninguna prueba: al retirar `permittedScopesForRoles` desaparecieron líneas y ramas que estaban **bien** cubiertas, así que el ratio cae aunque el código restante siga igual de probado. Es el efecto normal de borrar código con tests. Antes de eso, los tests de E-2, M-2 y D-3 las habían subido desde 85,0/92,7. El salto anterior lo dio `KeycloakAuthIT` (TEST-1), que ejercita en integración `SecurityConfig` y los controladores con un token real, desde 84,5/92,1. La medición original de la que parte esta tabla es el artefacto de `798e6b6`. El frontend se mide aparte y está en **6,3 %** de líneas: G-3a lo había subido de 7,1 % a 9,3 % con el test del mapa de scopes, y G-2 lo devuelve a 7,4 % al borrar ese mapa. Los 4 tests que lo sustituyen cubren `LOGIN_SCOPE`, que son 2 líneas en vez de 20. El informe daba 100 % hasta que se configuró `coverage.include` en vitest, que solo cubría las 14 sentencias que los tests importaban; con esa opción el número es el real.
 
 ---
 
@@ -190,7 +190,7 @@ Spotless estaba declarado en el POM y desactivado con `-Dspotless.check.skip=tru
 |---|---|
 | Repositorio público | cumple |
 | README profesional | cumple — rutas reales, matriz rol→scopes y el `scope` obligatorio del token |
-| **Issues** | **33 issues**: 13 épicas de fase, **17 bugs** (solo 2 abiertos: #48 A-2 diferido y #49 C-4 de entorno) y **3 charters**. Los dos últimos bugs (#69, #70) salieron de montar los E2E en CI. Las épicas 9, 10 y 11 se pusieron al día en la Ola 4 |
+| **Issues** | **42 issues**: 13 épicas de fase, **26 bugs** y **3 charters**. Los 9 últimos (#80…#88) salieron de recrear el stack desde cero para el charter #60: cuatro fallaban **en silencio** y solo se veían arrancando de volumen limpio —el realm que no se actualiza, la imagen del frontend dependiendo de un fichero en `.gitignore`, un `.env` con un prefijo inexistente y `/products` en blanco al recargar—, más dos vulnerabilidades que destapó SonarCloud. Todos con reproducción y arreglo enlazado |
 | Pull Requests | cumple — **33 PRs**, el último el #64 |
 | Branch strategy | cumple — `main` protegida; corren 4 checks y 2 son obligatorios |
 | Conventional Commits | cumple — commitlint activo |
@@ -267,7 +267,7 @@ El área queda cerrada: el pendiente que arrastraba (P-2) está hecho.
 
 | Documento | Exigencia del PDF | Esfuerzo | Estado |
 |---|---|---|---|
-| **`docs/requisitos/`** | "documento detallado de requisitos funcionales y no funcionales" | 3 h | **hecho** — **22 RF y 24 RNF**, cada uno con su cita del PDF, el `fichero:línea` que lo implementa y la prueba que lo verifica. 35 cumplen, 9 parciales, **2 pendientes**: Policies (RNF-05) y tiempo de respuesta bajo carga (RNF-08) |
+| **`docs/requisitos/`** | "documento detallado de requisitos funcionales y no funcionales" | 3 h | **hecho** — **22 RF y 24 RNF**, cada uno con su cita del PDF, el `fichero:línea` que lo implementa y la prueba que lo verifica. **43 cumplen, 3 parciales y cero pendientes** tras el barrido: RNF-05 lo cerró G-1 y RNF-08 resultó ser documentación desfasada. Los cinco parciales son límites conocidos —A-2 diferido, Jenkins por C-4, CI-2 y las revisiones cruzadas—, no trabajo olvidado |
 | **`docs/arquitectura/`** | "diagramas de arquitectura, guías de instalación y manuales de mantenimiento" | 3 h | **hecho** — vista de componentes con 5 diagramas Mermaid (contexto, componentes, arranque, 3 flujos), estructura de backend y frontend, y guía de instalación con verificación de la cadena de auth. Destapó **INF-1**: Redis desplegado, configurado y sin un solo uso en el código |
 | **`docs/operacion/manual-mantenimiento.md`** | idem + **la trampa del volumen de Keycloak** | 2 h | **hecho** — qué vigilar, rutinas, respaldo/recuperación y la trampa del volumen de Keycloak con su tabla objetivo→acción. Enlaza P-2b y S-4b |
 | **`docs/testing/guia-de-pruebas.md`** | "casos de prueba, resultados y cualquier defecto encontrado" | 2 h | **hecho** — las 8 capas de testing una a una: qué se prueba, con qué, dónde vive, resultado y qué falta. 307 tests desglosados por área; los 15 bugs con severidad y tarea, 7 abiertos. Cierra la trazabilidad hacia `reportes/` |
@@ -309,7 +309,7 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 |---|---|---|---|
 | ~~**G-1**~~ | ~~Authorization Services: Resources, Policies, Permissions~~ — **hecho (fase 1)**: 5 Resources, 7 authorization scopes, 4 Policies de rol y 7 Permissions de scope declarados en el realm sobre `inventory-backend`, que pasa de `bearerOnly` decorativo a cliente confidencial con service account. Verificado en vivo: el realm importa y `AuthorizationServicesIT` fija el modelo con 3 tests de declaración y **la matriz entera parametrizada — 4 roles × 7 permisos = 28 decisiones**, no una muestra. Cierra **RNF-05**. **Fase 2 no hecha y deliberada:** el enforcement sigue siendo `@PreAuthorize` sobre los scopes del token, no un RPT por petición — ver el aviso de abajo | 2 h | — |
 | ~~**G-2**~~ | ~~Mover rol→permisos a Keycloak (depende de G-8)~~ — **hecho**: retirados `SCOPES_BY_ROLE`, `permittedScopesForRoles` y `BASE_SCOPES` de `SecurityConfig`, más el espejo del frontend en `lib/scopes.ts`. El backend confía en el claim `scope`, que G-8 ya gatea por rol en el realm. El mapa pasa de vivir en tres sitios —realm, backend y cliente— a vivir solo en el realm. [ADR-004](decisions/ADR-004-keycloak-autoridad-de-scopes.md) sustituye a ADR-002 y razona por qué **no** se conservó como defensa en profundidad: las dos capas derivaban de la misma fuente y fallaban a la vez, el único fallo que cubría ya lo detecta `KeycloakAuthIT` en un check obligatorio, y el mapa lo **enmascaraba** en runtime en vez de exponerlo | 1 h | — |
-| **A-2 / M-1** | `UserController` sobre la Admin API — daría uso a `user:manage` | 4 h | ADR delegando a la consola |
+| ~~**A-2 / M-1**~~ | ~~`UserController` sobre la Admin API~~ — **hecho**: `/api/users` con listar, crear, editar, activar/desactivar, reemplazar roles y eliminar, todo tras `SCOPE_user:manage`; más la sección Usuarios del frontend. El backend habla con la Admin API como service account de `inventory-backend`, capacidad que ya existía desde G-1. Cierra #48 y completa la matriz de 7 permisos | 4 h | — |
 | **A-1** | Unificar rutas bajo `/api/v1` | 3 h | **Riesgo alto** cerca de la entrega. El mínimo ya está hecho: el README documenta las rutas reales y declara la inconsistencia en vez de disimularla |
 
 ### Mejoras funcionales · **COMPLETA**
@@ -358,4 +358,4 @@ Las cifras de abajo son el hueco que falta por cerrar en cada área, no su peso.
 4. **Cada corrección con su evidencia**, archivada en `docs/testing/reportes/`.
 5. **Reviews reales.** Cada PR con aprobación del otro integrante. Es evaluable y sale gratis.
 6. **Participación equitativa.** El enunciado evalúa *"commits individuales, ramas, issues y pull requests"* de ambos. Repartir las olas explícitamente.
-7. **Los bugs van a Issues.** La regla nació porque había 13 issues y ninguno era un bug, pese a haberse encontrado y corregido varios documentados. T-6 lo cerró: hoy son **33 issues** — 13 épicas, 17 bugs y 3 charters. Todo defecto nuevo abre su issue, también si se arregla en el acto (así se registraron #69 y #70).
+7. **Los bugs van a Issues.** La regla nació porque había 13 issues y ninguno era un bug, pese a haberse encontrado y corregido varios documentados. T-6 lo cerró: hoy son **42 issues** — 13 épicas, 26 bugs y 3 charters. Todo defecto nuevo abre su issue, también si se arregla en el acto (así se registraron #69 y #70).
