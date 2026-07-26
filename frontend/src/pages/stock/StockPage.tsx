@@ -351,6 +351,7 @@ export function StockPage() {
               <button
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 disabled={page === 0}
+                aria-label="Página anterior"
                 className="rounded-md border border-gray-300 p-1.5 hover:bg-gray-50 disabled:opacity-40"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -358,6 +359,7 @@ export function StockPage() {
               <button
                 onClick={() => setPage((p) => p + 1)}
                 disabled={page >= data.totalPages - 1}
+                aria-label="Página siguiente"
                 className="rounded-md border border-gray-300 p-1.5 hover:bg-gray-50 disabled:opacity-40"
               >
                 <ChevronRight className="h-4 w-4" />

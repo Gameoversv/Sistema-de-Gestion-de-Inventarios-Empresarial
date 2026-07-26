@@ -103,7 +103,7 @@ export function ProductFormModal({ product, onClose }: Props) {
           <button
             onClick={onClose}
             className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-          >
+           aria-label="Cerrar">
             <X className="h-5 w-5" />
           </button>
         </div>
