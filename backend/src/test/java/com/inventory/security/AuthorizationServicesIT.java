@@ -20,8 +20,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * que <strong>decide</strong>: no basta con que las policies existan, tienen que permitir y denegar
  * lo que dice la matriz de permisos.
  *
- * <p>Nota de redacción: evitar la palabra española «todo» en los comentarios. La regla S1135 de
- * Sonar busca el tag {@code TODO} sin distinguir mayúsculas y la dispara, como ya pasó en Q-5.
+ * <p>Nota de redacción: la regla S1135 de Sonar busca marcadores de tarea pendiente sin distinguir
+ * mayúsculas, y hay un cuantificador español de cuatro letras que coincide con uno de ellos. Ojo al
+ * usarlo en comentarios; ya costó un falso positivo en Q-5 y otro aquí.
  *
  * <p>Las decisiones se piden al endpoint de evaluación de políticas de la Admin API, que es el
  * mismo motor que resolvería un RPT en runtime. Que el <em>enforcement</em> en la ruta de petición
