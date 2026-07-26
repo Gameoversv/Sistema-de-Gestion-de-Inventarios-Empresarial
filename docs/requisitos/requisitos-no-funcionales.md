@@ -64,8 +64,13 @@ La consecuencia a asumir es que ese realm es ahora el único control de acceso. 
 |---|---|
 | **Criterio** | O se implementan Authorization Services de Keycloak (Resources, Policies, Permissions), o existe un ADR que argumente por qué roles + scopes cubren el modelo exigido. |
 | **Origen** | *"modelo de seguridad completamente granular basado en: Keycloak, OAuth2, JWT, Roles, Permisos, Scopes y **Policies**"* |
-| **Estado** | **Pendiente** |
-| **Qué falta** | **G-1** en el plan: implementar (≈5 h) o justificar por ADR. "Policies" aparece nombrado literalmente en el enunciado, así que la opción de ignorarlo en silencio no existe |
+| **Estado** | **Cumple** — implementado, no justificado por ADR |
+| **Implementación** | Authorization Services sobre el cliente `inventory-backend` en [`keycloak/realm-export.json`](../../keycloak/realm-export.json): **5 Resources** (Product, Stock, Report, Audit, User), **7 authorization scopes**, **4 Policies** de tipo `role` y **7 Permissions** de tipo `scope` con `decisionStrategy` AFFIRMATIVE |
+| **Verificación** | `AuthorizationServicesIT` — 3 tests de declaración y 4 de decisión (PERMIT/DENY) contra un Keycloak real |
+
+El modelo expresa la **misma matriz** que los `scope-mappings` de [RNF-02](#rnf-02--autorización-por-permiso-no-por-rol), en el lenguaje que el enunciado nombra. Validado en vivo evaluando los 11 cruces rol×recurso×scope más significativos, todos coincidentes con la matriz: `warehouse-clerk` PERMIT sobre `Product#product:manage`, `auditor` DENY sobre el mismo, `auditor` PERMIT sobre `Audit#audit:view`, `user:manage` solo PERMIT para `inventory-admin`.
+
+**Alcance honesto de lo implementado.** El modelo está declarado y **decide**, pero el *enforcement* en la ruta de petición sigue siendo `@PreAuthorize` sobre los scopes del token, no una evaluación de RPT por petición. Es una decisión deliberada, no una carencia: pedir un RPT a Keycloak en cada petición añade un round-trip que compromete el umbral `p(95)<500ms` que k6 verifica en CI ([RNF-08](#rnf-08--tiempo-de-respuesta-bajo-carga)), y ambas capas derivan de la misma matriz. Queda anotado como fase 2 de **G-1** en el plan.
 
 ### RNF-06 — Superficie HTTP endurecida
 
