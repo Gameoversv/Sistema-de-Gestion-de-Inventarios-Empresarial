@@ -7,7 +7,6 @@ import com.inventory.user.dto.UserUpdateRequest;
 import com.inventory.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -50,11 +49,9 @@ public class UserController {
 
   @GetMapping
   @Operation(summary = "Listar usuarios del realm con sus roles")
-  @ApiResponses({
-    @ApiResponse(responseCode = "200", description = "Lista de usuarios"),
-    @ApiResponse(responseCode = "401", description = "Token ausente o inválido"),
-    @ApiResponse(responseCode = "403", description = "Falta el permiso user:manage")
-  })
+  @ApiResponse(responseCode = "200", description = "Lista de usuarios")
+  @ApiResponse(responseCode = "401", description = "Token ausente o inválido")
+  @ApiResponse(responseCode = "403", description = "Falta el permiso user:manage")
   public List<UserResponse> list(
       @RequestParam(required = false) String search,
       @RequestParam(defaultValue = "0") int page,
@@ -77,10 +74,8 @@ public class UserController {
 
   @PostMapping
   @Operation(summary = "Crear un usuario con su contraseña y sus roles")
-  @ApiResponses({
-    @ApiResponse(responseCode = "201", description = "Usuario creado"),
-    @ApiResponse(responseCode = "409", description = "Ya existe un usuario con ese nombre o correo")
-  })
+  @ApiResponse(responseCode = "201", description = "Usuario creado")
+  @ApiResponse(responseCode = "409", description = "Ya existe un usuario con ese nombre o correo")
   public ResponseEntity<UserResponse> create(@Valid @RequestBody UserCreateRequest request) {
     return ResponseEntity.status(HttpStatus.CREATED).body(service.create(request));
   }

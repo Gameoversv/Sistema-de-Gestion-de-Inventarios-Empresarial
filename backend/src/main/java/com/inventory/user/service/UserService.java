@@ -85,8 +85,10 @@ public class UserService {
     keycloak.resetPassword(id, request.password());
     replaceRoles(id, request.roles() == null ? List.of() : request.roles());
 
-    log.info(
-        "Usuario creado en el realm: username={} id={}", forLog(request.username()), forLog(id));
+    if (log.isInfoEnabled()) {
+      log.info(
+          "Usuario creado en el realm: username={} id={}", forLog(request.username()), forLog(id));
+    }
     return findById(id);
   }
 
@@ -95,27 +97,33 @@ public class UserService {
 
     Map<String, Object> representation = new HashMap<>();
     representation.put(
-        "email", request.email() != null ? request.email().trim() : current.get(EMAIL));
+        EMAIL, request.email() != null ? request.email().trim() : current.get(EMAIL));
     representation.put(FIRST_NAME, nullSafe(request.firstName()));
     representation.put(LAST_NAME, nullSafe(request.lastName()));
     representation.put(ENABLED, request.enabled());
 
     keycloak.updateUser(id, representation);
-    log.info("Usuario actualizado: id={} enabled={}", forLog(id), request.enabled());
+    if (log.isInfoEnabled()) {
+      log.info("Usuario actualizado: id={} enabled={}", forLog(id), request.enabled());
+    }
     return findById(id);
   }
 
   public UserResponse replaceRoles(String id, UserRolesRequest request) {
     validateRoles(request.roles());
     replaceRoles(id, request.roles());
-    log.info("Roles reemplazados: id={} roles={}", forLog(id), request.roles());
+    if (log.isInfoEnabled()) {
+      log.info("Roles reemplazados: id={} roles={}", forLog(id), request.roles());
+    }
     return findById(id);
   }
 
   public void delete(String id) {
     keycloak.findUser(id);
     keycloak.deleteUser(id);
-    log.info("Usuario eliminado del realm: id={}", forLog(id));
+    if (log.isInfoEnabled()) {
+      log.info("Usuario eliminado del realm: id={}", forLog(id));
+    }
   }
 
   // ── Interno ────────────────────────────────────────────────────────────────

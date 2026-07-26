@@ -69,7 +69,7 @@ class KeycloakAdminClientTest {
     MockRestServiceServer strict = MockRestServiceServer.bindTo(builder).build();
     var unconfigured = new KeycloakAdminClient(builder, BASE, "inventory", "inventory-backend", "");
 
-    assertThatThrownBy(() -> unconfigured.realmRoles())
+    assertThatThrownBy(unconfigured::realmRoles)
         .isInstanceOf(BusinessException.class)
         .hasMessageContaining("KC_BACKEND_CLIENT_SECRET");
 
@@ -138,7 +138,9 @@ class KeycloakAdminClientTest {
         .andExpect(method(HttpMethod.POST))
         .andRespond(withStatus(HttpStatus.CONFLICT));
 
-    assertThatThrownBy(() -> client.createUser(Map.of("username", "ana")))
+    Map<String, Object> representacion = Map.of("username", "ana");
+
+    assertThatThrownBy(() -> client.createUser(representacion))
         .isInstanceOf(ConflictException.class);
   }
 
@@ -151,7 +153,9 @@ class KeycloakAdminClientTest {
         .andExpect(method(HttpMethod.POST))
         .andRespond(withStatus(HttpStatus.CREATED));
 
-    assertThatThrownBy(() -> client.createUser(Map.of("username", "ana")))
+    Map<String, Object> representacion = Map.of("username", "ana");
+
+    assertThatThrownBy(() -> client.createUser(representacion))
         .isInstanceOf(BusinessException.class)
         .hasMessageContaining("identificador");
   }
@@ -167,7 +171,7 @@ class KeycloakAdminClientTest {
                 .body("{\"stack\":\"detalle interno del IdP\"}")
                 .contentType(MediaType.APPLICATION_JSON));
 
-    assertThatThrownBy(() -> client.realmRoles())
+    assertThatThrownBy(client::realmRoles)
         .isInstanceOf(BusinessException.class)
         .hasMessageNotContaining("detalle interno");
   }

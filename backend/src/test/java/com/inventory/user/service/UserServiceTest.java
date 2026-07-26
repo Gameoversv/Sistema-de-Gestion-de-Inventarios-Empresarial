@@ -13,11 +13,11 @@ import com.inventory.user.client.KeycloakAdminClient;
 import com.inventory.user.dto.UserRolesRequest;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -29,7 +29,7 @@ class UserServiceTest {
 
   @Mock KeycloakAdminClient keycloak;
 
-  private UserService service;
+  @InjectMocks UserService service;
 
   private static Map<String, Object> role(String name) {
     return Map.of("id", "r-" + name, "name", name);
@@ -45,11 +45,6 @@ class UserServiceTest {
           role("offline_access"),
           role("default-roles-inventory"));
 
-  @BeforeEach
-  void setUp() {
-    service = new UserService(keycloak);
-  }
-
   @Test
   @DisplayName("solo se ofrecen como asignables los cuatro roles de negocio")
   void assignableRoles_excludesKeycloakInternals() {
@@ -62,7 +57,9 @@ class UserServiceTest {
   @Test
   @DisplayName("un rol desconocido se rechaza antes de llamar a Keycloak")
   void replaceRoles_unknownRole_isRejected() {
-    assertThatThrownBy(() -> service.replaceRoles(UID, new UserRolesRequest(List.of("superadmin"))))
+    UserRolesRequest peticion = new UserRolesRequest(List.of("superadmin"));
+
+    assertThatThrownBy(() -> service.replaceRoles(UID, peticion))
         .isInstanceOf(BusinessException.class)
         .hasMessageContaining("superadmin");
 
@@ -114,10 +111,10 @@ class UserServiceTest {
 
     ArgumentCaptor<Map<String, Object>> rep = ArgumentCaptor.forClass(Map.class);
     verify(keycloak).updateUser(anyString(), rep.capture());
-    assertThat(rep.getValue().get("email")).isEqualTo("previo@b.c");
-    assertThat(rep.getValue().get("enabled")).isEqualTo(false);
+    assertThat(rep.getValue()).containsEntry("email", "previo@b.c");
+    assertThat(rep.getValue()).containsEntry("enabled", false);
     // Nombre y apellido nulos se normalizan a cadena vacia, no se envian como null.
-    assertThat(rep.getValue().get("firstName")).isEqualTo("");
+    assertThat(rep.getValue()).containsEntry("firstName", "");
   }
 
   @Test
@@ -137,8 +134,8 @@ class UserServiceTest {
     ArgumentCaptor<Map<String, Object>> rep = ArgumentCaptor.forClass(Map.class);
     verify(keycloak).createUser(rep.capture());
     // Los espacios sobrantes se recortan antes de llegar al IdP.
-    assertThat(rep.getValue().get("username")).isEqualTo("ana");
-    assertThat(rep.getValue().get("email")).isEqualTo("a@b.c");
+    assertThat(rep.getValue()).containsEntry("username", "ana");
+    assertThat(rep.getValue()).containsEntry("email", "a@b.c");
   }
 
   @Test
