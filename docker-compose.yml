@@ -163,6 +163,13 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      # Explicitos para que la imagen no dependa de frontend/.env, que esta en .gitignore
+      # y por tanto no existe en CI.
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+        VITE_KEYCLOAK_URL: ${VITE_KEYCLOAK_URL:-http://localhost:8180}
+        VITE_KEYCLOAK_REALM: ${KC_REALM:-inventory}
+        VITE_KEYCLOAK_CLIENT_ID: ${VITE_KEYCLOAK_CLIENT_ID:-inventory-frontend}
     container_name: inventory-frontend
     restart: unless-stopped
     ports:
