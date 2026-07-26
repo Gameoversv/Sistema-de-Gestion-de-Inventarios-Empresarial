@@ -27,8 +27,8 @@ Salvo la cobertura, medida sobre el artefacto de CI, los porcentajes son estimac
 
 | Cobertura (artefacto JaCoCo en Actions) | Inicial | Actual | Umbral |
 |---|---|---|---|
-| BRANCH | 71,6 % | **82,9 %** | 80 % |
-| LINE | 84,9 % | **92,8 %** | 80 % |
+| BRANCH | 71,6 % | **82,5 %** | 80 % |
+| LINE | 84,9 % | **92,9 %** | 80 % |
 
 Cifras vigentes tras G-2, que las bajó desde 85,7/92,8 sin que se perdiera ninguna prueba: al retirar `permittedScopesForRoles` desaparecieron líneas y ramas que estaban **bien** cubiertas, así que el ratio cae aunque el código restante siga igual de probado. Es el efecto normal de borrar código con tests. Antes de eso, los tests de E-2, M-2 y D-3 las habían subido desde 85,0/92,7. El salto anterior lo dio `KeycloakAuthIT` (TEST-1), que ejercita en integración `SecurityConfig` y los controladores con un token real, desde 84,5/92,1. La medición original de la que parte esta tabla es el artefacto de `798e6b6`. El frontend se mide aparte y está en **6,3 %** de líneas: G-3a lo había subido de 7,1 % a 9,3 % con el test del mapa de scopes, y G-2 lo devuelve a 7,4 % al borrar ese mapa. Los 4 tests que lo sustituyen cubren `LOGIN_SCOPE`, que son 2 líneas en vez de 20. El informe daba 100 % hasta que se configuró `coverage.include` en vitest, que solo cubría las 14 sentencias que los tests importaban; con esa opción el número es el real.
 
