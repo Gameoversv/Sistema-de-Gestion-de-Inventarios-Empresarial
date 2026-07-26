@@ -190,7 +190,7 @@ Spotless estaba declarado en el POM y desactivado con `-Dspotless.check.skip=tru
 |---|---|
 | Repositorio público | cumple |
 | README profesional | cumple — rutas reales, matriz rol→scopes y el `scope` obligatorio del token |
-| **Issues** | **33 issues**: 13 épicas de fase, **17 bugs** (solo 2 abiertos: #48 A-2 diferido y #49 C-4 de entorno) y **3 charters**. Los dos últimos bugs (#69, #70) salieron de montar los E2E en CI. Las épicas 9, 10 y 11 se pusieron al día en la Ola 4 |
+| **Issues** | **42 issues**: 13 épicas de fase, **26 bugs** y **3 charters**. Los 9 últimos (#80…#88) salieron de recrear el stack desde cero para el charter #60: cuatro fallaban **en silencio** y solo se veían arrancando de volumen limpio —el realm que no se actualiza, la imagen del frontend dependiendo de un fichero en `.gitignore`, un `.env` con un prefijo inexistente y `/products` en blanco al recargar—, más dos vulnerabilidades que destapó SonarCloud. Todos con reproducción y arreglo enlazado |
 | Pull Requests | cumple — **33 PRs**, el último el #64 |
 | Branch strategy | cumple — `main` protegida; corren 4 checks y 2 son obligatorios |
 | Conventional Commits | cumple — commitlint activo |
@@ -358,4 +358,4 @@ Las cifras de abajo son el hueco que falta por cerrar en cada área, no su peso.
 4. **Cada corrección con su evidencia**, archivada en `docs/testing/reportes/`.
 5. **Reviews reales.** Cada PR con aprobación del otro integrante. Es evaluable y sale gratis.
 6. **Participación equitativa.** El enunciado evalúa *"commits individuales, ramas, issues y pull requests"* de ambos. Repartir las olas explícitamente.
-7. **Los bugs van a Issues.** La regla nació porque había 13 issues y ninguno era un bug, pese a haberse encontrado y corregido varios documentados. T-6 lo cerró: hoy son **33 issues** — 13 épicas, 17 bugs y 3 charters. Todo defecto nuevo abre su issue, también si se arregla en el acto (así se registraron #69 y #70).
+7. **Los bugs van a Issues.** La regla nació porque había 13 issues y ninguno era un bug, pese a haberse encontrado y corregido varios documentados. T-6 lo cerró: hoy son **42 issues** — 13 épicas, 26 bugs y 3 charters. Todo defecto nuevo abre su issue, también si se arregla en el acto (así se registraron #69 y #70).
