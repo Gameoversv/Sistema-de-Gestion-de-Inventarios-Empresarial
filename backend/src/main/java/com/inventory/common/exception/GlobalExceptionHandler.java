@@ -17,6 +17,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
@@ -116,6 +117,40 @@ public class GlobalExceptionHandler {
         ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     problem.setType(URI.create(PROBLEM_BASE_URI + "/invalid-sort-property"));
     problem.setTitle("Invalid Sort Property");
+    problem.setInstance(URI.create(request.getRequestURI()));
+    return ResponseEntity.badRequest().body(problem);
+  }
+
+  /**
+   * Tipo incorrecto en un parámetro de ruta o de consulta: {@code GET /products/abc} donde el
+   * identificador es numérico.
+   *
+   * <p>Sin este manejador la excepción caía en el fallback genérico y respondía **500**. Es el
+   * mismo defecto que F-2 corrigió para {@code ?sort=} inválido, pero en el path variable: entrada
+   * de usuario mal formada es un **400**, no un fallo del servidor.
+   *
+   * <p>Desde que los 500 marcan la traza como ERROR, además contaminaba la señal: cada
+   * identificador mal tecleado inflaba la tasa de error de los dashboards con algo que no es un
+   * fallo del sistema.
+   *
+   * <p>El mensaje nombra el parámetro y el tipo esperado. No expone interioridades —el cliente ya
+   * conoce la ruta que ha llamado— y sin eso el error no es accionable.
+   */
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  public ResponseEntity<ProblemDetail> handleTypeMismatch(
+      MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+    Class<?> required = ex.getRequiredType();
+    String detail =
+        "El parámetro '"
+            + ex.getName()
+            + "' debe ser de tipo "
+            + (required != null ? required.getSimpleName() : "válido")
+            + "; se recibió '"
+            + ex.getValue()
+            + "'";
+    ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detail);
+    problem.setType(URI.create(PROBLEM_BASE_URI + "/type-mismatch"));
+    problem.setTitle("Invalid Parameter Type");
     problem.setInstance(URI.create(request.getRequestURI()));
     return ResponseEntity.badRequest().body(problem);
   }

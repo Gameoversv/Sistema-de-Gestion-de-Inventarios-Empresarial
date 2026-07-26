@@ -9,6 +9,7 @@ import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.data.util.TypeInformation;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,6 +41,15 @@ class ExceptionTriggerController {
   void validate(@Valid @RequestBody ValidatedBody body) {
     // Vacío a propósito: lo que se prueba es @Valid, que rechaza el cuerpo antes de llegar aquí.
     // Si la validación pasa, no hay nada que hacer; si falla, este método nunca se ejecuta.
+  }
+
+  /**
+   * Ruta con identificador tipado. Llamarla con algo que no sea un número hace que Spring lance
+   * MethodArgumentTypeMismatchException antes de entrar al método, que es justo lo que se prueba.
+   */
+  @GetMapping("/typed/{id}")
+  void typedPathVariable(@PathVariable Long id) {
+    // Nunca se ejecuta en el test: la conversion del path variable falla antes.
   }
 
   @GetMapping("/access-denied")

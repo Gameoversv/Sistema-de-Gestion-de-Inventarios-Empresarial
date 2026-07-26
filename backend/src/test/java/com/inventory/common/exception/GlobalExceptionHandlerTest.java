@@ -132,6 +132,22 @@ class GlobalExceptionHandlerTest {
         .andExpect(jsonPath("$.status").value(400));
   }
 
+  // ── MethodArgumentTypeMismatchException → 400 ────────────────────────────
+
+  // Un identificador no numerico en la ruta es entrada mal formada del usuario, no un fallo del
+  // servidor. Antes caia en el fallback generico y respondia 500; ademas, desde que los 500 marcan
+  // la traza como ERROR, cada ID mal tecleado ensuciaba la tasa de error de los dashboards.
+  @Test
+  void handleTypeMismatch_nonNumericPathVariable_returns400() throws Exception {
+    mockMvc
+        .perform(get("/test-handler/typed/abc").with(jwt().jwt(j -> j.subject("user"))))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.title").value("Invalid Parameter Type"))
+        .andExpect(jsonPath("$.status").value(400))
+        .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("id")))
+        .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("Long")));
+  }
+
   // ── NoResourceFoundException → 404 (unmapped path) ───────────────────────
 
   // Verifica que una ruta que no existe en el servidor retorna 404.
