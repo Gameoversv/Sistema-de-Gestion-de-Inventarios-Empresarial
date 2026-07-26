@@ -66,7 +66,7 @@ La consecuencia a asumir es que ese realm es ahora el único control de acceso. 
 | **Origen** | *"modelo de seguridad completamente granular basado en: Keycloak, OAuth2, JWT, Roles, Permisos, Scopes y **Policies**"* |
 | **Estado** | **Cumple** — implementado, no justificado por ADR |
 | **Implementación** | Authorization Services sobre el cliente `inventory-backend` en [`keycloak/realm-export.json`](../../keycloak/realm-export.json): **5 Resources** (Product, Stock, Report, Audit, User), **7 authorization scopes**, **4 Policies** de tipo `role` y **7 Permissions** de tipo `scope` con `decisionStrategy` AFFIRMATIVE |
-| **Verificación** | `AuthorizationServicesIT` — 3 tests de declaración y 4 de decisión (PERMIT/DENY) contra un Keycloak real |
+| **Verificación** | `AuthorizationServicesIT` contra un Keycloak real — 3 tests de declaración y **28 de decisión**: la matriz completa (PERMIT/DENY) |
 
 El modelo expresa la **misma matriz** que los `scope-mappings` de [RNF-02](#rnf-02--autorización-por-permiso-no-por-rol), en el lenguaje que el enunciado nombra. `AuthorizationServicesIT` evalúa **la matriz completa: 4 roles × 7 permisos = 28 decisiones**, no una muestra representativa. Se enumeran las 28 a propósito: un modelo de autorización se rompe por el cruce que nadie miró, y así un `applyPolicies` mal editado deja de ser una afirmación de este documento para ser un test en rojo con nombre y fila.
 
@@ -108,9 +108,22 @@ CSRF está deshabilitado, y es correcto: la autenticación viaja en la cabecera 
 |---|---|
 | **Criterio** | **p(95) < 500 ms** en los endpoints de lectura bajo carga sostenida, medido con k6 contra el sistema desplegado. |
 | **Origen** | Performance Testing — *"Tiempo de respuesta y Throughput"* · umbral **[criterio propio]** |
-| **Estado** | **Pendiente** |
-| **Implementación** | Existe la instrumentación para medirlo: `percentiles-histogram` activo y buckets SLO en `50ms, 100ms, 200ms, 500ms, 1s, 2s` (`application.yml:104-108`) |
-| **Qué falta** | **T-3**: no hay ni una prueba de carga. El enunciado exige stress, load, usuarios concurrentes, tiempo de respuesta y throughput. Es la única de las ocho capas de testing que está literalmente a cero |
+| **Estado** | **Cumple** |
+| **Implementación** | `scripts/k6/load-test.js` — perfil load + stress sobre 7 endpoints de lectura: rampa a 10 VUs, 30 s sostenidos, pico de **25 VUs concurrentes** y ramp-down. Instrumentación de apoyo: `percentiles-histogram` activo y buckets SLO en `50ms, 100ms, 200ms, 500ms, 1s, 2s` (`application.yml:104-108`) |
+| **Verificación** | Paso *Performance tests (k6)* de `e2e.yml`, contra el stack desplegado, en cada ejecución |
+
+Medición del run [30186019153](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/actions/runs/30186019153):
+
+| Métrica | Umbral | Medido |
+|---|---|---|
+| `http_req_duration` p(95) | < 500 ms | **7,92 ms** |
+| `http_req_failed` | < 1 % | **0,00 %** — 0 de 5 251 |
+| `checks` | > 99 % | **100,00 %** — 5 251 de 5 251 |
+| Throughput | — | **74,44 req/s** |
+
+Los tres umbrales son bloqueantes: k6 devuelve código distinto de cero si alguno falla, así que una regresión de rendimiento tumba el job.
+
+**El margen es enorme y conviene no leerlo de más.** 7,92 ms frente a 500 ms son 63× de holgura, pero la carga se genera *en el mismo runner* que hospeda el stack: la latencia de red es prácticamente cero y todo cabe en memoria. Mide que la aplicación no tiene un cuello de botella propio bajo 25 usuarios concurrentes, no lo que daría un despliegue real con red por medio.
 
 ### RNF-09 — Concurrencia y consistencia del stock
 

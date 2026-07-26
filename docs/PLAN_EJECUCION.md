@@ -2,7 +2,7 @@
 
 **Fuente de verdad:** `Proyecto_Final_V3.pdf` (revisado íntegro el 2026-07-22)
 **Base de hallazgos:** [ANALISIS_BRECHAS.md](ANALISIS_BRECHAS.md)
-**Actualizado:** 2026-07-25 con **G-2** (Keycloak como autoridad única de scopes, [ADR-004](decisions/ADR-004-keycloak-autoridad-de-scopes.md)). Antes, 2026-07-24, sobre `main` en `4243945`, tras cerrar la Ola 2, la Ola 4 salvo C-4 y CI-2, **la Ola 5 completa** (requisitos, arquitectura, mantenimiento, guía de pruebas, T-6 y D-1…D-4), P-2 de la Ola 6, P-2a de la Ola 7, los dos obligatorios de sesión (SEC-2, S-2), los 16 code smells (Q-5) y el alcance funcional pendiente (F-2, D-1, D-2), que se mergeó en el PR #64. La documentación de la Ola 5 está en rama, sin mergear aún.
+**Actualizado:** 2026-07-26 con **G-1** (Authorization Services, cierra RNF-05), **RNF-08** (estaba declarado pendiente y T-3 llevaba tiempo verde) y la señal de **errores distribuidos** en trazas, que no era falta de verificación sino un defecto: los 500 no llegaban a Tempo. Antes, 2026-07-25, con **G-2** (Keycloak como autoridad única de scopes, [ADR-004](decisions/ADR-004-keycloak-autoridad-de-scopes.md)), y 2026-07-24 sobre `main` en `4243945`, tras cerrar la Ola 2, la Ola 4 salvo C-4 y CI-2, **la Ola 5 completa** (requisitos, arquitectura, mantenimiento, guía de pruebas, T-6 y D-1…D-4), P-2 de la Ola 6, P-2a de la Ola 7, los dos obligatorios de sesión (SEC-2, S-2), los 16 code smells (Q-5) y el alcance funcional pendiente (F-2, D-1, D-2), que se mergeó en el PR #64. La documentación de la Ola 5 está en rama, sin mergear aún.
 
 > **Aviso de método.** La versión anterior de este plan tomaba como requisito el desglose del análisis de brechas, que en algunos puntos era interpretación propia y no texto del enunciado. Cada requisito de este documento está contrastado con el PDF. Cuando algo es criterio nuestro y no del enunciado, se marca como **[criterio propio]**.
 
@@ -27,8 +27,8 @@ Salvo la cobertura, medida sobre el artefacto de CI, los porcentajes son estimac
 
 | Cobertura (artefacto JaCoCo en Actions) | Inicial | Actual | Umbral |
 |---|---|---|---|
-| BRANCH | 71,6 % | **85,1 %** | 80 % |
-| LINE | 84,9 % | **92,6 %** | 80 % |
+| BRANCH | 71,6 % | **84,8 %** | 80 % |
+| LINE | 84,9 % | **92,7 %** | 80 % |
 
 Cifras vigentes tras G-2, que las bajó desde 85,7/92,8 sin que se perdiera ninguna prueba: al retirar `permittedScopesForRoles` desaparecieron líneas y ramas que estaban **bien** cubiertas, así que el ratio cae aunque el código restante siga igual de probado. Es el efecto normal de borrar código con tests. Antes de eso, los tests de E-2, M-2 y D-3 las habían subido desde 85,0/92,7. El salto anterior lo dio `KeycloakAuthIT` (TEST-1), que ejercita en integración `SecurityConfig` y los controladores con un token real, desde 84,5/92,1. La medición original de la que parte esta tabla es el artefacto de `798e6b6`. El frontend se mide aparte y está en **7,4 %** de líneas: G-3a lo había subido de 7,1 % a 9,3 % con el test del mapa de scopes, y G-2 lo devuelve a 7,4 % al borrar ese mapa. Los 4 tests que lo sustituyen cubren `LOGIN_SCOPE`, que son 2 líneas en vez de 20. El informe daba 100 % hasta que se configuró `coverage.include` en vitest, que solo cubría las 14 sentencias que los tests importaban; con esa opción el número es el real.
 
@@ -151,7 +151,7 @@ Ambos corregidos en el PR de C-1. **Consecuencia de método:** los E2E no son ve
 |---|---|---|
 | **Métricas** | CPU, Memoria, JVM, Latencia, Throughput, Error rate, DB pool | **7 de 7** — CPU y memoria de host desde OBS-3 |
 | **Logs** | traceId, spanId, correlationId, nivel, usuario, endpoint | **6 de 6** — [informe](testing/reportes/OBS-4-logs-loki.md); solo en perfil `staging`/`prod` |
-| **Trazas** | request, database, external calls, errores distribuidos | **3 de 4** — falta verificar errores distribuidos |
+| **Trazas** | request, database, external calls, errores distribuidos | **4 de 4** — los errores distribuidos no llegaban a Tempo: `GlobalExceptionHandler` captura la excepción y devuelve un `ResponseEntity`, así que para la instrumentación automática la petición terminaba con normalidad y el span quedaba UNSET, sin evento `exception`. Un 500 estaba en los logs y era invisible en las trazas. Corregido con `recordException` + `setStatus(ERROR)` solo en el 5xx; `GlobalExceptionHandlerTracingTest` lo fija, incluido que un 4xx **no** se marca |
 | **Alertas** | CPU, error rate, latencia, servicios caídos, fallos de autenticación | **5 de 5** — dos verificadas disparando; +1 de negocio (`ProductosBajoMinimo`) |
 | **Métricas de negocio** | [criterio propio] movimientos, unidades, alertas y productos bajo mínimo | **4 series** — [informe](testing/reportes/OBS-2-E-3-metricas-de-negocio.md) |
 

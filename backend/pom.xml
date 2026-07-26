@@ -20,6 +20,13 @@
   <description>Sistema de Gestión de Inventarios Empresarial — Backend</description>
 
   <properties>
+    <!-- Sin esto Maven avisa de "platform dependent build": javac y el copiado de recursos usan la
+         codificacion por defecto del sistema. Hoy no rompe nada -la imagen se construye en Linux,
+         que es UTF-8, y las cadenas acentuadas del OpenAPI salen correctas-, pero una compilacion
+         local en Windows con codepage 1252 si produciria mojibake en los literales que viajan a
+         Swagger y a las respuestas de error. Se fija para que el build no dependa de donde corre. -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <java.version>21</java.version>
     <jjwt.version>0.12.6</jjwt.version>
     <testcontainers.version>1.20.6</testcontainers.version>

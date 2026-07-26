@@ -1,5 +1,7 @@
 package com.inventory.common.exception;
 
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.StatusCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
@@ -15,6 +17,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
@@ -118,6 +121,40 @@ public class GlobalExceptionHandler {
     return ResponseEntity.badRequest().body(problem);
   }
 
+  /**
+   * Tipo incorrecto en un parámetro de ruta o de consulta: {@code GET /products/abc} donde el
+   * identificador es numérico.
+   *
+   * <p>Sin este manejador la excepción caía en el fallback genérico y respondía **500**. Es el
+   * mismo defecto que F-2 corrigió para {@code ?sort=} inválido, pero en el path variable: entrada
+   * de usuario mal formada es un **400**, no un fallo del servidor.
+   *
+   * <p>Desde que los 500 marcan la traza como ERROR, además contaminaba la señal: cada
+   * identificador mal tecleado inflaba la tasa de error de los dashboards con algo que no es un
+   * fallo del sistema.
+   *
+   * <p>El mensaje nombra el parámetro y el tipo esperado. No expone interioridades —el cliente ya
+   * conoce la ruta que ha llamado— y sin eso el error no es accionable.
+   */
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  public ResponseEntity<ProblemDetail> handleTypeMismatch(
+      MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+    Class<?> required = ex.getRequiredType();
+    String detail =
+        "El parámetro '"
+            + ex.getName()
+            + "' debe ser de tipo "
+            + (required != null ? required.getSimpleName() : "válido")
+            + "; se recibió '"
+            + ex.getValue()
+            + "'";
+    ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, detail);
+    problem.setType(URI.create(PROBLEM_BASE_URI + "/type-mismatch"));
+    problem.setTitle("Invalid Parameter Type");
+    problem.setInstance(URI.create(request.getRequestURI()));
+    return ResponseEntity.badRequest().body(problem);
+  }
+
   @ExceptionHandler(NoResourceFoundException.class)
   public ResponseEntity<ProblemDetail> handleNoResource(
       NoResourceFoundException ex, HttpServletRequest request) {
@@ -129,9 +166,25 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
   }
 
+  /**
+   * Fallback para lo que nadie previó: responde 500 sin filtrar el detalle al cliente.
+   *
+   * <p>Además marca la traza. Sin esto, un 500 era <em>invisible</em> en Tempo: este manejador
+   * captura la excepción y devuelve un {@code ResponseEntity}, así que desde el punto de vista de
+   * la instrumentación automática la petición terminó con normalidad y el span quedaba con estado
+   * UNSET, sin evento {@code exception} y sin traza de pila. Buscar errores distribuidos no
+   * encontraba nada, que es justo lo contrario de para lo que sirve el trazado.
+   *
+   * <p>Solo el 5xx. Los 4xx de arriba son errores del cliente —un SKU duplicado, un campo inválido—
+   * y marcarlos como ERROR inflaría cualquier panel de tasa de error con ruido que no indica un
+   * fallo del sistema.
+   */
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ProblemDetail> handleGeneric(Exception ex, HttpServletRequest request) {
     log.error("Unhandled exception on {}", request.getRequestURI(), ex);
+    Span span = Span.current();
+    span.recordException(ex);
+    span.setStatus(StatusCode.ERROR, "Internal server error");
     ProblemDetail problem =
         ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
     problem.setType(URI.create(PROBLEM_BASE_URI + "/internal-error"));
