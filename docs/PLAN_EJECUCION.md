@@ -151,7 +151,7 @@ Ambos corregidos en el PR de C-1. **Consecuencia de método:** los E2E no son ve
 |---|---|---|
 | **Métricas** | CPU, Memoria, JVM, Latencia, Throughput, Error rate, DB pool | **7 de 7** — CPU y memoria de host desde OBS-3 |
 | **Logs** | traceId, spanId, correlationId, nivel, usuario, endpoint | **6 de 6** — [informe](testing/reportes/OBS-4-logs-loki.md); solo en perfil `staging`/`prod` |
-| **Trazas** | request, database, external calls, errores distribuidos | **3 de 4** — falta verificar errores distribuidos |
+| **Trazas** | request, database, external calls, errores distribuidos | **4 de 4** — los errores distribuidos no llegaban a Tempo: `GlobalExceptionHandler` captura la excepción y devuelve un `ResponseEntity`, así que para la instrumentación automática la petición terminaba con normalidad y el span quedaba UNSET, sin evento `exception`. Un 500 estaba en los logs y era invisible en las trazas. Corregido con `recordException` + `setStatus(ERROR)` solo en el 5xx; `GlobalExceptionHandlerTracingTest` lo fija, incluido que un 4xx **no** se marca |
 | **Alertas** | CPU, error rate, latencia, servicios caídos, fallos de autenticación | **5 de 5** — dos verificadas disparando; +1 de negocio (`ProductosBajoMinimo`) |
 | **Métricas de negocio** | [criterio propio] movimientos, unidades, alertas y productos bajo mínimo | **4 series** — [informe](testing/reportes/OBS-2-E-3-metricas-de-negocio.md) |
 

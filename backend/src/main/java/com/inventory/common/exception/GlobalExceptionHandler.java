@@ -1,5 +1,7 @@
 package com.inventory.common.exception;
 
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.StatusCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
@@ -129,9 +131,25 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
   }
 
+  /**
+   * Fallback para lo que nadie previó: responde 500 sin filtrar el detalle al cliente.
+   *
+   * <p>Además marca la traza. Sin esto, un 500 era <em>invisible</em> en Tempo: este manejador
+   * captura la excepción y devuelve un {@code ResponseEntity}, así que desde el punto de vista de
+   * la instrumentación automática la petición terminó con normalidad y el span quedaba con estado
+   * UNSET, sin evento {@code exception} y sin traza de pila. Buscar errores distribuidos no
+   * encontraba nada, que es justo lo contrario de para lo que sirve el trazado.
+   *
+   * <p>Solo el 5xx. Los 4xx de arriba son errores del cliente —un SKU duplicado, un campo inválido—
+   * y marcarlos como ERROR inflaría cualquier panel de tasa de error con ruido que no indica un
+   * fallo del sistema.
+   */
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ProblemDetail> handleGeneric(Exception ex, HttpServletRequest request) {
     log.error("Unhandled exception on {}", request.getRequestURI(), ex);
+    Span span = Span.current();
+    span.recordException(ex);
+    span.setStatus(StatusCode.ERROR, "Internal server error");
     ProblemDetail problem =
         ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
     problem.setType(URI.create(PROBLEM_BASE_URI + "/internal-error"));

@@ -99,9 +99,22 @@ CSRF está deshabilitado, y es correcto: la autenticación viaja en la cabecera 
 |---|---|
 | **Criterio** | **p(95) < 500 ms** en los endpoints de lectura bajo carga sostenida, medido con k6 contra el sistema desplegado. |
 | **Origen** | Performance Testing — *"Tiempo de respuesta y Throughput"* · umbral **[criterio propio]** |
-| **Estado** | **Pendiente** |
-| **Implementación** | Existe la instrumentación para medirlo: `percentiles-histogram` activo y buckets SLO en `50ms, 100ms, 200ms, 500ms, 1s, 2s` (`application.yml:104-108`) |
-| **Qué falta** | **T-3**: no hay ni una prueba de carga. El enunciado exige stress, load, usuarios concurrentes, tiempo de respuesta y throughput. Es la única de las ocho capas de testing que está literalmente a cero |
+| **Estado** | **Cumple** |
+| **Implementación** | `scripts/k6/load-test.js` — perfil load + stress sobre 7 endpoints de lectura: rampa a 10 VUs, 30 s sostenidos, pico de **25 VUs concurrentes** y ramp-down. Instrumentación de apoyo: `percentiles-histogram` activo y buckets SLO en `50ms, 100ms, 200ms, 500ms, 1s, 2s` (`application.yml:104-108`) |
+| **Verificación** | Paso *Performance tests (k6)* de `e2e.yml`, contra el stack desplegado, en cada ejecución |
+
+Medición del run [30186019153](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/actions/runs/30186019153):
+
+| Métrica | Umbral | Medido |
+|---|---|---|
+| `http_req_duration` p(95) | < 500 ms | **7,92 ms** |
+| `http_req_failed` | < 1 % | **0,00 %** — 0 de 5 251 |
+| `checks` | > 99 % | **100,00 %** — 5 251 de 5 251 |
+| Throughput | — | **74,44 req/s** |
+
+Los tres umbrales son bloqueantes: k6 devuelve código distinto de cero si alguno falla, así que una regresión de rendimiento tumba el job.
+
+**El margen es enorme y conviene no leerlo de más.** 7,92 ms frente a 500 ms son 63× de holgura, pero la carga se genera *en el mismo runner* que hospeda el stack: la latencia de red es prácticamente cero y todo cabe en memoria. Mide que la aplicación no tiene un cuello de botella propio bajo 25 usuarios concurrentes, no lo que daría un despliegue real con red por medio.
 
 ### RNF-09 — Concurrencia y consistencia del stock
 
