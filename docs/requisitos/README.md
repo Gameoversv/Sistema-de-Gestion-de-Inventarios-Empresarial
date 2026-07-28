@@ -34,18 +34,17 @@ La columna *Estado* no se rellena de memoria. Cada fila apunta al código que la
 | No funcionales — seguridad | RNF-01…RNF-07 | 7 | 0 | 0 |
 | No funcionales — rendimiento y capacidad | RNF-08…RNF-10 | 3 | 0 | 0 |
 | No funcionales — observabilidad | RNF-11…RNF-16 | 6 | 0 | 0 |
-| No funcionales — calidad, CI/CD y entornos | RNF-17…RNF-21 | 3 | 2 | 0 |
+| No funcionales — calidad, CI/CD y entornos | RNF-17…RNF-21 | 4 | 1 | 0 |
 | No funcionales — datos, operación y repositorio | RNF-22…RNF-24 | 2 | 1 | 0 |
-| **Total** | **46** | **43** | **3** | **0** |
+| **Total** | **46** | **44** | **2** | **0** |
 
 **Ningún requisito queda pendiente.** Los dos que lo estaban se cerraron: **Policies de Keycloak** (RNF-05) se implementó en G-1 —5 Resources, 4 Policies y 7 Permissions, con la matriz de 28 decisiones verificada contra un Keycloak real— y el **tiempo de respuesta bajo carga** (RNF-08) resultó ser documentación desfasada: T-3 llevaba tiempo verde con `p(95) = 7,92 ms`.
 
-Los tres parciales que quedan **no son trabajo olvidado, son límites conocidos**. A-2 dejó de estar entre ellos: `user:manage` ya protege `/api/users`, así que la matriz de siete permisos está aplicada entera.
+Los dos parciales que quedan **no son trabajo olvidado, son límites conocidos**. A-2 dejó de estar entre ellos: `user:manage` ya protege `/api/users`, así que la matriz de siete permisos está aplicada entera. **RNF-21 tampoco**: CI-2 ejecutó `production.yml` por primera vez con el tag [`v1.0.0`](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/releases/tag/v1.0.0).
 
 | Requisito | Qué falta | Por qué |
 |---|---|---|
 | RNF-19 | Etapas de Jenkins más allá de `Integration Tests` | Testcontainers no arranca sobre Docker Desktop en Windows; hace falta un agente Linux (issue #49). En Actions las 10 etapas corren |
-| RNF-21 | Ejecutar `production.yml` | CI-2: disparar un release `v1.0.0` es una decisión explícita |
 | RNF-24 | Revisión cruzada en todos los PR | Evaluable; depende de los dos integrantes, no del código |
 
 ---

@@ -290,9 +290,9 @@ Spotless corre en fase `validate`, así que el formato se comprueba en cada `com
 |---|---|
 | **Criterio** | Development, Staging y Production. En staging deben ejecutarse integration, API, E2E y security tests **contra el sistema ya desplegado**, no durante el build. |
 | **Origen** | Entornos Obligatorios |
-| **Estado** | **Parcial** |
-| **Implementación** | Seis perfiles: `dev`, `demo`, `staging`, `prod`, `test` y `smoke`. `staging.yml` despliega y después lanza API tests y el escaneo ZAP **contra el despliegue vivo**; `LiveDatabaseIT` corre contra la base desplegada y **falla si no la encuentra**, en vez de saltarse |
-| **Qué falta** | Solo **CI-2**: `production.yml` nunca se ha ejecutado, porque disparar un release `v1.0.0` es una decisión explícita, no un descuido. Las cuatro familias que el enunciado exige sobre el entorno desplegado ya corren: integration (`LiveDatabaseIT`), API (Newman), **E2E** (`e2e.yml`, C-1) y security (ZAP) |
+| **Estado** | **Cumple** |
+| **Implementación** | Seis perfiles: `dev`, `demo`, `staging`, `prod`, `test` y `smoke`. `staging.yml` despliega y después lanza API tests y el escaneo ZAP **contra el despliegue vivo**; `LiveDatabaseIT` corre contra la base desplegada y **falla si no la encuentra**, en vez de saltarse. Las cuatro familias que el enunciado exige sobre el entorno desplegado corren: integration (`LiveDatabaseIT`), API (Newman), **E2E** (`e2e.yml`, C-1) y security (ZAP) |
+| **Verificación** | CI-2 cerró el último hueco: `production.yml` se ejecutó por primera vez el 2026-07-28 con el tag [`v1.0.0`](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/releases/tag/v1.0.0) ([run 30347306408](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/actions/runs/30347306408)), y la ejecución **destapó un defecto que la revisión no veía**: el job no declaraba `permissions`, y con `default_workflow_permissions: read` en el repositorio, `Create GitHub Release` habría respondido 403 después de gastar tests e imagen. Un workflow escrito y nunca ejecutado no es un workflow verificado (PR #89) |
 
 El perfil `demo` existe porque la presentación necesita a la vez log JSON estructurado —sin él los paneles no filtran por usuario ni endpoint— y CORS hacia `localhost:3000`, y ningún perfil daba ambas cosas. Se descartó añadir `localhost` a `staging`, que declara espejar producción.
 
