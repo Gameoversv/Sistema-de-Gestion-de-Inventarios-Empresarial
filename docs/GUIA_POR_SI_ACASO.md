@@ -1,3 +1,29 @@
+## Antes de empezar: dejar el entorno listo
+
+```bash
+docker compose down -v && docker compose up -d
+scripts/poblar-demo-bmw.sh
+```
+
+Dos minutos y medio en total. El primer comando levanta el stack desde cero —el `-v` es intencionado: borra los volúmenes y evita la trampa del volumen de Keycloak—. El segundo puebla el catálogo de demostración: un taller de piezas de performance para BMW.
+
+| | |
+|---|---|
+| Categorías | 8 — admisión, escape, turbo, refrigeración, suspensión, frenos, software y transmisión |
+| Productos | 45 con marcas y precios reales del sector |
+| Movimientos | 24 entre entradas de proveedor, ventas y ajustes de inventario |
+| Bajo mínimo | 11, para que la pantalla de alertas tenga contenido |
+| Rotura de stock | 2, que es lo que mide el panel de stock crítico |
+| Valor del inventario | $337.069,15 |
+
+**Es idempotente:** ejecutarlo dos veces deja exactamente los mismos números, porque purga antes de poblar. Se puede repetir entre ensayos sin miedo.
+
+Dos detalles que importan en la presentación:
+
+- **Puebla por API, no por SQL.** Los datos entran por Hibernate, así que Envers registra las 77 revisiones y la pantalla de auditoría se ve llena. El seed de Flyway (`V5__seed_data.sql`) inserta por SQL directo y por eso no genera auditoría —fue justo lo que destapó el bug [#91](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/issues/91)—. `V5` se deja intacta a propósito: `DataIntegrityIT` verifica que `ELEC-001` existe, y cambiarla rompería el pipeline.
+- **Genera tráfico al final**, con 401, 403 y 404 incluidos. Sin él, los paneles de Aplicación y Seguridad salen planos y parece que la observabilidad no funciona.
+
+
 **URLs de la demo:**
 
 | Servicio | URL | Credencial |
