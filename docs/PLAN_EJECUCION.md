@@ -48,7 +48,7 @@ El enunciado los lista de forma explícita. Sirve como checklist de cierre.
 | Reportes de pruebas | **cumple** — surefire, failsafe, JaCoCo, cobertura de frontend, ZAP, Playwright, JUnit de Newman, resumen de k6 y OWASP Dependency-Check, todos como artefactos de CI |
 | Evidencias QA | **cumple** — 12 informes en `docs/testing/reportes/`, 6 capturas en `docs/testing/capturas/` y 18 issues de bug y charter con reproducción |
 | Documentación completa | **cumple** — requisitos, arquitectura, manual de mantenimiento y guía de pruebas entregados |
-| **Presentación final funcional** | **en curso** — P-2 hecho; faltan guion (P-1) y ensayo (P-3) |
+| **Presentación final funcional** | **en curso** — P-2 y P-1 hechos ([guion de demostración](GUIA_POR_SI_ACASO.md)); falta el ensayo (P-3) |
 
 ---
 
@@ -250,7 +250,7 @@ El área queda cerrada: el pendiente que arrastraba (P-2) está hecho.
 | **Q-4** | Publicar cobertura como artefacto + badge | 30 min | **hecho** — artefacto `coverage-report`, resumen en cada run y badges verificados en CI |
 | **Q-1** | SonarCloud con las 5 métricas exigidas + badge | 1,5 h | **hecho** — análisis en cada run de CI; 6 badges (quality gate + las 5 métricas) servidos por SonarCloud |
 | **C-4** | Jenkins: añadir E2E, security scan y quality gate | 3 h | **parcial** — Jenkins pasa a configurarse como código (`docker/jenkins/`) y el pipeline se ejecuta por primera vez. Corregida la etapa `Unit Tests`, que arrastraba los IT: ahora 284 tests en verde. Añadidas Quality Gate, E2E y Security Scan, validadas de sintaxis con el linter declarativo. **Sin validar en ejecución**: `Integration Tests` no corre bajo Docker Desktop en Windows (ver abajo), y con ella quedan sin alcanzar las tres nuevas |
-| **CI-2** | Tag `v1.0.0` y primera ejecución de `production.yml` | 15 min | pendiente — crea un GitHub Release, decisión explícita |
+| **CI-2** | Tag `v1.0.0` y primera ejecución de `production.yml` | 15 min | **en curso** — desbloqueado un 403 latente: el repositorio tiene `default_workflow_permissions: read` y el job no declaraba permisos, así que `Create GitHub Release` habría fallado con 403 la primera vez que se etiquetara. Añadido `permissions: contents: write`, el mismo patrón que ya usa `promote-to-staging.yml`. Falta empujar el tag y comprobar la ejecución |
 | **—** | Smoke test post-release | 45 min | pendiente — depende de CI-2 |
 | **TEST-10** | ZAP autenticado o `zap-full-scan` con umbral | 2 h | **hecho** — `zap-api-scan` sembrado con el OpenAPI y autenticado; sin `-I`, así que un WARN nuevo tumba el despliegue. Validado en local: 29 URLs, 118 reglas PASS, 0 WARN |
 | **ENV-1** | IT con URL de BD por configuración externa | 1 h | **hecho** — `LiveDatabaseIT` + perfil `live-db-it`; verificado que falla cuando no hay base, en vez de saltarse |
@@ -282,7 +282,7 @@ Es un entregable explícito: *"presentación final funcional del sistema en clas
 
 | # | Acción | Esfuerzo | Estado |
 |---|---|---|---|
-| **P-1** | Guion de demo: alta de producto → movimiento de stock → alerta → auditoría → dashboard | 1 h | pendiente |
+| **P-1** | Guion de demo: alta de producto → movimiento de stock → alerta → auditoría → dashboard | 1 h | **hecho** — [`GUIA_POR_SI_ACASO.md`](GUIA_POR_SI_ACASO.md): recorre el enunciado acápite por acápite con *cómo se resolvió · dónde está · **Prueba*** (comando o URL para demostrarlo en vivo), más el guion corto de 15 min (apéndice A) y las preguntas incómodas con su respuesta honesta (apéndice B) |
 | **P-2** | Capturas de los 4 dashboards con datos reales y de una alerta disparada | 1 h | **hecho** — 6 capturas, 34 paneles sin ninguno vacío, alerta verificada hasta Alertmanager, [informe](testing/reportes/P-2-capturas-de-evidencia.md) |
 | **P-3** | Ensayo con el stack levantado desde cero (`down -v && up`) | 1 h | pendiente — **ya desbloqueado**: el CORS lo resolvió P-2a y la idempotencia de `keycloak-init` la resolvió P-2b. Solo falta correr el ensayo sobre un stack vivo |
 
