@@ -4,6 +4,7 @@ import com.inventory.audit.domain.RevisionInfo;
 import com.inventory.audit.dto.ProductAuditResponse;
 import com.inventory.product.domain.Product;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -53,7 +54,11 @@ public class ProductAuditService {
       if (product.getCategory() != null) {
         categoryName = product.getCategory().getName();
       }
-    } catch (LazyInitializationException ex) {
+    } catch (LazyInitializationException | EntityNotFoundException ex) {
+      // Las categorías del seed las inserta Flyway por SQL directo, sin pasar por Hibernate, así
+      // que Envers no tiene su fila en categories_aud. Al reconstruir la revisión, el proxy no
+      // resuelve y lanza EntityNotFoundException, no LazyInitializationException. La revisión se
+      // devuelve igual, sin el nombre de la categoría.
       log.warn(
           "Could not resolve category for product id={}: {}", product.getId(), ex.getMessage());
     }
