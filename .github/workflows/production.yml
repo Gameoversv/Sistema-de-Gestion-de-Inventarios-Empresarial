@@ -11,6 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
+    # El repositorio tiene los permisos por defecto del GITHUB_TOKEN en solo lectura,
+    # asi que sin esto el paso "Create GitHub Release" responde 403.
+    permissions:
+      contents: write
+
     steps:
       - uses: actions/checkout@v4
 
