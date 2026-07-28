@@ -23,9 +23,6 @@ Dos detalles que importan en la presentación:
 - **Puebla por API, no por SQL.** Los datos entran por Hibernate, así que Envers registra las 77 revisiones y la pantalla de auditoría se ve llena. El seed de Flyway (`V5__seed_data.sql`) inserta por SQL directo y por eso no genera auditoría —fue justo lo que destapó el bug [#91](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/issues/91)—. `V5` se deja intacta a propósito: `DataIntegrityIT` verifica que `ELEC-001` existe, y cambiarla rompería el pipeline.
 - **Genera tráfico al final**, con 401, 403 y 404 incluidos. Sin él, los paneles de Aplicación y Seguridad salen planos y parece que la observabilidad no funciona.
 
-> **Si el `up` falla**, casi siempre son los puertos: 5432 y 8080 ocupados por otro proyecto. `netstat -ano | grep -E ":(5432|8080)\s+.*LISTENING"` lo dice en cinco segundos.
-
----
 
 **URLs de la demo:**
 
