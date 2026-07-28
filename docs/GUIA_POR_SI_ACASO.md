@@ -304,32 +304,58 @@ El enunciado deja backend, frontend y base de datos agnósticos y solo fija cont
 
 ## 5. Full Stack Testing 
 
- Las **ocho capas** exigidas cumplen y **todas corren en CI**. 307 `@Test` en 33 ficheros. Cobertura del backend medida por JaCoCo en cada ejecución: **92,9 % de líneas, 81,6 % de ramas** (umbral que rompe el build: 80 %).
+ Las **ocho capas** exigidas cumplen y **todas corren en CI**. 393 tests en 44 ficheros: 358 unitarios en 37 ficheros `*Test.java` y 35 de integración en 7 ficheros `*IT.java`. Cobertura del backend medida por JaCoCo en cada ejecución: **95,5 % de líneas, 82,7 % de ramas** (umbral que rompe el build: 80 %).
 
 El detalle capa por capa, con casos y resultados, está en [`docs/testing/guia-de-pruebas.md`](testing/guia-de-pruebas.md) 
 
+**Dónde corre cada capa**, que es lo primero que preguntan al ver la tabla:
+
+| Capa | Workflow | Job | Step |
+|---|---|---|---|
+| Unit | `ci.yml` | `unit-tests` | *Run unit tests* |
+| Integration | `ci.yml` | `integration-test` | *Run integration tests and coverage gate* |
+| Contract | `ci.yml` | `unit-tests` | *Run unit tests* (`OpenApiContractTest` es un `*Test`) |
+| API (Newman) | `e2e.yml` | `e2e` | *API tests (Newman)* |
+| E2E + a11y | `e2e.yml` | `e2e` | *Run Playwright (E2E + a11y)* y *Visual regression (@visual)* |
+| Security (ZAP) | `staging.yml` | `deploy-and-test` | *OWASP ZAP authenticated API scan* |
+| Security (deps) | `dependency-scan.yml` | `npm-audit`, `owasp-backend` | *npm audit*, *OWASP Dependency-Check* |
+| Performance | `e2e.yml` | `e2e` | *Performance tests (k6)* |
+| Data | `ci.yml` | `integration-test` | *Run integration tests and coverage gate* |
+| Contra base viva | `staging.yml` | `deploy-and-test` | *Run IT tests against live DB* |
+
+La última fila es la distinción que importa: **`LiveDatabaseIT` no corre con las demás**. Las otras usan Testcontainers efímeros en `ci.yml`; esa corre en `staging.yml` contra la base **ya desplegada**, que es lo que el enunciado exige cuando pide pruebas sobre el sistema desplegado y no solo durante el build.
+
 ### 5.1 Unit Testing
 
-289 tests con JUnit 5 + Mockito + AssertJ sobre las tres cosas que nombra el enunciado: servicios, validaciones y lógica de negocio. Surefire está limitado a `**/*Test.java` y excluye los `*IT`, de modo que la capa unitaria corre sin Docker.
+358 tests con JUnit 5 + Mockito + AssertJ sobre las tres cosas que nombra el enunciado: servicios, validaciones y lógica de negocio. Surefire está limitado a `**/*Test.java` y excluye los `*IT`, de modo que la capa unitaria corre sin Docker.
 
 - Diferentes test: `backend/src/test/java/com/inventory/**/*Test.java`
-- Configuración de Surefire: [`backend/pom.xml`](../backend/pom.xml).
+- Configuración de Surefire: [`backend/pom.xml`](../backend/pom.xml)
+- **En CI:** [`ci.yml`](../.github/workflows/ci.yml) → job `unit-tests` → step *Run unit tests* (`./mvnw test -B`). Es el job más rápido del pipeline, ~45 s, porque no levanta ningún contenedor.
 
 
 ### 5.2 Integration Testing
 
 **Testcontainers**, con las tres cosas que se piden: base de datos real (PostgreSQL en contenedor), **Keycloak real** (`dasniko/testcontainers-keycloak`, que importa un realm de test con roles, scopes y `scopeMappings` y valida la cadena completa con un token firmado de verdad) e integraciones.
 
-| Fichero | Qué integra |
-|---|---|
-| `ProductRepositoryIT` (8) | Specification de búsqueda y filtro contra base real, con paginación |
-| `AuditIntegrationIT` (4) | Envers escribe las tablas `*_aud` de verdad |
-| `StockServiceConcurrencyIT` (3) | Dos movimientos simultáneos no dejan el stock inconsistente |
-| `KeycloakAuthIT` (4) | Token real: admin lista (200), viewer no crea (403), sin token (401) |
-| `LiveDatabaseIT` (3) | Contra la **base ya desplegada**, no un contenedor efímero |
+**35 tests en 7 ficheros:**
+
+| Fichero | Qué integra | Dónde corre |
+|---|---|---|
+| `ProductRepositoryIT` (12) | Specification de búsqueda y filtro contra base real, con paginación | `ci.yml` |
+| `KeycloakAuthIT` (5) | Token real: admin lista (200), viewer no crea (403), sin token (401) | `ci.yml` |
+| `AuditIntegrationIT` (4) | Envers escribe las tablas `*_aud` de verdad | `ci.yml` |
+| `DataIntegrityIT` (4) | Constraints y seeds contra el esquema real (ver §5.7) | `ci.yml` |
+| `AuthorizationServicesIT` (4) | Authorization Services de Keycloak: la matriz de decisiones contra un IdP vivo | `ci.yml` |
+| `StockServiceConcurrencyIT` (3) | Dos movimientos simultáneos no dejan el stock inconsistente | `ci.yml` |
+| `LiveDatabaseIT` (3) | Contra la **base ya desplegada**, no un contenedor efímero | **`staging.yml`** |
 
 - Diferentes test: `backend/src/test/java/**/*IT.java` 
-- Failsafe y el perfil: `live-db-it` en [`backend/pom.xml`](../backend/pom.xml).
+- Failsafe y el perfil: `live-db-it` en [`backend/pom.xml`](../backend/pom.xml)
+- **En CI:** [`ci.yml`](../.github/workflows/ci.yml) → job `integration-test` → step *Run integration tests and coverage gate* (`./mvnw verify -B`, que además aplica el gate de JaCoCo)
+- **Contra base desplegada:** [`staging.yml`](../.github/workflows/staging.yml) → step *Run IT tests against live DB*
+
+> **La distinción que conviene defender:** los seis primeros levantan Testcontainers efímeros dentro del job. `LiveDatabaseIT` es distinto — corre **después del despliegue**, contra la base viva, y con el perfil `live-db-it` **falla si no la encuentra** en vez de saltarse en silencio. Un test que se salta cuando falta su dependencia no prueba nada, y es exactamente la trampa que el enunciado busca al pedir pruebas sobre el sistema desplegado.
 
 
 ### 5.3 API Testing / Contract Testing
@@ -342,9 +368,10 @@ Tres frentes, los tres en CI:
 
 Vale la pena contarlo en la presentación: ejecutar la colección por primera vez destapó **7 bugs propios** que nunca se habían visto, entre ellos rutas `/api/v1` inexistentes e IDs hardcodeados que borraban datos sembrados.
 
-- OpenApiTest: [`OpenApiContractTest.java`](../backend/src/test/java/com/inventory/common/web/OpenApiContractTest.java) 
+- OpenApiTest: [`OpenApiContractTest.java`](../backend/src/test/java/com/inventory/common/web/OpenApiContractTest.java) — al llamarse `*Test` lo recoge Surefire, así que corre en [`ci.yml`](../.github/workflows/ci.yml) → job `unit-tests`, sin necesidad de Docker
 - Colección [`inventory-api.postman_collection.json`](postman/inventory-api.postman_collection.json) 
-- Newman: `API tests (Newman)` en [`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml).
+- Newman: [`e2e.yml`](../.github/workflows/e2e.yml) → job `e2e` → step *API tests (Newman)*, después del despliegue del stack
+- Ciclo de vida del token: [`staging.yml`](../.github/workflows/staging.yml) → step *API smoke & integration tests*, contra el Keycloak desplegado.
 
 
 ### 5.4 E2E Testing
@@ -365,7 +392,8 @@ Esta capa destapó **dos defectos reales de autenticación**, no fragilidad de l
 
 - e2e: [`e2e/tests/`](../e2e/tests/) 
 - Configuración: [`playwright.config.ts`](../e2e/playwright.config.ts) 
-- Workflow: [`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml)
+- **En CI:** [`e2e.yml`](../.github/workflows/e2e.yml) → job `e2e`, en **dos steps separados**: *Run Playwright (E2E + a11y)* para funcionalidad, roles, seguridad, responsive y accesibilidad, y *Visual regression (@visual)* aparte, filtrado por tag. Van separados a propósito: un snapshot desviado no debe enmascarar un fallo funcional, ni al revés
+- Antes de ambos, el job despliega el stack completo (*Deploy stack*) y espera a Keycloak, backend y frontend con sondas de disponibilidad, no con esperas fijas.
 
 ### 5.5 Security Testing
 
@@ -382,16 +410,19 @@ Los seis controles :
 
 Dos matices que conviene defender: el escaneo es **autenticado** (sin token ZAP solo recibiría 401 y "pasaría" sin haber probado nada), y su token dura 3600 s desde un cliente dedicado `inventory-zap` — antes caducaba a los 300 s y el resto de la API se recorría sin autenticar, un falso verde.
 
-- Pasos ZAP: [`.github/workflows/staging.yml`](../.github/workflows/staging.yml) 
-- Jenkinks: [`Jenkinsfile`](../Jenkinsfile) 
-- Workflow: [`.github/workflows/dependency-scan.yml`](../.github/workflows/dependency-scan.yml).
+Y ese segundo matiz **no se defiende de palabra: hay un step que lo comprueba.** `staging.yml` incluye *Verificar que el escaneo no sobrevivio al token*, que falla el job si el token expiró antes de terminar el recorrido. Sin él, el falso verde volvería en silencio la próxima vez que el escaneo tardase más de la cuenta.
+
+- **ZAP en CI:** [`staging.yml`](../.github/workflows/staging.yml) → job `deploy-and-test` → steps *Obtain JWT for the authenticated scan* → *OWASP ZAP authenticated API scan* → *Verificar que el escaneo no sobrevivio al token*
+- **Dependencias:** [`dependency-scan.yml`](../.github/workflows/dependency-scan.yml) → jobs `npm-audit` (frontend y e2e por separado) y `owasp-backend` (*OWASP Dependency-Check*, falla en CVSS ≥ 8)
+- **Token de vida larga:** [`e2e.yml`](../.github/workflows/e2e.yml) → step *TEST-10b — token de vida larga del cliente ZAP*
+- Jenkins: [`Jenkinsfile`](../Jenkinsfile), etapa *Security Scan — ZAP*.
 
 ### 5.6 Performance Testing
 
 **k6** con un perfil combinado que cubre los cinco puntos en una sola ejecución: rampa a 10 VUs → 30 s sostenidos (**load**) → pico de **25 VUs concurrentes** (**stress**) → ramp-down. Los umbrales **hacen fallar el job**: `p(95) < 500 ms` (tiempo de respuesta), `< 1 %` de peticiones fallidas y `> 99 %` de checks en 200. `setup()` obtiene un token compartido y cada VU recorre 7 endpoints de lectura.
 
 - K6 load test: [`scripts/k6/load-test.js`](../scripts/k6/load-test.js) 
-- K6 Workflow `Performance tests (k6)` en [`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml).
+- **En CI:** [`e2e.yml`](../.github/workflows/e2e.yml) → job `e2e` → step *Performance tests (k6)*, contra el stack ya desplegado en el mismo job. El resumen JSON se sube como artefacto en *Upload k6 summary*.
 
 
 ### 5.7 Data Testing
@@ -401,13 +432,14 @@ Dos matices que conviene defender: el escaneo es **autenticado** (sin token ZAP 
 | Aspecto | Cómo |
 |---|---|
 | Migraciones | 7 migraciones Flyway `V1`…`V7`; los IT levantan el esquema real |
-| Seeds | `V5__seed_data.sql`; `DataIntegrityIT` verifica que Flyway los cargó |
+| Seeds | `V5__seed_data.sql`; `DataIntegrityIT` verifica que Flyway los cargó — y por eso la migración **no se puede tocar**: cambiarla rompe el pipeline |
 | Integridad | FK producto↔movimiento, verificada en `StockServiceConcurrencyIT` |
 | Constraints | SKU único y `minimum_stock NOT NULL`, verificados contra la BD |
 | Datos duplicados | `DataIntegrityIT` inserta un SKU ya sembrado y comprueba el rechazo |
 
 - DataTest: [`DataIntegrityIT.java`](../backend/src/test/java/com/inventory/product/repository/DataIntegrityIT.java) 
-- Migraciones: [`backend/src/main/resources/db/migration/`](../backend/src/main/resources/db/migration/).
+- Migraciones: [`backend/src/main/resources/db/migration/`](../backend/src/main/resources/db/migration/)
+- **En CI:** [`ci.yml`](../.github/workflows/ci.yml) → job `integration-test` → step *Run integration tests and coverage gate*, junto al resto de los `*IT`.
 
 ### 5.8 Manual Exploratory Testing
 
@@ -546,7 +578,7 @@ El análisis va **después** de `verify` a propósito, porque es `verify` quien 
 
 Complementos locales: **JaCoCo** con umbral que rompe el build (80 % de líneas y ramas) y **Spotless** con Google Java Format en fase `validate` — es decir, el formato no es una sugerencia, un fichero mal formateado no compila en CI.
 
-**Estado actual:** 92,9 % de líneas · 81,6 % de ramas (backend). El frontend está en **6,3 %** y es el hueco de calidad conocido, declarado como tal en el plan en vez de disimulado. Vale la pena saber que el informe de frontend marcaba **100 %** hasta que se configuró `coverage.include` en vitest: solo medía las 14 sentencias que los tests importaban.
+**Estado actual:** 95,5 % de líneas · 82,7 % de ramas (backend). El frontend está en **6,3 %** y es el hueco de calidad conocido, declarado como tal en el plan en vez de disimulado. Vale la pena saber que el informe de frontend marcaba **100 %** hasta que se configuró `coverage.include` en vitest: solo medía las 14 sentencias que los tests importaban.
 
 - Configuración de Sonar, JaCoCo y Spotless: [`backend/pom.xml`](../backend/pom.xml) 
 - IT: `integration-test` de [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) 
@@ -569,10 +601,23 @@ Seis workflows. Los cinco puntos—Build, Tests, Security scans, Coverage, Docke
 | [`e2e.yml`](../.github/workflows/e2e.yml) | PR y manual | Despliega el stack demo y corre **Playwright + Newman + k6** contra él |
 | [`staging.yml`](../.github/workflows/staging.yml) | push a `main`/`develop`, manual | Despliega, API smoke, `LiveDatabaseIT` contra base viva, **ZAP autenticado** |
 | [`dependency-scan.yml`](../.github/workflows/dependency-scan.yml) | programado y push | `npm audit` + **OWASP Dependency-Check** (falla en CVSS ≥ 8) |
-| [`production.yml`](../.github/workflows/production.yml) | tags `v*.*.*` | Verifica, construye imagen de producción y publica GitHub Release |
+| [`production.yml`](../.github/workflows/production.yml) | tags `v*.*.*` | Verifica, construye imagen de producción y publica GitHub Release. **Ejecutado con `v1.0.0`**, no solo escrito |
 | [`promote-to-staging.yml`](../.github/workflows/promote-to-staging.yml) | push | Promoción de rama a `staging` |
 
 Los cuatro checks de `ci.yml` son **obligatorios** y `main` exige revisión aprobatoria.
+
+##### Un workflow escrito no es un workflow verificado
+
+`production.yml` existía desde el principio y **nunca se había ejecutado**, porque publicar un release es una decisión explícita. Al etiquetar `v1.0.0` por primera vez apareció lo que ninguna revisión de código había visto: el job no declaraba `permissions`, y el repositorio tiene `default_workflow_permissions: read`.
+
+```
+$ gh api repos/.../actions/permissions/workflow
+{"default_workflow_permissions":"read","can_approve_pull_request_reviews":false}
+```
+
+Es decir, el paso `Create GitHub Release` habría respondido **403 después** de correr los tests y construir la imagen: el ciclo entero gastado para morir en el último paso. Se arregló añadiendo `permissions: contents: write` al job, el mismo patrón que ya usaba `promote-to-staging.yml`.
+
+Es la misma lección que dejó la colección de Postman en §5.3 —ejecutarla por primera vez destapó 7 bugs propios— y la que dejó Jenkins en §9.2. **Un artefacto de automatización que nunca se ha ejecutado es una hipótesis, no una garantía**, y conviene decirlo así antes de que lo pregunten.
 
 #### Prueba
 
@@ -580,7 +625,8 @@ Abrir la pestaña **Actions** del repositorio y enseñar, en este orden:
 1. Un run verde de `ci.yml` → los 3 jobs y los artefactos (surefire, JaCoCo, cobertura de frontend).
 2. Un run de `e2e.yml` → artefactos de Playwright, Newman y el resumen JSON de k6.
 3. Un run de `staging.yml` → el informe ZAP, y el orden deploy → tests.
-4. Un PR cualquiera → los checks obligatorios bloqueando el merge.
+4. Un run de `production.yml` → los tres pasos en verde y, al final, el [**Release `v1.0.0`**](https://github.com/Gameoversv/Sistema-de-Gestion-de-Inventarios-Empresarial/releases/tag/v1.0.0) publicado. Es la prueba de que el pipeline de producción se ejecutó de verdad y no solo está escrito.
+5. Un PR cualquiera → los checks obligatorios bloqueando el merge.
 
 
 ### 9.2 Jenkins (Obligatorio)
